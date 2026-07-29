@@ -1,0 +1,66 @@
+---
+// The primary "install the extension" block. SLEEPS until at least one
+// extension in src/data/extensions.ts has a real storeUrl — renders nothing
+// (not even a wrapping <section>) while every storeUrl is null, so this is
+// safe to leave mounted on a page ahead of launch.
+//
+// RELEVANCE GATE: only mount this on a page whose job matches a
+// website-capture extension — i.e. a page about capturing a *live site*,
+// not a file you already have. Today that's exactly one page,
+// /guides/export-from-ai-builders/ (see ArticleLayout.astro). Do not add
+// this to the file-converter pages (png-to-psd, jpg-to-psd, psd-to-png,
+// psd-to-jpg, jpg-to-pdf, pdf-to-jpg, favicon-generator, webp-to-jpg) — none
+// of them touch a live page, so the extension doesn't upgrade them. Those
+// pages get ExtensionFooterLine instead (a quiet one-line pointer here, not
+// this block).
+//
+// Copy angle: capability, not price. No "free forever" — see the owner's
+// brief on being careful with that word. "Free" itself is fine when it's
+// describing the tool truthfully; a permanence promise is not.
+import { extensions } from '../data/extensions';
+
+interface Props {
+  surface: string; // page/location id, forwarded on extension_cta_click
+}
+const { surface } = Astro.props;
+
+const live = extensions.filter((e) => e.storeUrl !== null);
+---
+
+{live.length > 0 && (
+  <section class="extension-cta" aria-labelledby="extension-cta-heading">
+    <h2 id="extension-cta-heading">Get it as a browser extension</h2>
+    <p class="extension-cta-lead">
+      Capture from any live page, right-click, reuse the result — without leaving the tab you're already on.
+    </p>
+    <ul class="extension-cta-list">
+      {live.map((e) => (
+        <li class="extension-cta-item">
+          <a
+            class="btn extension-cta-link"
+            href={e.storeUrl!}
+            rel="noopener"
+            data-ext-id={e.id}
+            data-surface={surface}
+          >
+            Install {e.name}
+          </a>
+          <p class="extension-cta-blurb">{e.blurb}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<script>
+  import { track } from '../lib/analytics';
+
+  document.querySelectorAll<HTMLAnchorElement>('.extension-cta-link').forEach((link) => {
+    link.addEventListener('click', () => {
+      track('extension_cta_click', {
+        surface: link.dataset.surface ?? '',
+        ext_id: link.dataset.extId ?? '',
+      });
+    });
+  });
+</script>

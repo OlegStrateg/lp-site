@@ -1,0 +1,26 @@
+{
+  "name": "layerporter",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "smoke": "node scripts/smoke-agpsd.mjs && node scripts/smoke-pptx.mjs && node scripts/smoke-pdf.mjs && node scripts/smoke-ico.mjs && node scripts/smoke-webp.mjs",
+    "uniqueness": "node scripts/uniqueness-check.mjs",
+    "build": "npm run smoke && astro build && npm run uniqueness",
+    "preview": "astro preview",
+    "astro": "astro",
+    "og:generate": "node scripts/generate-og-image.mjs"
+  },
+  "dependencies": {
+    "ag-psd": "^31.0.2",
+    "astro": "^7.1.0",
+    "fflate": "^0.8.3",
+    "pdfjs-dist": "^6.1.200"
+  },
+  "devDependencies": {
+    "jpeg-js": "^0.4.4"
+  }
+}

@@ -1,0 +1,398 @@
+---
+// v2 tool widget (ТЗ 19.07, owner prototype) — PNG -> PSD ONLY. Unlike the
+// shared ConverterWidget.astro (which serves 3 different directions across
+// 4 pages), this component is dedicated to one direction so its copy and
+// guardrails can be exact: PNG-only accept + magic bytes, a JPG drop bridges
+// to /convert/jpg-to-psd/ via the same handoff.ts mechanism the home
+// dropzone uses, and the processing-state copy is driven by real pipeline
+// milestones (decode -> worker builds the PSD -> blob/URL prep) rather than
+// a fake timer. The transparency badge on success comes from a real alpha
+// scan of a <=400px canvas downsample of the source image — the same
+// downsample doubles as the checkerboard thumbnail, so it's one canvas op,
+// not two.
+//
+// Root element reuses .udz-zone/.udz-shell (home dropzone) visual language
+// per the owner's mockup — same dashed zone, same file icon — with state
+// colors layered on via [data-state] (see global.css "TOOL PAGE V2").
+interface Props {
+  toolHeading: string;
+}
+const { toolHeading } = Astro.props;
+---
+
+<section aria-label={toolHeading} class="tool-section-v2">
+  <div
+    id="converter-widget-v2"
+    class="udz-zone tool-zone"
+    data-state="idle"
+    role="group"
+    aria-label="PNG to PSD converter"
+  >
+    <div class="tool-state" data-state-view="idle">
+      <div class="udz-file-icon" aria-hidden="true"></div>
+      <p class="udz-title">Drop PNG here</p>
+      <p class="udz-sub">or choose a PNG file from your device</p>
+      <button type="button" class="btn" id="tw-choose-btn">Choose PNG</button>
+      <p class="tool-hint">PNG only &middot; processed locally</p>
+      <p class="tool-privacy-note"><span class="tool-privacy-dot" aria-hidden="true"></span> File data uploaded: 0 B</p>
+      <p class="tool-micro-bridge">
+        Creates one editable image layer.
+        {' '}
+        <a href="/extensions/" id="tw-micro-bridge-link">Need real website layers?</a>
+      </p>
+    </div>
+
+    <div class="tool-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="udz-title" id="tw-stage-title">Reading PNG&hellip;</p>
+      <p class="tool-hint">No file data is being uploaded.</p>
+    </div>
+
+    <div class="tool-state tool-state-success" data-state-view="success" hidden>
+      <p class="state-badge"><span class="state-badge-dot" aria-hidden="true"></span> Conversion completed locally</p>
+      <h2 class="tool-success-title">Your PSD is ready</h2>
+
+      <div class="file-card">
+        <div class="file-card-preview checkerboard">
+          <img id="tw-preview-img" alt="Checkerboard preview of the converted image" />
+        </div>
+        <div class="file-card-info">
+          <p class="file-card-name" id="tw-file-name"></p>
+          <p class="file-card-dims" id="tw-file-dims"></p>
+          <div class="file-card-pills">
+            <span class="pill">One image layer</span>
+            <span class="pill" id="tw-transparency-pill">Transparency preserved</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-actions">
+        <a class="btn" id="tw-download-link" download>Download PSD</a>
+        <button type="button" class="btn secondary" id="tw-photopea-btn" hidden>Open in Photopea</button>
+        <button type="button" class="btn ghost" id="tw-convert-another-btn">Convert another PNG</button>
+      </div>
+
+      <a class="success-next" href="/extensions/" id="tw-success-next">
+        <span class="success-next-label">Capture a website as editable PSD</span>
+        <span class="success-next-sub">Separate text, images, buttons, and backgrounds</span>
+      </a>
+    </div>
+
+    <div class="tool-state" data-state-view="error" hidden>
+      <p class="error-message" id="tw-error-message">That file didn't make it. Try again?</p>
+      <p class="error-bridge" id="tw-error-bridge" hidden>
+        This looks like a JPG &rarr;
+        {' '}
+        <a href="/convert/jpg-to-psd/" id="tw-error-bridge-link">JPG to PSD converter</a>
+      </p>
+      <button type="button" class="btn" id="tw-retry-btn">Retry</button>
+    </div>
+
+    <input type="file" id="tw-file-input" accept="image/png,.png" hidden />
+    <div class="sr-only" aria-live="polite" id="tw-status"></div>
+  </div>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { putHandoff, takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+  import { PHOTOPEA_MAX_PSD_BYTES, openInPhotopea } from '../lib/photopea';
+
+  const MAX_BYTES = 30 * 1024 * 1024; // 30 MB guardrail, same budget as the v1 raster path
+  const MAX_DIMENSION = 6000; // 6000x6000 px guardrail
+  const THUMB_MAX = 400; // canvas-sample cap for the checkerboard thumbnail + alpha scan
+
+  const widget = document.getElementById('converter-widget-v2')!;
+  const fileInput = document.getElementById('tw-file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('tw-choose-btn')!;
+  const retryBtn = document.getElementById('tw-retry-btn')!;
+  const convertAnotherBtn = document.getElementById('tw-convert-another-btn')!;
+  const downloadLink = document.getElementById('tw-download-link') as HTMLAnchorElement;
+  const photopeaBtn = document.getElementById('tw-photopea-btn') as HTMLButtonElement;
+  const errorMessage = document.getElementById('tw-error-message')!;
+  const errorBridge = document.getElementById('tw-error-bridge')!;
+  const errorBridgeLink = document.getElementById('tw-error-bridge-link') as HTMLAnchorElement;
+  const stageTitle = document.getElementById('tw-stage-title')!;
+  const previewImg = document.getElementById('tw-preview-img') as HTMLImageElement;
+  const fileNameEl = document.getElementById('tw-file-name')!;
+  const fileDimsEl = document.getElementById('tw-file-dims')!;
+  const transparencyPill = document.getElementById('tw-transparency-pill')!;
+  const statusEl = document.getElementById('tw-status')!;
+  const microBridgeLink = document.getElementById('tw-micro-bridge-link')!;
+  const successNext = document.getElementById('tw-success-next')!;
+
+  let currentObjectUrl: string | null = null;
+  let currentPsdBuffer: ArrayBuffer | null = null;
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  function announce(text: string) {
+    statusEl.textContent = text;
+  }
+
+  function setState(state: 'idle' | 'processing' | 'success' | 'error') {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    if (state === 'processing') {
+      logPrivacyEvent('converting on this device');
+      announce('Converting…');
+    } else if (state === 'success') {
+      logPrivacyEvent('done. nothing uploaded');
+      announce('Done. Your PSD is ready to download.');
+    } else if (state === 'error') {
+      announce(errorMessage.textContent ?? '');
+    } else {
+      announce('');
+    }
+  }
+
+  // Called at three real pipeline milestones (decode start, worker
+  // dispatched, worker finished) -- never on a timer.
+  function setStage(text: string) {
+    stageTitle.textContent = text;
+    if (widget.dataset.state === 'processing') announce(text);
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function revokeUrls() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+    currentPsdBuffer = null;
+  }
+
+  function resetToIdle() {
+    revokeUrls();
+    fileInput.value = '';
+    photopeaBtn.hidden = true;
+    errorBridge.hidden = true;
+    setState('idle');
+  }
+
+  function showError(reason: string, message: string, jpgBridge = false) {
+    errorMessage.textContent = message;
+    errorBridge.hidden = !jpgBridge;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  async function detectMagic(file: File): Promise<'png' | 'jpg' | 'other'> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'png';
+      if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'jpg';
+    } catch {
+      /* fall through */
+    }
+    return 'other';
+  }
+
+  // One small canvas op serves two real jobs: the checkerboard thumbnail AND
+  // the transparency badge (a genuine alpha-channel scan, not a guess) --
+  // downsampled to <=400px so it stays cheap even on a 6000x6000 source.
+  function buildPreviewAndDetectAlpha(bitmap: ImageBitmap): { dataUrl: string; hasAlpha: boolean } {
+    const scale = Math.min(1, THUMB_MAX / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const { data } = ctx.getImageData(0, 0, w, h);
+    let hasAlpha = false;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 255) {
+        hasAlpha = true;
+        break;
+      }
+    }
+    return { dataUrl: canvas.toDataURL('image/png'), hasAlpha };
+  }
+
+  async function handleFile(file: File) {
+    if (widget.dataset.state === 'processing') return;
+    logPrivacyEvent('file selected locally');
+
+    const magic = await detectMagic(file);
+    if (magic !== 'png') {
+      if (magic === 'jpg') {
+        try {
+          await putHandoff(file, 'jpg');
+        } catch {
+          /* storage unavailable -- the link below still works, just without auto-carry */
+        }
+        showError('unsupported_format', 'This file looks like a JPG, not a PNG.', true);
+      } else {
+        showError('unsupported_format', 'This file does not look like a PNG. Drop a .png file.');
+      }
+      return;
+    }
+
+    track('upload_start', { file_type: 'png', size_bucket: sizeBucket(file.size) });
+
+    if (file.size > MAX_BYTES) {
+      showError('too_large', 'This file is larger than 30 MB. Try a smaller image.');
+      return;
+    }
+
+    setState('processing');
+    setStage('Reading PNG…');
+
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      showError('corrupt', 'This file could not be read. It may be corrupted or in an unsupported format.');
+      return;
+    }
+
+    if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+      bitmap.close();
+      showError('too_large_dimensions', `This image is larger than ${MAX_DIMENSION}×${MAX_DIMENSION}px. Try a smaller image.`);
+      return;
+    }
+
+    const { dataUrl: previewDataUrl, hasAlpha } = buildPreviewAndDetectAlpha(bitmap);
+
+    let decoded: { width: number; height: number; data: Uint8ClampedArray };
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('canvas 2d context unavailable');
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      decoded = { width: imageData.width, height: imageData.height, data: imageData.data };
+    } catch {
+      bitmap.close();
+      showError('corrupt', 'This file could not be read. It may be corrupted or in an unsupported format.');
+      return;
+    }
+
+    setStage('Building PSD document…');
+
+    const worker = new Worker(new URL('../lib/converter/pngToPsd.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        setStage('Preparing download…');
+
+        revokeUrls();
+        currentPsdBuffer = msg.buffer;
+        const blob = new Blob([msg.buffer], { type: 'image/vnd.adobe.photoshop' });
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        const outName = file.name.replace(/\.[^.]+$/, '') + '.psd';
+        downloadLink.download = outName;
+
+        previewImg.src = previewDataUrl;
+        fileNameEl.textContent = outName;
+        fileDimsEl.textContent = `${decoded.width}×${decoded.height}px`;
+        transparencyPill.textContent = hasAlpha ? 'Transparency preserved' : 'Opaque image';
+        transparencyPill.classList.toggle('pill-trust', hasAlpha);
+
+        photopeaBtn.hidden = msg.buffer.byteLength > PHOTOPEA_MAX_PSD_BYTES;
+
+        setState('success');
+        track('convert_success', {
+          duration_bucket: durationBucket(msg.durationMs),
+          layer_bucket: '1',
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', 'Conversion failed. Please try again.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'Conversion failed unexpectedly. Please try again.');
+      worker.terminate();
+    };
+
+    worker.postMessage(
+      { type: 'convert', width: decoded.width, height: decoded.height, data: decoded.data, fileName: file.name },
+      [decoded.data.buffer],
+    );
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+
+  widget.addEventListener('click', (e) => {
+    if (widget.dataset.state === 'idle' && !(e.target as HTMLElement).closest('button, a')) {
+      fileInput.click();
+    }
+  });
+
+  widget.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    widget.classList.add('dragging');
+  });
+  widget.addEventListener('dragover', (e) => e.preventDefault());
+  widget.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) widget.classList.remove('dragging');
+  });
+  widget.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    widget.classList.remove('dragging');
+    fileInput.value = '';
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+  });
+
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToIdle();
+  });
+  convertAnotherBtn.addEventListener('click', () => {
+    track('convert_another_clicked', { surface: 'widget' });
+    resetToIdle();
+  });
+  downloadLink.addEventListener('click', () => track('download_click'));
+  microBridgeLink.addEventListener('click', () => track('extension_bridge_clicked', { surface: 'widget-idle' }));
+  successNext.addEventListener('click', () => track('extension_bridge_clicked', { surface: 'success-next' }));
+  errorBridgeLink.addEventListener('click', () => track('cross_sell_click', { target: 'jpg-to-psd' }));
+  photopeaBtn.addEventListener('click', () => {
+    track('photopea_open_clicked', { surface: 'widget' });
+    if (currentPsdBuffer) openInPhotopea(currentPsdBuffer);
+  });
+
+  // Home-dropzone handoff: PNG only for this widget.
+  takeHandoff(['png']).then((file) => {
+    if (file) handleFile(file);
+  });
+</script>

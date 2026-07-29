@@ -1,0 +1,11 @@
+# Cloudflare Pages config for the layerporter project. Needed so `wrangler
+# pages deploy dist` picks up the Pages Function in functions/ and binds KV.
+name = "layerporter"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-07-01"
+
+# Feedback-hub archive (strategy: 15_Стратегия-обратной-связи.md). 90-day TTL
+# is enforced per-write in functions/api/feedback.js, not here.
+[[kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "a9cb0f03a191428085051e44df201bc6"

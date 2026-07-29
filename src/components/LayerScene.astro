@@ -1,0 +1,45 @@
+---
+// Isometric "exploded layers" scene (v2, 19.07 — replaces the flying-cards
+// story the owner rejected as cluttered). Four parallel plates — Background,
+// Image, Content, Navigation — sit in one isometric stack and only ever move
+// along the stack axis (translateZ), so every frame of the loop is a clean,
+// composed exploded view: plates stay parallel and can never collide or pile
+// up mid-flight. A scan beam sweeps through the stack and a screen-facing
+// PSD badge anchors the output side of the story.
+//
+// Pure CSS (transform/opacity only), zero JS, zero CLS. Always decorative:
+// parents wrap it in aria-hidden="true" and give it a fixed-size dark
+// container (.ext-visual / .scene-band). Labels billboard back to screen
+// orientation via inverse rotations (rotateZ then rotateX undo the iso
+// wrapper's rotateX·rotateZ). prefers-reduced-motion freezes the stack in
+// its exploded state with labels visible (see global.css).
+---
+
+<div class="scene">
+  <div class="iso">
+    <div class="plate p-bg"><span class="pl-tag">Background</span></div>
+    <div class="plate p-img">
+      <i class="el-img"></i>
+      <span class="pl-tag">Image</span>
+    </div>
+    <div class="plate p-content">
+      <i class="el-title"></i>
+      <i class="el-copy"></i>
+      <i class="el-copy c2"></i>
+      <i class="el-btn"></i>
+      <span class="pl-tag">Content</span>
+    </div>
+    <div class="plate p-nav">
+      <i class="el-chrome"><b></b><b></b><b></b></i>
+      <i class="el-navbar"></i>
+      <span class="pl-tag">Navigation</span>
+    </div>
+    <div class="beam"></div>
+  </div>
+  <!-- Both REAL extension outputs, not just one: PSD Export produces a
+       layered .psd, Site to Canva lands the capture in Canva. -->
+  <div class="scene-out">
+    <div class="out-card out-canva"><span>Canva</span></div>
+    <div class="out-card out-psd"><span>PSD</span></div>
+  </div>
+</div>

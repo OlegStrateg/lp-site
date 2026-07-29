@@ -1,0 +1,281 @@
+---
+// Feedback hub — same-origin destination for the "send feedback" link on
+// this site and inside the browser extensions (popup / uninstall funnel).
+// Deliberately noindex: it's a destination page, not a search landing, same
+// reasoning as uninstall.astro.
+//
+// Query params are read client-side (see <script> below) — this is a static
+// build, so Astro.url never carries a runtime querystring at build time.
+// The POST target (/api/feedback) doesn't exist yet; it lands as a separate
+// Pages Function. A 404/failure here is expected until then and is handled
+// by the error state below, not silently swallowed.
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout
+  title="Send Feedback — LayerPorter"
+  description="Tell us about a bug, an idea, or anything that didn't work. We read every message, usually the same day."
+  canonicalPath="/feedback/"
+  robots="noindex, nofollow"
+>
+  <div class="fbx">
+  <h1>Send feedback</h1>
+  <p class="answer-first">
+    Bug, idea, or just something that bugged you. We read every message, usually the same day.
+  </p>
+
+  <p class="feedback-about" id="feedback-about" hidden>About: <span id="feedback-about-name"></span></p>
+
+  <div class="feedback-card" id="feedback-widget" data-state="form">
+    <form id="feedback-form" class="feedback-form" novalidate>
+      <fieldset class="segment-control">
+        <legend>What's this about?</legend>
+        <label class="segment-option">
+          <input type="radio" name="feedback-type" value="bug" checked />
+          <span>Bug <small>(something's broken)</small></span>
+        </label>
+        <label class="segment-option">
+          <input type="radio" name="feedback-type" value="idea" />
+          <span>Idea <small>(a feature you'd want)</small></span>
+        </label>
+        <label class="segment-option">
+          <input type="radio" name="feedback-type" value="general" />
+          <span>General feedback</span>
+        </label>
+      </fieldset>
+
+      <label class="field-label" for="feedback-text" id="feedback-text-label">Tell us what happened</label>
+      <textarea
+        id="feedback-text"
+        class="feedback-textarea"
+        required
+        placeholder="What were you trying to do, and what happened instead?"
+      ></textarea>
+
+      <!-- Diagnostics opt-in: shown only when the visitor arrived with real
+           context (a product version or an error code in the URL). Every
+           value that would be sent is printed right here — nothing hidden,
+           and deliberately NO page domain / URL (that would contradict the
+           extensions' "activeTab-only, local" promise). -->
+      <label class="diag-box" id="feedback-diag" hidden>
+        <input type="checkbox" id="feedback-diag-check" checked />
+        <span>
+          <b>Include technical details</b>
+          <em id="feedback-diag-list"></em>
+        </span>
+      </label>
+
+      <label class="field-label" for="feedback-email">Email (optional)</label>
+      <input type="email" id="feedback-email" class="feedback-input" placeholder="you@example.com" />
+      <p class="field-error" id="feedback-email-error" hidden>Please enter a valid email (name@example.com)</p>
+      <p class="field-helper">Only if you want a reply.</p>
+
+      <button type="submit" class="btn feedback-submit" id="feedback-submit-btn">Send feedback</button>
+      <p class="feedback-fineprint">No account needed. Your email is only used to reply, never shared.</p>
+
+      <p class="feedback-error" id="feedback-error" role="alert" hidden>
+        Couldn't send right now. Please try again, or email <a href="mailto:hello@layerporter.com">hello@layerporter.com</a>.
+      </p>
+    </form>
+
+    <div class="feedback-done" id="feedback-done" hidden>
+      <h2>Got it &mdash; thank you.</h2>
+      <p id="feedback-done-text"></p>
+      <button type="button" class="btn secondary" id="feedback-again-btn">Send another message</button>
+    </div>
+  </div>
+  </div>
+</PageLayout>
+
+<script>
+  import { track } from '../lib/analytics';
+
+  const TOOL_NAMES: Record<string, string> = {
+    s2c: 'Site to Canva',
+    pex: 'PSD Export',
+    h2f: 'HTML to Figma Converter',
+    ic: 'Image Converter',
+    ds: 'Document Summarizer',
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('p') || 'site';
+  const channel = params.get('channel') || 'site';
+  const src = params.get('src') || 'direct';
+  const v = params.get('v') || '';
+  const typeParam = params.get('type');
+  const toolParam = params.get('tool');
+
+  // "About: <tool>" plaque — shown when the visitor arrived scoped to a
+  // specific tool (?tool=slug) or a non-site product (?p=slug other than
+  // the site default).
+  const aboutSlug = toolParam || (p !== 'site' ? p : null);
+  if (aboutSlug) {
+    const aboutEl = document.getElementById('feedback-about');
+    const aboutNameEl = document.getElementById('feedback-about-name');
+    if (aboutEl && aboutNameEl) {
+      aboutNameEl.textContent = TOOL_NAMES[aboutSlug] ?? aboutSlug;
+      aboutEl.hidden = false;
+    }
+  }
+
+  // Pre-select the "what's this about" type from ?type=. Legacy links may
+  // still say type=other — it maps to the renamed "general" option. No match
+  // (including no param at all) keeps the markup default: Bug.
+  const normalizedType = typeParam === 'other' ? 'general' : typeParam;
+  if (normalizedType === 'bug' || normalizedType === 'idea' || normalizedType === 'general') {
+    const radio = document.querySelector<HTMLInputElement>(
+      `input[name="feedback-type"][value="${normalizedType}"]`
+    );
+    if (radio) radio.checked = true;
+  }
+
+  // Scenario dressing: the selected type retitles the textarea and the
+  // submit button so the action reads concrete (GPT-ТЗ 20.07, принято) —
+  // same single form underneath, no extra fields.
+  const SCENARIOS: Record<string, { label: string; placeholder: string; button: string }> = {
+    bug: {
+      label: 'Tell us what happened',
+      placeholder: 'What were you trying to do, and what happened instead?',
+      button: 'Send report',
+    },
+    idea: {
+      label: 'What would you like LayerPorter to do?',
+      placeholder: 'Describe the feature — and, if you can, the problem it would solve.',
+      button: 'Send idea',
+    },
+    general: {
+      label: 'What would you like us to know?',
+      placeholder: 'Anything — praise, confusion, a rough edge.',
+      button: 'Send feedback',
+    },
+  };
+
+  function applyScenario() {
+    const current =
+      document.querySelector<HTMLInputElement>('input[name="feedback-type"]:checked')?.value || 'bug';
+    const s = SCENARIOS[current] ?? SCENARIOS.bug;
+    document.getElementById('feedback-text-label')!.textContent = s.label;
+    (document.getElementById('feedback-text') as HTMLTextAreaElement).placeholder = s.placeholder;
+    document.getElementById('feedback-submit-btn')!.textContent = s.button;
+  }
+  document.querySelectorAll<HTMLInputElement>('input[name="feedback-type"]').forEach((r) =>
+    r.addEventListener('change', applyScenario)
+  );
+  applyScenario();
+
+  // Diagnostics opt-in: only offered when the link carried real context (an
+  // extension version or an error code); everything sent is listed in the
+  // label. Browser/OS come from the UA string coarsely — no fingerprinting
+  // beyond what any request header already says, and no page URLs.
+  const errParam = params.get('error') || '';
+  const diagBox = document.getElementById('feedback-diag')!;
+  const diagCheck = document.getElementById('feedback-diag-check') as HTMLInputElement;
+  const ua = navigator.userAgent;
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'other';
+  const os = /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /Linux/.test(ua) ? 'Linux' : /iPhone|iPad/.test(ua) ? 'iOS' : 'other';
+  const diagParts: string[] = [];
+  if (p !== 'site') diagParts.push(`product: ${TOOL_NAMES[p] ?? p}`);
+  if (v) diagParts.push(`version: ${v}`);
+  diagParts.push(`browser: ${browser}`, `os: ${os}`);
+  if (errParam) diagParts.push(`error: ${errParam.slice(0, 60)}`);
+  if (v || errParam) {
+    document.getElementById('feedback-diag-list')!.textContent = diagParts.join(' · ');
+    diagBox.hidden = false;
+  }
+
+  const widget = document.getElementById('feedback-widget')!;
+  const form = document.getElementById('feedback-form') as HTMLFormElement;
+  const textEl = document.getElementById('feedback-text') as HTMLTextAreaElement;
+  const emailEl = document.getElementById('feedback-email') as HTMLInputElement;
+  const emailErrorEl = document.getElementById('feedback-email-error')!;
+  const errorEl = document.getElementById('feedback-error')!;
+  const doneEl = document.getElementById('feedback-done')!;
+  const doneTextEl = document.getElementById('feedback-done-text')!;
+  const againBtn = document.getElementById('feedback-again-btn')!;
+  const submitBtn = document.getElementById('feedback-submit-btn') as HTMLButtonElement;
+
+  track('fb_view', { p });
+
+  // fb_start fires once, on the first time any field in the form gets
+  // focus — 'focusin' bubbles (plain 'focus' does not), so one listener on
+  // the form covers the radio group, textarea, and email field.
+  form.addEventListener(
+    'focusin',
+    () => track('fb_start'),
+    { once: true }
+  );
+
+  // Email format is validated on blur, not per keystroke — an empty field
+  // is valid (the field is optional); an invalid one leaves the value in
+  // place and shows an inline message instead of clearing it.
+  function validateEmailField(): boolean {
+    const valid = emailEl.checkValidity();
+    emailErrorEl.hidden = valid;
+    return valid;
+  }
+  emailEl.addEventListener('blur', validateEmailField);
+  emailEl.addEventListener('input', () => {
+    if (!emailErrorEl.hidden) validateEmailField();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.hidden = true;
+    track('fb_submit');
+
+    const text = textEl.value.trim();
+    if (!text) {
+      textEl.reportValidity();
+      return;
+    }
+    if (!validateEmailField()) {
+      emailEl.focus();
+      return;
+    }
+    const email = emailEl.value.trim();
+    const type = (document.querySelector<HTMLInputElement>('input[name="feedback-type"]:checked')?.value) || 'bug';
+
+    // Diagnostics ride inside `text` (the endpoint schema stays neutral);
+    // only when the block is visible AND the box is still checked.
+    const diag = !diagBox.hidden && diagCheck.checked ? `\n---\n${diagParts.join(' | ')}` : '';
+    const payload = { p, channel, src, type, text: text + diag, email, v };
+
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+
+      track('fb_success', { type, has_email: Boolean(email) });
+      doneTextEl.textContent = email
+        ? "We'll read this today. If it needs a reply, expect one within a couple of days."
+        : "We'll read this today. No reply is possible without an email, but it still shapes what we fix next.";
+      widget.dataset.state = 'done';
+      form.hidden = true;
+      doneEl.hidden = false;
+    } catch (err) {
+      track('fb_error', { reason: err instanceof Error ? err.message : 'unknown' });
+      errorEl.hidden = false;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  againBtn.addEventListener('click', () => {
+    form.reset();
+    // form.reset() flips the radios back to the markup default (Bug) without
+    // firing change events — re-dress the scenario or the label/button keep
+    // the previous type's texts (owner caught this live 20.07).
+    applyScenario();
+    errorEl.hidden = true;
+    emailErrorEl.hidden = true;
+    doneEl.hidden = true;
+    form.hidden = false;
+    widget.dataset.state = 'form';
+    textEl.focus();
+  });
+</script>

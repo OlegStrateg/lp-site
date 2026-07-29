@@ -1,0 +1,32 @@
+---
+// Tiny inline-SVG icon set replacing the emoji previously used in dropzones
+// (📁📄) and the privacy line (🔒). Stroke-only, sized via `size` (px),
+// currentColor so it follows the surrounding text color in light/dark mode.
+interface Props {
+  name: 'folder' | 'file' | 'lock' | 'check';
+  size?: number;
+}
+const { name, size = 32 } = Astro.props;
+
+const PATHS: Record<Props['name'], string> = {
+  folder: 'M3 7a2 2 0 0 1 2-2h4.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
+  file: 'M6.5 3h7l5 5v12a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M13.5 3v5h5',
+  lock: 'M6.5 11V8a5.5 5.5 0 0 1 11 0v3 M5.5 11h13v9a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-9Z',
+  check: 'M4.5 12.5l4.5 4.5L19.5 6.5',
+};
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.6"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  <path d={PATHS[name]} />
+</svg>

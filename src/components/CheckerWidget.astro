@@ -1,0 +1,311 @@
+---
+// PPTX checker island (canva-to-google-slides page). Same 5-state vanilla
+// pattern as ConverterWidget, but the output is an on-page report, not a
+// download. Deliberately a separate component: the converter's decode/worker
+// pipeline shares nothing with ZIP parsing, and keeping them apart means
+// neither page pays for the other's code.
+import Icon from './Icon.astro';
+
+interface Props {
+  toolHeading: string;
+  related?: { href: string; label: string; target: string }[];
+}
+const { toolHeading, related = [] } = Astro.props;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="checker-widget"
+    class="converter-widget"
+    data-state="empty"
+    role="group"
+    aria-label="Canva PPTX export compatibility checker for Google Slides"
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="file" /></div>
+      <p class="dz-title">Drop your Canva PPTX export — or click to choose a file</p>
+      <p class="dz-sub">Checked in your browser · nothing is uploaded</p>
+      <button type="button" class="btn" id="choose-file-btn">Choose file — it's free</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden>
+      <p class="dz-title">Drop to check</p>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">Checking your PPTX&hellip;</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title">Your compatibility check is ready</p>
+      <div class="check-report" id="check-report"></div>
+      <p class="dz-sub"><a href="#how-it-works-heading">Follow the import steps below</a> to bring the file into Google Slides.</p>
+      <div>
+        <button type="button" class="btn secondary" id="check-another-btn">Check another file</button>
+      </div>
+      {related.length > 0 && (
+        <div class="cross-sell" id="cross-sell">
+          <p class="cross-sell-label">Related converters</p>
+          <div class="cross-sell-cards">
+            {related.map((r) => (
+              <a class="cross-sell-card" href={r.href} data-target={r.target}>{r.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">That file didn't make it. Try again?</p>
+      <button type="button" class="btn" id="retry-btn">Retry</button>
+    </div>
+
+    <input type="file" id="file-input" accept=".pptx" hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% client-side — nothing leaves your device</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  const MAX_BYTES = 100 * 1024 * 1024; // 100 MB guardrail (PPTX with media can be big)
+
+  const widget = document.getElementById('checker-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const checkAnotherBtn = document.getElementById('check-another-btn')!;
+  const errorMessage = document.getElementById('error-message')!;
+  const reportEl = document.getElementById('check-report')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const crossSellLinks = document.querySelectorAll<HTMLAnchorElement>('#cross-sell .cross-sell-card');
+
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  function announce(state: string) {
+    if (state === 'processing') statusEl.textContent = 'Checking your file…';
+    else if (state === 'success') statusEl.textContent = 'Done. Your compatibility report is ready.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: 'empty' | 'drag-over' | 'processing' | 'success' | 'error') {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('checking on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function slideBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 10) return '2-10';
+    if (n <= 30) return '11-30';
+    return '>30';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('check_error', { reason });
+  }
+
+  function resetToEmpty() {
+    fileInput.value = '';
+    setState('empty');
+  }
+
+  // PPTX is a ZIP: magic bytes 50 4B 03 04 ("PK\x03\x04").
+  async function looksLikeZip(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+    } catch {
+      return false;
+    }
+  }
+
+  // Report is rendered with createElement/textContent only — font names come
+  // from inside the user's file and must never touch innerHTML.
+  function line(label: string, value: string): HTMLParagraphElement {
+    const p = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = label + ': ';
+    p.appendChild(strong);
+    p.appendChild(document.createTextNode(value));
+    return p;
+  }
+
+  function renderReport(r: {
+    slideCount: number;
+    widthIn: number | null;
+    heightIn: number | null;
+    fonts: string[];
+    flaggedFonts: string[];
+    mediaCount: number;
+    gradientCount: number;
+    groupedShapeCount: number;
+  }) {
+    reportEl.innerHTML = '';
+
+    const size = r.widthIn && r.heightIn ? ` · ${r.widthIn}″ × ${r.heightIn}″` : '';
+    reportEl.appendChild(line('Slides', `${r.slideCount}${size}`));
+    reportEl.appendChild(line('Media files', String(r.mediaCount)));
+
+    if (r.fonts.length > 0) {
+      reportEl.appendChild(line('Fonts found', r.fonts.join(', ')));
+    }
+
+    if (r.flaggedFonts.length > 0) {
+      const warn = document.createElement('p');
+      warn.className = 'check-flag';
+      const strong = document.createElement('strong');
+      strong.textContent = 'Google Slides may substitute these fonts: ';
+      warn.appendChild(strong);
+      warn.appendChild(document.createTextNode(r.flaggedFonts.join(', ')));
+      reportEl.appendChild(warn);
+    } else {
+      const okP = document.createElement('p');
+      okP.className = 'check-ok';
+      okP.textContent = r.fonts.length > 0
+        ? 'All fonts are available in Google Slides — no substitution expected.'
+        : 'No explicit font overrides found in the slides.';
+      reportEl.appendChild(okP);
+    }
+
+    if (r.gradientCount > 0 || r.groupedShapeCount > 0) {
+      const parts: string[] = [];
+      if (r.gradientCount > 0) parts.push(`${r.gradientCount} gradient fill${r.gradientCount === 1 ? '' : 's'}`);
+      if (r.groupedShapeCount > 0) parts.push(`${r.groupedShapeCount} grouped shape${r.groupedShapeCount === 1 ? '' : 's'}`);
+      const warn = document.createElement('p');
+      warn.className = 'check-flag';
+      warn.textContent = `Found ${parts.join(' and ')} — these can get simplified on import. Compare those slides after importing.`;
+      reportEl.appendChild(warn);
+    }
+  }
+
+  async function handleFile(file: File) {
+    // Busy-guard: ignore a second drop while a check is running.
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+    // Funnel integrity: upload_start fires for EVERY attempt, before any guardrail.
+    track('upload_start', { file_type: 'pptx', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikeZip(file))) {
+      showError('unsupported_format', 'This does not look like a PPTX file. In Canva, use Share → Download → PowerPoint (.pptx).');
+      return;
+    }
+
+    if (file.size > MAX_BYTES) {
+      showError('too_large', 'This file is larger than 100 MB. Try exporting a smaller deck.');
+      return;
+    }
+
+    setState('processing');
+
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch {
+      showError('corrupt', 'This file could not be read.');
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/pptx/pptxCheck.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        renderReport(msg.report);
+        setState('success');
+        track('check_success', {
+          slide_bucket: slideBucket(msg.report.slideCount),
+          font_flags: msg.report.flaggedFonts.length,
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', msg.message || 'The check failed. Please try again.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'The check failed unexpectedly. Please try again.');
+      worker.terminate();
+    };
+
+    worker.postMessage({ type: 'check', buffer }, [buffer]);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    // Clear immediately so picking the same file again re-fires `change`.
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+
+  widget.addEventListener('click', (e) => {
+    if (widget.dataset.state === 'empty' && !(e.target as HTMLElement).closest('button, a')) {
+      fileInput.click();
+    }
+  });
+
+  widget.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (e) => e.preventDefault());
+  widget.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    fileInput.value = '';
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToEmpty();
+  });
+  checkAnotherBtn.addEventListener('click', () => resetToEmpty());
+  crossSellLinks.forEach((link) => {
+    link.addEventListener('click', () => track('cross_sell_click', { target: link.dataset.target ?? '' }));
+  });
+
+  // Home-dropzone handoff: ZIP magic (PK) was detected as "pptx" by the
+  // dropzone; the checker's own validation still decides whether the file
+  // really is a usable PPTX.
+  takeHandoff(['pptx']).then((file) => {
+    if (file) handleFile(file);
+  });
+</script>

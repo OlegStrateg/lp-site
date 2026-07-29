@@ -1,0 +1,95 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath: string; // e.g. "/" or "/convert/png-to-psd/"
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string; // absolute URL
+  robots?: string;
+}
+
+const {
+  title,
+  description,
+  canonicalPath,
+  ogTitle = title,
+  ogDescription = description,
+  ogImage,
+  robots = 'index, follow, max-image-preview:large, max-snippet:-1',
+} = Astro.props;
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+const canonicalUrl = `${site}${canonicalPath}`;
+const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta name="robots" content={robots} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LayerPorter" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={ogTitle} />
+    <meta property="og:description" content={ogDescription} />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={ogTitle} />
+    <meta name="twitter:description" content={ogDescription} />
+    <meta name="twitter:image" content={resolvedOgImage} />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <slot name="head" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">LayerPorter</a>
+        <div class="site-header-right">
+          <nav class="site-nav" aria-label="Main">
+            <a href="/#tools">Converters</a>
+            <a href="/extensions/">Extensions</a>
+            <a href="/#learn">Learn</a>
+          </nav>
+          <span class="local-pill" title="All tools run on your device">
+            <span class="local-pill-dot" aria-hidden="true"></span>
+            Local engine
+          </span>
+        </div>
+      </div>
+    </header>
+    <main class="wrap">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>LayerPorter — free, in-browser file converters. No uploads.</p>
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="/about/">About</a>
+          <span aria-hidden="true">·</span>
+          <a href="/extensions/">Extensions</a>
+          <span aria-hidden="true">·</span>
+          <a href="/privacy/">Privacy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms/">Terms</a>
+        </nav>
+      </div>
+    </footer>
+    <script>
+      import { track } from '../lib/analytics';
+      track('page_view', { path: window.location.pathname });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,374 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import UniversalDropzone from '../components/UniversalDropzone.astro';
+import LayerScene from '../components/LayerScene.astro';
+import HeroConvertDemo from '../components/HeroConvertDemo.astro';
+
+// One card per tool. Descriptions follow the approved home.md copy, with one
+// correction: psd-to-jpg exports at a FIXED 92% quality (engine spec) — the
+// draft's "at the quality you pick" overpromised and was reworded to match
+// the actual tool, same fix as on the psd-to-jpg page itself.
+//
+// canva-to-google-slides is deliberately NOT in this list — it's a
+// compatibility checker, not a file converter (no download, no format
+// change). It lives in its own "Checkers" group on /convert/ (the hub);
+// the home page doesn't show checkers at all, only the top 6 converters.
+// Порядок = спрос (Semrush Measured) + полезность: слоты 1–3 — самые
+// частотные запросы (jpg-to-pdf 246K, pdf-to-jpg 201K, favicon 12.1K),
+// слоты 4–6 — PSD-семейство, дифференциатор линейки (слои). Решение
+// владельца 19.07: «по популярности и полезности», не по хронологии сборки.
+//
+// from/to = real input -> output formats (mockup v3, 21.07: replaces the
+// single-badge chip with a colored from->to file-icon pair so the card
+// scans at a glance, matching the reference mockup's tool grid). Favicon
+// Generator takes any raster image; "IMG" is the honest generic label,
+// not a specific format claim.
+const tools = [
+  {
+    href: '/convert/jpg-to-pdf/',
+    name: 'JPG to PDF Converter',
+    from: 'JPG',
+    to: 'PDF',
+    blurb: 'Turn one or more JPGs or PNGs into a PDF — one page per image, in the order you drop them.',
+  },
+  {
+    href: '/convert/pdf-to-jpg/',
+    name: 'PDF to JPG Converter',
+    from: 'PDF',
+    to: 'JPG',
+    blurb: 'Render every page of a PDF as its own JPG image, ready to share or drop into a doc.',
+  },
+  {
+    href: '/convert/favicon-generator/',
+    name: 'Favicon Generator',
+    from: 'IMG',
+    to: 'ICO',
+    blurb: 'Turn one image into a full favicon set — 16 to 512px plus a .ico file — with a live preview of every size.',
+  },
+  {
+    href: '/convert/psd-to-png/',
+    name: 'PSD to PNG Converter',
+    from: 'PSD',
+    to: 'PNG',
+    blurb: 'Export a layered PSD as a single flattened PNG with transparency preserved — ready for the web or an app.',
+  },
+  {
+    href: '/convert/psd-to-jpg/',
+    name: 'PSD to JPG Converter',
+    from: 'PSD',
+    to: 'JPG',
+    blurb: 'Flatten a PSD into a compressed JPG sized for email, chat, or a quick share.',
+  },
+  {
+    href: '/convert/png-to-psd/',
+    name: 'PNG to PSD Converter',
+    from: 'PNG',
+    to: 'PSD',
+    blurb: 'Turn a flat PNG into a PSD with your image on its own layer, transparency intact — ready to open in Photoshop, GIMP, or Photopea.',
+  },
+];
+
+// Use-cases (mockup v2): three audiences, each claim maps to a real tool on
+// this site — no invented workflows, no invented user counts. Each card's
+// visual shows that audience's REAL output (png-to-psd's two layers, the
+// favicon generator's size set, jpg-to-pdf's pages) — never a generic blob.
+const useCases = [
+  {
+    title: 'Designers',
+    visual: 'layers',
+    blurb:
+      'Move a flat PNG into Photoshop as a PSD with transparency intact, or flatten a PSD for a quick share — without leaving the browser.',
+  },
+  {
+    title: 'Frontend developers',
+    visual: 'favicon',
+    blurb:
+      'Generate a full favicon set from one image, batch screenshots into a PDF, and keep every file on your machine while you work.',
+  },
+  {
+    title: 'Product teams',
+    visual: 'pdf',
+    blurb:
+      'Turn design files into share-ready JPGs and PDFs for docs, chats, and decks — no accounts, no upload queue, nothing installed.',
+  },
+];
+
+// Learn section: one featured article + two list items. All three are REAL
+// pages that exist on this site — never list an article that isn't built.
+const featured = {
+  href: '/formats/psd/',
+  eyebrow: 'Featured guide',
+  title: 'What a PSD file actually contains — and what a converter can preserve',
+};
+
+const articles = [
+  {
+    href: '/guides/flat-image-vs-editable-layers/',
+    title: 'Flat image vs. editable layers',
+    blurb: 'What a converter can recover from a flat file — and what it cannot.',
+  },
+  {
+    href: '/guides/export-from-ai-builders/',
+    title: 'Exporting Lovable, v0, or Bolt designs',
+    blurb: 'Prepare AI-built designs for Photoshop or presentations.',
+  },
+];
+
+// Trust strip (mockup v2) — replaces the old 4-metric band; ONE block of
+// numbers on the page, every cell a true, checkable claim about this site.
+const trustItems = [
+  { big: '0 B', small: 'uploaded — files never leave your device' },
+  { big: '9', small: 'free tools, one purpose each' },
+  { big: '1', small: 'click from file to download' },
+  { big: 'Local', small: 'processing runs in your browser' },
+];
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${site}/#org`,
+      name: 'LayerPorter',
+      url: `${site}/`,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site}/#website`,
+      name: 'LayerPorter',
+      url: `${site}/`,
+      publisher: { '@id': `${site}/#org` },
+    },
+  ],
+};
+---
+
+<BaseLayout
+  title="LayerPorter — Free In-Browser File Converters"
+  description="Free file converters for PNG, JPG, PSD, and Canva-to-Slides prep — everything runs in your browser. Files never leave your device."
+  canonicalPath="/"
+  ogTitle="LayerPorter — Free In-Browser File Converters"
+  ogDescription="Convert and check files right in your browser. No upload, no account, nothing stored."
+  ogImage={`${site}/og/home.png`}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </Fragment>
+
+  <section class="hero2">
+    <div class="hero2-grid">
+      <div class="hero2-copy">
+        <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> Runs entirely in your browser</p>
+        <h1 class="hero2-title">Move digital work.<span class="accent">Keep the layers.</span></h1>
+        <p class="hero2-lead">
+          Convert design files locally and move live websites into Photoshop, Canva, or other
+          design workflows as editable structures.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" id="hero-cta-tools" href="/convert/">Browse 9 free tools</a>
+          <a class="btn secondary" id="hero-cta-ext" href="/extensions/">See extensions</a>
+        </div>
+      </div>
+
+      <HeroConvertDemo />
+    </div>
+
+    <!-- The universal dropzone is a REAL tool (magic-byte format detection +
+         IndexedDB hand-off to the right converter) — kept as a compact strip
+         under the hero grid, live terminal status beside it. -->
+    <div class="hero2-dropstrip">
+      <UniversalDropzone />
+    </div>
+  </section>
+
+  <section
+    class="home-section trust-section"
+    aria-label="LayerPorter in numbers: 0 bytes uploaded, 9 tools, 1 click from file to download, local processing"
+  >
+    <div class="trust-box">
+      {trustItems.map((t) => (
+        <div class="trust-item">
+          <b>{t.big}</b>
+          <span>{t.small}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="home-section" id="paths" aria-labelledby="paths-heading">
+    <div class="section-head">
+      <div>
+        <h2 id="paths-heading">Two ways to use LayerPorter</h2>
+        <p class="section-copy">Pick a quick file tool, or capture a live website into an editable workflow.</p>
+      </div>
+    </div>
+
+    <div class="path-grid">
+      <a class="path-card" href="/convert/">
+        <h3>File converters</h3>
+        <p>Focused tools for images, documents, and design files. No upload, no account, no editor.</p>
+        <span class="path-cta">Browse converters →</span>
+      </a>
+      <a class="path-card path-card-ext" href="/extensions/">
+        <h3>Browser extensions</h3>
+        <p>Capture a live website and move it into Canva or a layered PSD, ready to edit.</p>
+        <span class="path-cta">Explore extensions →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="home-section" id="tools" aria-labelledby="tools-heading">
+    <div class="section-head">
+      <div>
+        <h2 id="tools-heading">Start with a converter</h2>
+        <p class="section-copy">One purpose per tool. No editor, no account, no unnecessary steps.</p>
+      </div>
+      <a class="text-link" id="browse-all-tools" href="/convert/">Browse all 9 tools →</a>
+    </div>
+
+    <div class="home-tools">
+      {tools.map((t) => (
+        <a class="home-tool-card" href={t.href}>
+          <span class="tool-top">
+            <span class="tool-flow" aria-hidden="true">
+              <span class={`tool-chip fmt-${t.from.toLowerCase()}`}>{t.from}</span>
+              <span class="tool-arrow">→</span>
+              <span class={`tool-chip fmt-${t.to.toLowerCase()}`}>{t.to}</span>
+            </span>
+            <span class="local-mini">Local</span>
+          </span>
+          <strong>{t.name}</strong>
+          <p>{t.blurb}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="home-section" id="extensions" aria-labelledby="extensions-heading">
+    <div class="ext-band">
+      <div class="ext-copy">
+        <p class="eyebrow">Browser extensions</p>
+        <h2 id="extensions-heading">Move live websites into your design workflow.</h2>
+        <p class="ext-lead">
+          Capture a page as editable layers and keep working in Canva, Photoshop, GIMP, or
+          Photopea. Built by us, coming to the Chrome Web Store.
+        </p>
+        <div class="ext-actions">
+          <a class="btn" id="ext-band-cta" href="/extensions/">See extensions</a>
+          <button type="button" class="ext-soon-btn" disabled>Chrome Web Store — coming soon</button>
+        </div>
+      </div>
+      <div class="ext-visual" aria-hidden="true">
+        <LayerScene />
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section" id="use-cases" aria-labelledby="uses-heading">
+    <div class="section-head">
+      <div>
+        <h2 id="uses-heading">Built for people who work in layers</h2>
+        <p class="section-copy">Same local engine, different jobs — pick the one that looks like your day.</p>
+      </div>
+    </div>
+
+    <div class="use-grid">
+      {useCases.map((u) => (
+        <div class="use-card">
+          <h3>{u.title}</h3>
+          <p>{u.blurb}</p>
+          {u.visual === 'layers' && (
+            <div class="use-visual uv-layers" aria-hidden="true">
+              <div class="uvl-panel">
+                <span class="uvl-head">Layers</span>
+                <span class="uvl-row"><i class="sw sw-img"></i>Your image</span>
+                <span class="uvl-row"><i class="sw sw-bg"></i>Background</span>
+              </div>
+              <div class="uvl-file">PSD</div>
+            </div>
+          )}
+          {u.visual === 'favicon' && (
+            <div class="use-visual uv-favicon" aria-hidden="true">
+              <div class="uvf-row">
+                <span class="uvf s48"></span>
+                <span class="uvf s32"></span>
+                <span class="uvf s16"></span>
+                <span class="uvf-chip">.ico</span>
+              </div>
+              <span class="uvf-sizes">512 · 192 · 48 · 32 · 16</span>
+            </div>
+          )}
+          {u.visual === 'pdf' && (
+            <div class="use-visual uv-pdf" aria-hidden="true">
+              <div class="uvp-page pg3"></div>
+              <div class="uvp-page pg2"></div>
+              <div class="uvp-page pg1"><i class="ln1"></i><i class="ln2"></i><b></b></div>
+              <span class="uvp-chip">PDF</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="home-section" id="learn" aria-labelledby="learn-heading">
+    <div class="section-head">
+      <div>
+        <h2 id="learn-heading">Learn before you convert</h2>
+        <p class="section-copy">Clear answers about layers, formats, compatibility, and export quality.</p>
+      </div>
+    </div>
+
+    <div class="learn-grid">
+      <a class="article-large" href={featured.href}>
+        <span>{featured.eyebrow}</span>
+        <h3>{featured.title}</h3>
+      </a>
+      <div class="article-list">
+        {articles.map((a) => (
+          <a class="learn-article" href={a.href}>
+            <b>{a.title}</b>
+            <span>{a.blurb}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section final-cta-section">
+    <div class="final-cta">
+      <div>
+        <h2>Choose the shortest path to your result.</h2>
+        <p>File → converter. Website → extension.</p>
+      </div>
+      <div class="final-cta-actions">
+        <a class="btn btn-light" id="final-cta-tools" href="/convert/">Open a converter</a>
+        <a class="btn btn-outline-light" id="final-cta-ext" href="/extensions/">Explore extensions</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { track } from '../lib/analytics';
+    document.getElementById('browse-all-tools')?.addEventListener('click', () => {
+      track('path_card_click', { target: 'tools' });
+    });
+    document.getElementById('ext-band-cta')?.addEventListener('click', () => {
+      track('path_card_click', { target: 'extensions' });
+    });
+    document.getElementById('hero-cta-tools')?.addEventListener('click', () => {
+      track('path_card_click', { target: 'hero_tools' });
+    });
+    document.getElementById('hero-cta-ext')?.addEventListener('click', () => {
+      track('path_card_click', { target: 'hero_extensions' });
+    });
+    document.getElementById('final-cta-tools')?.addEventListener('click', () => {
+      track('path_card_click', { target: 'final_cta_tools' });
+    });
+    document.getElementById('final-cta-ext')?.addEventListener('click', () => {
+      track('path_card_click', { target: 'final_cta_extensions' });
+    });
+  </script>
+</BaseLayout>

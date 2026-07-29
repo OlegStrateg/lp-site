@@ -1,0 +1,64 @@
+---
+// Terminal-style privacy panel shown under every tool widget. Two honest,
+// live signals — nothing fabricated, nothing that requires trusting a claim:
+//
+// 1. PRIVACY_LOG — a short event log. Lines are pushed only for real
+//    milestones the widget script dispatches as they happen (file picked,
+//    conversion started, conversion finished) via the `lp:privacy-log`
+//    CustomEvent — see src/lib/privacyLog.ts. No scripted/looping fake log.
+// 2. OUTGOING FILE TRAFFIC — bytes seen over fetch/XHR/sendBeacon, via the
+//    shared observer in src/lib/trafficMonitor.ts (also used by the home
+//    page's StatusStrip.astro, so both panels share one counter
+//    implementation). CSP's connect-src is 'self' only and no code path
+//    here uploads the file, so this reads 0.00 kb on every real load —
+//    visitors can verify it themselves in the browser's Network tab.
+//
+// Fixed min-height (see .privacy-terminal in global.css) so lines
+// streaming in never shift layout — CLS stays 0.
+---
+
+<div class="privacy-terminal" id="privacy-terminal">
+  <div class="privacy-terminal-head">
+    <span class="privacy-terminal-dot" aria-hidden="true"></span>
+    <span>PRIVACY_LOG</span>
+  </div>
+  <div class="privacy-terminal-body">
+    <ul class="privacy-terminal-log" id="privacy-terminal-log" role="log" aria-live="polite"></ul>
+    <div class="privacy-terminal-traffic">
+      <span class="privacy-terminal-traffic-label">OUTGOING FILE TRAFFIC</span>
+      <span class="privacy-terminal-traffic-value" id="privacy-terminal-traffic">0.00 kb</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PRIVACY_LOG_EVENT, type PrivacyLogDetail } from '../lib/privacyLog';
+  import { observeOutgoingTraffic } from '../lib/trafficMonitor';
+
+  const MAX_LINES = 5;
+  const logEl = document.getElementById('privacy-terminal-log');
+  const trafficEl = document.getElementById('privacy-terminal-traffic');
+
+  function pushLine(message: string) {
+    if (!logEl) return;
+    const li = document.createElement('li');
+    li.textContent = `> ${message}`;
+    logEl.appendChild(li);
+    while (logEl.children.length > MAX_LINES) {
+      logEl.removeChild(logEl.firstChild as ChildNode);
+    }
+  }
+
+  pushLine('page loaded');
+
+  window.addEventListener(PRIVACY_LOG_EVENT, (event) => {
+    const detail = (event as CustomEvent<PrivacyLogDetail>).detail;
+    if (detail?.message) pushLine(detail.message);
+  });
+
+  if (trafficEl) {
+    observeOutgoingTraffic((kb) => {
+      trafficEl.textContent = `${kb} kb`;
+    });
+  }
+</script>

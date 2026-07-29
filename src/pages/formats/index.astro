@@ -1,0 +1,37 @@
+---
+// Hub page for /formats/{slug}/ articles. Exists mainly so the BreadcrumbList
+// JSON-LD on every formats article (ArticleLayout.astro, position 2 item:
+// `${site}/formats/`) points at a real 200 page instead of a 404 — plus it's
+// a genuinely useful index for a visitor who lands here directly.
+import PageLayout from '../../layouts/PageLayout.astro';
+import { getCollection } from 'astro:content';
+
+const entries = (await getCollection('articles', (e) => e.data.section === 'formats')).sort((a, b) =>
+  a.data.h1.localeCompare(b.data.h1),
+);
+---
+
+<PageLayout
+  title="File Format Guides — LayerPorter"
+  description="Plain-language explainers on the file formats LayerPorter's converters read and write — what they store and when to use them."
+  canonicalPath="/formats/"
+>
+  <div class="fbx hub-idx">
+    <h1>File format guides</h1>
+    <p class="answer-first">
+      Plain-language explainers on the file formats LayerPorter's converters read and write — what
+      each one actually stores, and when to reach for it.
+    </p>
+
+    <div class="tool-cards">
+      {entries.map((e) => (
+        <a class="tool-card" href={`/formats/${e.data.slug}/`}>
+          <h3>{e.data.h1}</h3>
+          <p>{e.data.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <p class="hub-cross">Looking for the tools themselves? <a href="/convert/">Browse all converters →</a></p>
+  </div>
+</PageLayout>

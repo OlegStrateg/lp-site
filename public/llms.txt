@@ -1,0 +1,23 @@
+# LayerPorter
+
+> LayerPorter is a set of free, single-purpose file converters that run
+> entirely in the browser. Every conversion happens on the user's own
+> device — no file is ever uploaded to a server, no account is required.
+
+## Tools
+
+- [PNG to PSD Converter](https://layerporter.com/convert/png-to-psd/): Turns a PNG or JPG into an editable PSD, image on its own layer, transparency intact.
+- [JPG to PSD Converter](https://layerporter.com/convert/jpg-to-psd/): Wraps a JPG photo into a PSD built for non-destructive editing.
+- [PSD to PNG Converter](https://layerporter.com/convert/psd-to-png/): Flattens a layered PSD into a single PNG with transparency preserved.
+- [PSD to JPG Converter](https://layerporter.com/convert/psd-to-jpg/): Flattens a PSD into a compressed JPG for email or a quick share.
+- [Canva to Google Slides Checker](https://layerporter.com/convert/canva-to-google-slides/): Checks a Canva PPTX export for fonts and objects Google Slides tends to break, before import.
+- [JPG to PDF Converter](https://layerporter.com/convert/jpg-to-pdf/): Combines one or more JPGs or PNGs into a single PDF, one page per image.
+- [PDF to JPG Converter](https://layerporter.com/convert/pdf-to-jpg/): Renders every page of a PDF as its own JPG image.
+- [Favicon Generator](https://layerporter.com/convert/favicon-generator/): Turns one image into a full favicon set (16–512px plus .ico).
+- [WebP to JPG Converter](https://layerporter.com/convert/webp-to-jpg/): Converts a WebP image to JPG for tools that don't support WebP.
+
+## Guides
+
+- [What Is a PSD File?](https://layerporter.com/formats/psd/): What the PSD format actually stores and when you need it.
+- [Flat Image vs. Editable Layers](https://layerporter.com/guides/flat-image-vs-editable-layers/): What converting a flat image to PSD can and can't give you back.
+- [Exporting Lovable, v0, or Bolt Designs to PSD or PowerPoint](https://layerporter.com/guides/export-from-ai-builders/): The actual workaround for getting a design file out of an AI app builder.

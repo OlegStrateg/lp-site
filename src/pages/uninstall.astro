@@ -1,0 +1,193 @@
+---
+// Uninstall-survey target for the browser extensions' chrome.runtime.setUninstallURL.
+// Deliberately noindex: it is a destination page, not a search landing.
+//
+// Redesigned 20.07: chips replace the old mailto-per-reason links. Each chip
+// click fires its own fire-and-forget POST to /api/feedback (so a reason is
+// captured even if the visitor never hits Send), and Send posts the full
+// aggregate. Both are best-effort — this funnel never blocks on the network
+// (the visitor has already uninstalled; the UI shouldn't make that worse).
+import PageLayout from '../layouts/PageLayout.astro';
+
+const reasons = [
+  { key: 'capture', label: "Didn't capture the page correctly" },
+  { key: 'missing-feature', label: 'Missing a feature I needed' },
+  { key: 'slow-crash', label: 'Too slow, or it crashed' },
+  { key: 'found-alternative', label: 'Found something that fit better' },
+  { key: 'unsure-how', label: "Wasn't sure how to use it" },
+  { key: 'trying-out', label: 'Just trying it out, not a permanent no' },
+  { key: 'privacy', label: 'Privacy or permissions concern' },
+  { key: 'other', label: 'Other' },
+];
+---
+
+<PageLayout
+  title="Sorry to see you go — LayerPorter"
+  description="Tell us in ten seconds why you removed the extension. No email, nothing saved to an account."
+  canonicalPath="/uninstall/"
+  robots="noindex, nofollow"
+>
+  <div class="fbx">
+  <h1>Before you go</h1>
+  <p class="answer-first">
+    This takes ten seconds, no email, nothing saved to an account. It just tells us what to fix.
+  </p>
+
+  <div class="feedback-card" id="uninstall-widget" data-state="form">
+    <form id="uninstall-form" class="feedback-form" novalidate>
+      <fieldset class="chip-group">
+        <legend class="field-label">What made you uninstall?</legend>
+        {reasons.map((r) => (
+          <label class="chip">
+            <input type="checkbox" data-key={r.key} value={r.label} />
+            <span>{r.label}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      <label class="field-label" for="uninstall-text">Anything else?</label>
+      <textarea
+        id="uninstall-text"
+        class="feedback-textarea"
+        placeholder="Optional — a sentence is enough."
+      ></textarea>
+
+      <div class="uninstall-actions">
+        <button type="submit" class="btn" id="uninstall-send-btn">Send</button>
+        <a class="uninstall-skip" href="/" id="uninstall-skip-link">Skip</a>
+      </div>
+    </form>
+
+    <div class="feedback-done" id="uninstall-done" hidden>
+      <h2>Thanks for the two seconds.</h2>
+      <p>If you ever need it again, it's one click away in the Chrome Web Store — nothing to reconfigure.</p>
+    </div>
+  </div>
+
+  <p class="feedback-fineprint">Prefer email? <a href="mailto:hello@layerporter.com">hello@layerporter.com</a></p>
+  </div>
+</PageLayout>
+
+<script>
+  import { track } from '../lib/analytics';
+
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('p') || 'unknown';
+
+  track('un_view', { p });
+
+  const widget = document.getElementById('uninstall-widget')!;
+  const form = document.getElementById('uninstall-form') as HTMLFormElement;
+  const textEl = document.getElementById('uninstall-text') as HTMLTextAreaElement;
+  const doneEl = document.getElementById('uninstall-done')!;
+  const skipLink = document.getElementById('uninstall-skip-link')!;
+  const chipInputs = document.querySelectorAll<HTMLInputElement>('.chip input[type="checkbox"]');
+
+  function postFeedback(payload: Record<string, unknown>) {
+    fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      /* Best-effort only — a failed beacon must never block the uninstall UI. */
+    });
+  }
+
+  // One contextual follow-up per reason (GPT-ТЗ 20.07, принято): the last
+  // toggled-ON chip retargets the optional textarea's placeholder — a
+  // question instead of a second form.
+  const FOLLOW_UP: Record<string, string> = {
+    capture: 'What went wrong?',
+    'missing-feature': 'What feature did you need?',
+    privacy: 'What concerned you?',
+    'slow-crash': 'What were you capturing when it slowed down or crashed?',
+    'found-alternative': 'Which tool fit better?',
+  };
+  const DEFAULT_PLACEHOLDER = textEl.placeholder;
+
+  // One push per real event, not one per click (21.07 — owner caught this
+  // in the Telegram feed: a single user toggling 3 chips then hitting Send
+  // produced 4 separate, unlabeled messages, indistinguishable from 4
+  // different users). Chip clicks are local UI state + internal analytics
+  // only; postFeedback (KV + Telegram) fires exactly once per session,
+  // either on Submit or, as a fallback, once on pagehide if the user
+  // picked reasons but never submitted.
+  let submitted = false;
+
+  chipInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      const key = input.dataset.key ?? 'unknown';
+      if (input.checked) {
+        textEl.placeholder = FOLLOW_UP[key] ?? DEFAULT_PLACEHOLDER;
+      }
+      track('un_chip', { reason: key });
+    });
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    track('un_submit');
+    submitted = true;
+
+    const selected = Array.from(chipInputs).filter((i) => i.checked).map((i) => i.value);
+    const extra = textEl.value.trim();
+    const parts = extra ? [...selected, extra] : selected;
+    const text = parts.length > 0 ? parts.join(' | ') : '(no reason selected)';
+
+    postFeedback({
+      p,
+      channel: 'chrome-ext',
+      src: 'uninstall',
+      type: 'uninstall',
+      text,
+      v: '',
+    });
+
+    widget.dataset.state = 'done';
+    form.hidden = true;
+    doneEl.hidden = false;
+  });
+
+  // Skip used to send nothing at all (owner caught this 21.07: an uninstall
+  // with Skip left zero signal in Telegram — you couldn't tell it happened).
+  // Now it sends one message too, distinctly labeled so it never reads as
+  // real feedback — this counts the uninstall, not a reason for it.
+  skipLink.addEventListener('click', () => {
+    track('un_skip');
+    submitted = true; // an explicit skip is a real answer, not an abandoned draft
+    postFeedback({
+      p,
+      channel: 'chrome-ext',
+      src: 'uninstall',
+      type: 'uninstall_skip',
+      text: '(skipped — no feedback left)',
+      v: '',
+    });
+  });
+
+  // Abandonment fallback: fires at most once, only if the user picked at
+  // least one chip and never submitted or skipped. Tagged 'draft:' so it
+  // reads in Telegram as a partial selection, never confusable with a real
+  // Send. sendBeacon survives tab-close better than a fetch here.
+  window.addEventListener('pagehide', () => {
+    if (submitted) return;
+    const selected = Array.from(chipInputs).filter((i) => i.checked).map((i) => i.value);
+    if (selected.length === 0) return;
+    submitted = true;
+
+    const payload = JSON.stringify({
+      p,
+      channel: 'chrome-ext',
+      src: 'uninstall',
+      type: 'uninstall_partial',
+      text: `draft: ${selected.join(' | ')}`,
+      v: '',
+    });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/feedback', new Blob([payload], { type: 'application/json' }));
+    } else {
+      postFeedback(JSON.parse(payload));
+    }
+  });
+</script>

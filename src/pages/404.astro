@@ -1,0 +1,48 @@
+---
+// Static 404. Cloudflare Pages serves dist/404.html directly for any
+// unmatched path (no server-side routing needed) — this file just has to
+// exist and build to that filename, which `astro build` does automatically
+// for a page at src/pages/404.astro.
+//
+// Redesigned 20.07 (owner pass: служебные страницы выглядели голыми):
+// centered destination layout (.fbx), a large "404" mark, two real exits
+// and the three most-used tools — no dead ends, no invented content.
+import PageLayout from '../layouts/PageLayout.astro';
+
+const popular = [
+  { href: '/convert/jpg-to-pdf/', name: 'JPG to PDF', badge: 'JPG' },
+  { href: '/convert/pdf-to-jpg/', name: 'PDF to JPG', badge: 'PDF' },
+  { href: '/convert/png-to-psd/', name: 'PNG to PSD', badge: 'PNG' },
+];
+---
+
+<PageLayout
+  title="Page not found — LayerPorter"
+  description="This page doesn't exist. Browse LayerPorter's free, in-browser file converters instead."
+  canonicalPath="/404/"
+  robots="noindex, nofollow"
+>
+  <div class="fbx nf">
+    <p class="nf-code" aria-hidden="true">404</p>
+    <h1>Page not found</h1>
+    <p class="answer-first">
+      There's no page at this address — it may have moved, or the link has a typo. Nothing was
+      uploaded or lost.
+    </p>
+
+    <div class="nf-actions">
+      <a class="btn" href="/convert/">Browse all converters</a>
+      <a class="btn secondary" href="/">Go to the homepage</a>
+    </div>
+
+    <div class="rail-card nf-popular">
+      <p class="rail-head">Most used tools</p>
+      {popular.map((t) => (
+        <a class="rail-tool" href={t.href}>
+          <span class="tool-icon" aria-hidden="true">{t.badge}</span>
+          <span>{t.name}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</PageLayout>

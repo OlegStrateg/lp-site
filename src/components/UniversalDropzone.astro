@@ -1,0 +1,192 @@
+---
+// Home-page universal dropzone (hero right column). A REAL tool, not a
+// mockup prop: drop/pick any file, the format is detected on-device by magic
+// bytes (src/lib/fileRouter.ts), and the matching converters are offered as
+// routes. Clicking a route stores the File in IndexedDB (src/lib/handoff.ts)
+// so the destination widget picks it up automatically — no second drop.
+//
+// The status block below is live and honest, same rules as NetworkGuard:
+// the traffic counter comes from the shared PerformanceObserver in
+// src/lib/trafficMonitor.ts, and terminal lines are pushed only when the
+// corresponding real event happens (observer wired, file read, routes
+// computed). No scripted/looping fake log.
+---
+
+<div class="udz-shell">
+  <div
+    class="udz-zone"
+    id="udz-zone"
+    data-state="idle"
+    role="button"
+    tabindex="0"
+    aria-label="Drop a file here, or press Enter to choose one. The format is detected on your device and matching local converters are offered."
+  >
+    <div class="udz-file-icon" aria-hidden="true"></div>
+    <h2 class="udz-title" id="udz-title">Drop a file here</h2>
+    <p class="udz-sub">We detect the format on your device and show the right local converter.</p>
+    <button type="button" class="btn udz-choose" id="udz-choose">Choose a file</button>
+    <p class="udz-formats">PNG · JPG · WEBP · PSD · PDF · PPTX</p>
+
+    <div class="udz-result" id="udz-result" aria-live="polite" hidden>
+      <p class="udz-detected" id="udz-detected"></p>
+      <div class="udz-routes" id="udz-routes"></div>
+      <button type="button" class="udz-again" id="udz-again">Try another file</button>
+    </div>
+
+    <input type="file" id="udz-input" hidden />
+  </div>
+</div>
+
+<div class="udz-status" role="status" aria-label="System status: running locally. Live outgoing traffic counter and local event log.">
+  <div class="udz-status-top">
+    <span class="udz-status-label"><span class="udz-status-dot" aria-hidden="true"></span>System status: local</span>
+    <span class="udz-status-traffic">Outgoing traffic: <span id="udz-traffic">0.00 kb</span></span>
+  </div>
+  <div class="udz-terminal" id="udz-terminal"></div>
+</div>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { detectFormat, FORMAT_ROUTES, type DetectedFormat, type Route } from '../lib/fileRouter';
+  import { putHandoff } from '../lib/handoff';
+  import { observeOutgoingTraffic } from '../lib/trafficMonitor';
+
+  const MAX_TERMINAL_LINES = 3;
+
+  const zone = document.getElementById('udz-zone')!;
+  const input = document.getElementById('udz-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('udz-choose')!;
+  const againBtn = document.getElementById('udz-again')!;
+  const resultEl = document.getElementById('udz-result')!;
+  const detectedEl = document.getElementById('udz-detected')!;
+  const routesEl = document.getElementById('udz-routes')!;
+  const terminalEl = document.getElementById('udz-terminal')!;
+  const trafficEl = document.getElementById('udz-traffic')!;
+
+  let currentFile: File | null = null;
+  let currentFormat: DetectedFormat = 'unknown';
+  let dragCounter = 0;
+
+  function termLine(message: string) {
+    const div = document.createElement('div');
+    div.textContent = `> ${message}`;
+    terminalEl.appendChild(div);
+    while (terminalEl.children.length > MAX_TERMINAL_LINES) {
+      terminalEl.removeChild(terminalEl.firstChild as ChildNode);
+    }
+  }
+
+  // Real init line: pushed only once the traffic observer is actually wired.
+  observeOutgoingTraffic((kb) => {
+    trafficEl.textContent = `${kb} kb`;
+  });
+  termLine('local engine initialized');
+
+  function setZoneState(state: 'idle' | 'detected') {
+    zone.dataset.state = state;
+    resultEl.hidden = state !== 'detected';
+  }
+
+  function routeLink(route: Route): HTMLAnchorElement {
+    const a = document.createElement('a');
+    a.className = 'btn udz-route';
+    a.href = route.href;
+    a.textContent = route.label;
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      goToRoute(route);
+    });
+    return a;
+  }
+
+  async function goToRoute(route: Route) {
+    track('universal_route_click', { target: route.target });
+    if (currentFile) {
+      try {
+        await putHandoff(currentFile, currentFormat);
+      } catch {
+        /* storage unavailable — converter page just starts empty */
+      }
+    }
+    window.location.href = route.href;
+  }
+
+  async function onFile(file: File) {
+    currentFile = file;
+    termLine(`file detected: ${file.name}`);
+
+    const format = await detectFormat(file);
+    currentFormat = format;
+    track('universal_drop', { format });
+
+    routesEl.innerHTML = '';
+    const routes = FORMAT_ROUTES[format];
+
+    if (routes && routes.length > 0) {
+      detectedEl.textContent = `${format.toUpperCase()} detected — pick a converter:`;
+      for (const route of routes) routesEl.appendChild(routeLink(route));
+      termLine('routes ready — pick a converter');
+    } else {
+      const label = format === 'unknown' ? 'this format' : format.toUpperCase();
+      detectedEl.textContent =
+        format === 'unknown' ? 'Could not recognize this file.' : `${format.toUpperCase()} detected.`;
+      const p = document.createElement('p');
+      p.className = 'udz-noroute';
+      p.append(`No converter for ${label} yet — `);
+      const a = document.createElement('a');
+      a.href = '/convert/';
+      a.textContent = 'see all tools';
+      p.appendChild(a);
+      p.append('.');
+      routesEl.appendChild(p);
+      termLine('no local converter for this format yet');
+    }
+
+    setZoneState('detected');
+  }
+
+  chooseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    input.click();
+  });
+  againBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    input.click();
+  });
+
+  input.addEventListener('change', () => {
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) onFile(file);
+  });
+
+  zone.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('button, a')) input.click();
+  });
+  zone.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target === zone) {
+      e.preventDefault();
+      input.click();
+    }
+  });
+
+  zone.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    zone.classList.add('dragging');
+  });
+  zone.addEventListener('dragover', (e) => e.preventDefault());
+  zone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) zone.classList.remove('dragging');
+  });
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    zone.classList.remove('dragging');
+    const file = e.dataTransfer?.files?.[0];
+    if (file) onFile(file);
+  });
+</script>

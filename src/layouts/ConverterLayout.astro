@@ -1,0 +1,623 @@
+---
+// Single source of truth for every /convert/[slug]/ page: 7 content blocks + the
+// JSON-LD @graph. All text comes from the content collection entry (src/content/converters)
+// so schema Answer text and visible FAQ text stay identical by construction.
+import BaseLayout from './BaseLayout.astro';
+import ConverterWidget from '../components/ConverterWidget.astro';
+import ConverterWidgetV2 from '../components/ConverterWidgetV2.astro';
+import CheckerWidget from '../components/CheckerWidget.astro';
+import JpgToPdfWidget from '../components/JpgToPdfWidget.astro';
+import PdfToJpgWidget from '../components/PdfToJpgWidget.astro';
+import FaviconWidget from '../components/FaviconWidget.astro';
+import ExtensionFooterLine from '../components/ExtensionFooterLine.astro';
+import NetworkGuard from '../components/NetworkGuard.astro';
+import { render, type CollectionEntry } from 'astro:content';
+
+interface Props {
+  entry: CollectionEntry<'converters'>;
+}
+
+const { entry } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+const pagePath = `/convert/${d.key}/`;
+const pageUrl = `${site}${pagePath}`;
+const ogImageUrl = `${site}/og/${d.key}.png`;
+
+// d.key is always "{from}-to-{to}" (e.g. "psd-to-png") — used to keep the
+// HowTo name direction-correct for every converter without a dedicated field.
+// Pages where the split reads badly override via frontmatter howToName.
+const [fromFormat, toFormat] = d.key.split('-to-');
+const howToName = d.howToName ?? `How to convert ${fromFormat.toUpperCase()} to ${toFormat.toUpperCase()} in your browser`;
+
+// Cross-sell: 2-3 mini "Related converters" cards on the success state (see
+// ConverterWidget/JpgToPdfWidget/PdfToJpgWidget/FaviconWidget/CheckerWidget).
+// First card is the logical opposite direction (same chain); the rest fill in
+// from the two highest-intent tools site-wide so every page shows at least 2
+// cards, even ones with no natural opposite (webp-to-jpg). Favicon-generator
+// and canva-to-google-slides have no natural "opposite" either, so they get a
+// fixed, hand-picked pair instead of running through buildRelated().
+const CONVERTER_META: Record<string, { href: string; label: string }> = {
+  'png-to-psd': { href: '/convert/png-to-psd/', label: 'PNG to PSD' },
+  'jpg-to-psd': { href: '/convert/jpg-to-psd/', label: 'JPG to PSD' },
+  'psd-to-png': { href: '/convert/psd-to-png/', label: 'PSD to PNG' },
+  'psd-to-jpg': { href: '/convert/psd-to-jpg/', label: 'PSD to JPG' },
+  'jpg-to-pdf': { href: '/convert/jpg-to-pdf/', label: 'JPG to PDF' },
+  'pdf-to-jpg': { href: '/convert/pdf-to-jpg/', label: 'PDF to JPG' },
+  'webp-to-jpg': { href: '/convert/webp-to-jpg/', label: 'WebP to JPG' },
+};
+const OPPOSITE: Record<string, string> = {
+  'png-to-psd': 'psd-to-png',
+  'jpg-to-psd': 'psd-to-jpg',
+  'psd-to-png': 'png-to-psd',
+  'psd-to-jpg': 'jpg-to-psd',
+  'jpg-to-pdf': 'pdf-to-jpg',
+  'pdf-to-jpg': 'jpg-to-pdf',
+};
+// The two highest-intent tools site-wide (png-to-psd, jpg-to-pdf — same pair
+// the home hero CTA and keyword research point at), used to round a page's
+// cross-sell out to 2-3 cards.
+const POPULAR_KEYS = ['png-to-psd', 'jpg-to-pdf'];
+
+function buildRelated(key: string): { href: string; label: string; target: string }[] {
+  const picks: string[] = [];
+  const opposite = OPPOSITE[key];
+  if (opposite) picks.push(opposite);
+  for (const p of POPULAR_KEYS) {
+    if (picks.length >= 3) break;
+    if (p !== key && !picks.includes(p)) picks.push(p);
+  }
+  return picks.slice(0, 3).map((k) => ({ ...CONVERTER_META[k], target: k }));
+}
+
+// Fixed pairs for the two tools with no natural "opposite" conversion.
+const FAVICON_RELATED = [
+  { ...CONVERTER_META['webp-to-jpg'], target: 'webp-to-jpg' },
+  { ...CONVERTER_META['jpg-to-pdf'], target: 'jpg-to-pdf' },
+];
+const CHECKER_RELATED = [
+  { ...CONVERTER_META['jpg-to-pdf'], target: 'jpg-to-pdf' },
+  { ...CONVERTER_META['pdf-to-jpg'], target: 'pdf-to-jpg' },
+];
+
+const related =
+  d.key === 'favicon-generator' ? FAVICON_RELATED
+  : d.key === 'canva-to-google-slides' ? CHECKER_RELATED
+  : buildRelated(d.key);
+
+// Extension relevance gate (see src/data/extensions.ts): the website-capture
+// extensions never touch a file you already have, so they don't upgrade any
+// converter page. This quiet single-line footer pointer is the one narrow
+// exception — it's allowed only on the plain raster<->PSD converters, where
+// "capturing a live page instead of a file" is at least an adjacent idea a
+// visitor might be looking for. Explicitly NOT on jpg-to-pdf/pdf-to-jpg
+// (PDF-specific job), favicon-generator (icon-specific job), webp-to-jpg
+// (format-shim job), or canva-to-google-slides (PPTX compatibility check,
+// not a file conversion at all) — none of those are adjacent enough.
+const EXTENSION_FOOTER_CONVERTERS = new Set(['png-to-psd', 'jpg-to-psd', 'psd-to-png', 'psd-to-jpg']);
+const showExtensionFooterLine = EXTENSION_FOOTER_CONVERTERS.has(d.key);
+
+// BreadcrumbList — scoped to v2 pages only (ТЗ 19.07 rebuilt png-to-psd,
+// generalized to the other 8 pages the same day); v1 pages keep the graph
+// they've always had. Every node is a real, existing page (home, /convert/,
+// this page itself). Name comes from h1's own "X — Y" convention, same split
+// SoftwareApplication.name uses below, so it stays correct per-page instead
+// of the original hardcoded "PNG to PSD".
+const pageShortName = d.h1.split('—')[0].trim();
+const breadcrumbNode =
+  d.layoutVariant === 'v2'
+    ? [
+        {
+          '@type': 'BreadcrumbList',
+          '@id': `${pageUrl}#breadcrumb`,
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: `${site}/` },
+            { '@type': 'ListItem', position: 2, name: 'Converters', item: `${site}/convert/` },
+            { '@type': 'ListItem', position: 3, name: pageShortName, item: pageUrl },
+          ],
+        },
+      ]
+    : [];
+
+// --- v2 template helpers (ТЗ 19.07 generalization) ---
+// Short, human label for "what you drop in", used by the "Continue working"
+// section's "Convert/Check another X" card. Keyed on inputKind (not the
+// key's fromFormat split) so it stays correct for pages like
+// favicon-generator whose key has no "-to-" in it at all.
+const INPUT_KIND_LABEL: Record<string, string> = {
+  raster: 'image',
+  psd: 'PSD',
+  webp: 'WebP image',
+  pdf: 'PDF',
+  pptx: 'PPTX',
+};
+const continueVerb = d.outputKind === 'slides' ? 'Check' : 'Convert';
+const continueAnotherLabel = `${continueVerb} another ${INPUT_KIND_LABEL[d.inputKind] ?? 'file'}`;
+
+// Table column headers for "What changes — and what does not" come from the
+// same expectation labels the "What to expect" cards already use just above
+// (content-authored per page), trimmed to the short lead phrase before any
+// parenthetical ("PSD (what you drop in)" -> "PSD") so they read as compact
+// column headers instead of full sentences.
+function shortLabel(label: string | undefined): string {
+  if (!label) return '';
+  const idx = label.indexOf(' (');
+  return idx > -1 ? label.slice(0, idx) : label;
+}
+const changesFromHeader = shortLabel(d.expectation?.pngLabel) || fromFormat.toUpperCase();
+const changesToHeader = shortLabel(d.expectation?.psdLabel) || (toFormat ? `${toFormat.toUpperCase()} after` : 'After');
+
+// threeWays heading: content-authored per page (see content.config.ts), with
+// a derived fallback for any future page that adds a threeWays table but
+// forgets the heading.
+const threeWaysHeading =
+  d.threeWaysHeading ?? `Three ways to convert ${fromFormat.toUpperCase()}${toFormat ? ` to ${toFormat.toUpperCase()}` : ''}`;
+
+// Dark extension-bridge: reuses the site's .ext-band visual, but only on the
+// same allow-list as the v1 ExtensionFooterLine (plain raster<->PSD
+// converters — see EXTENSION_FOOTER_CONVERTERS/showExtensionFooterLine
+// above and ExtensionFooterLine.astro's own doc comment for why the other
+// pages are off-topic). Copy is direction-aware rather than one shared
+// paragraph, both because it reads more accurately per direction and to
+// keep the four pages that show it from carrying near-identical text.
+const EXT_BRIDGE_COPY: Record<string, string> = {
+  'png-to-psd': 'A flat PNG only ever gives you one image layer. To get separate text, image, button, and background layers, capture the live page instead of exporting a flat file.',
+  'jpg-to-psd': 'A JPG photo only ever gives you one flattened layer, compression artifacts included. To pull real text, image, button, and background layers, capture the live page itself instead of wrapping an exported file.',
+  'psd-to-png': 'Flattening a PSD to PNG collapses everything back into one image — the opposite of what you actually want. To capture a live page as fresh, separate layers instead, skip the export step and grab the page directly.',
+  'psd-to-jpg': 'A JPG export compresses your PSD into one flat, lossy image — there is no way back to layers from there. To start a page over as real text, image, button, and background layers, capture it live instead.',
+};
+const extBridgeCopy = EXT_BRIDGE_COPY[d.key] ?? EXT_BRIDGE_COPY['png-to-psd'];
+const eyebrowLabel = d.outputKind === 'slides' ? 'Private browser checker' : 'Private browser converter';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${site}/#org`,
+      name: 'LayerPorter',
+      url: `${site}/`,
+    },
+    ...breadcrumbNode,
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: `LayerPorter ${d.h1.split('—')[0].trim()}`,
+      url: pageUrl,
+      description: d.answerFirst,
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      featureList: d.featureList,
+      publisher: { '@id': `${site}/#org` },
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: howToName,
+      step: d.howTo.map((s) => ({
+        '@type': 'HowToStep',
+        name: s.step,
+        text: s.text,
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      mainEntity: d.faq.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ],
+};
+---
+
+<BaseLayout
+  title={d.title}
+  description={d.metaDescription}
+  canonicalPath={pagePath}
+  ogTitle={d.ogTitle}
+  ogDescription={d.ogDescription}
+  ogImage={ogImageUrl}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </Fragment>
+
+  <article>
+    {d.layoutVariant === 'v2' ? (
+      <Fragment>
+        <!-- Hero-grid: H1/copy/proof-chips left, converter-shell (widget +
+             privacy log) right. Reuses the home page's hero2/udz-shell
+             visual language (ТЗ 19.07: same tokens as the redesigned home).
+             Widget dispatch mirrors the v1 branch below exactly (same
+             inputKind/outputKind chain), except png-to-psd keeps its
+             dedicated ConverterWidgetV2 (PNG-only accept, magic-byte JPG
+             bridge, live alpha-detect thumbnail — none of that transfers to
+             a shared component). Every widget lands inside the same
+             .udz-shell "converter-shell" frame for a consistent look. -->
+        <section class="hero2 tool-hero2">
+          <div class="hero2-grid">
+            <div class="hero2-copy">
+              <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> {eyebrowLabel}</p>
+              <h1>{d.h1}</h1>
+              <p class="tool-subtitle">Locally. No upload. No account.</p>
+              <p class="answer-first">{d.answerFirst}</p>
+              {d.proofChips.length > 0 && (
+                <div class="trust-row" aria-label="Product guarantees">
+                  {d.proofChips.map((c) => <span class="trust-chip">{c}</span>)}
+                </div>
+              )}
+            </div>
+            <div class="hero2-drop">
+              <div class="udz-shell tool-shell" id="tool-widget-shell">
+                {d.key === 'png-to-psd' ? (
+                  <ConverterWidgetV2 toolHeading={d.toolHeading} />
+                ) : d.inputKind === 'pptx' ? (
+                  <CheckerWidget toolHeading={d.toolHeading} related={related} />
+                ) : d.outputKind === 'pdf' ? (
+                  <JpgToPdfWidget toolHeading={d.toolHeading} related={related} />
+                ) : d.inputKind === 'pdf' ? (
+                  <PdfToJpgWidget toolHeading={d.toolHeading} related={related} />
+                ) : d.outputKind === 'favicon' ? (
+                  <FaviconWidget toolHeading={d.toolHeading} related={related} />
+                ) : (
+                  <ConverterWidget
+                    toolHeading={d.toolHeading}
+                    input={d.inputKind as 'raster' | 'psd' | 'webp'}
+                    output={d.outputKind as 'psd' | 'png' | 'jpg'}
+                    related={related}
+                    enablePhotopea={d.continuePhotopea}
+                  />
+                )}
+                <NetworkGuard />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {d.expectation && (
+          <section aria-labelledby="expect-heading" class="tool-section">
+            <h2 id="expect-heading">What to expect</h2>
+            <div class="expect-grid">
+              <div class="expect-card">
+                <h3>{d.expectation.pngLabel}</h3>
+                <ul>{d.expectation.pngChecks.map((c) => <li>{c}</li>)}</ul>
+              </div>
+              <div class="expect-card">
+                <h3>{d.expectation.psdLabel}</h3>
+                <ul>{d.expectation.psdChecks.map((c) => <li>{c}</li>)}</ul>
+              </div>
+            </div>
+            <p class="truth-note">{d.expectation.truthNote}</p>
+          </section>
+        )}
+
+        {d.whatYouGet.length > 0 && (
+          <section aria-labelledby="wyg-heading" class="tool-section">
+            <h2 id="wyg-heading">What you get</h2>
+            <div class="wyg-grid">
+              {d.whatYouGet.map((w) => (
+                <div class="wyg-card"><h3>{w.title}</h3><p>{w.text}</p></div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {d.whatChanges.length > 0 && (
+          <section aria-labelledby="changes-heading" class="tool-section">
+            <h2 id="changes-heading">What changes — and what does not</h2>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Property</th><th>{changesFromHeader}</th><th>{changesToHeader}</th></tr></thead>
+                <tbody>
+                  {d.whatChanges.map((r) => (
+                    <tr><td>{r.property}</td><td>{r.before}</td><td>{r.after}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        <!-- Preserved table — v1 SEO asset, kept in every layout. Distinct
+             from "What changes" above: this is a per-property yes/no answer
+             sheet, that's a before/after property comparison; the two don't
+             restate each other verbatim even where both exist. -->
+        <section aria-labelledby="preserved-heading" class="tool-section">
+          <h2 id="preserved-heading">{d.preservedHeading}</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>What</th><th>Preserved?</th></tr>
+              </thead>
+              <tbody>
+                {d.preserved.map((p) => (
+                  <tr><td>{p.item}</td><td>{p.value}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="how-it-works-heading" class="tool-section">
+          <h2 id="how-it-works-heading">{d.howItWorksHeading}</h2>
+          <ol class="how-it-works">
+            {d.howTo.map((s) => (
+              <li><strong>{s.step}.</strong> {s.text}</li>
+            ))}
+          </ol>
+        </section>
+
+        {d.useCases.length > 0 && (
+          <section aria-labelledby="usecases-heading" class="tool-section">
+            <h2 id="usecases-heading">Use cases</h2>
+            <div class="wyg-grid">
+              {d.useCases.map((u) => (
+                <div class="wyg-card"><h3>{u.title}</h3><p>{u.text}</p></div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- Comparison — v1 SEO asset (real competitor names/links), kept in every layout. -->
+        <section aria-labelledby="comparison-heading" class="tool-section">
+          <h2 id="comparison-heading">{d.comparisonHeading}</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Tool</th><th>Where it runs</th><th>Output</th><th>Free limits</th></tr>
+              </thead>
+              <tbody>
+                {d.competitors.map((c) => (
+                  <tr>
+                    <td>{c.name}</td>
+                    <td>{c.where}</td>
+                    <td>
+                      {c.outputUrl ? (
+                        <a href={c.outputUrl} rel="nofollow noopener">{c.output}</a>
+                      ) : (
+                        c.output
+                      )}
+                    </td>
+                    <td>{c.limits}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>{d.competitorNote}</p>
+        </section>
+
+        {showExtensionFooterLine && (
+          <section aria-labelledby="ext-bridge-heading" class="tool-section">
+            <div class="ext-band tool-ext-band">
+              <div class="ext-copy">
+                <p class="eyebrow">Browser extension</p>
+                <h2 id="ext-bridge-heading">Need real editable layers?</h2>
+                <p class="ext-lead">{extBridgeCopy}</p>
+                <div class="ext-actions">
+                  <a class="btn" id="ext-bridge-cta" href="/extensions/">Capture a website as layers</a>
+                </div>
+              </div>
+              <div class="ext-visual" aria-hidden="true">
+                <div class="layer-stack">
+                  <span class="layer-chip" style="--i:4">Header</span>
+                  <span class="layer-chip" style="--i:3">Navigation</span>
+                  <span class="layer-chip" style="--i:2">Hero image</span>
+                  <span class="layer-chip" style="--i:1">Button</span>
+                  <span class="layer-chip" style="--i:0">Background</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section aria-labelledby="continue-heading" class="tool-section">
+          <h2 id="continue-heading">Continue working with your file</h2>
+          <div class="continue-grid">
+            {d.continuePhotopea && (
+              <a class="continue-card primary" href="https://www.photopea.com" target="_blank" rel="noopener" id="continue-photopea">
+                <h3>Open in Photopea</h3>
+                <p>Keep editing your PSD in a full browser-based editor — free, no install.</p>
+              </a>
+            )}
+            <button type="button" class="continue-card" id="continue-again">
+              <h3>{continueAnotherLabel}</h3>
+              <p>Jump back to the tool above.</p>
+            </button>
+            <a class="continue-card" href="/convert/">
+              <h3>View all tools</h3>
+              <p>Every LayerPorter converter — every direction.</p>
+            </a>
+          </div>
+        </section>
+
+        {d.threeWays.length > 0 && (
+          <section aria-labelledby="threeways-heading" class="tool-section">
+            <h2 id="threeways-heading">{threeWaysHeading}</h2>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Tool</th><th>Runs where</th><th>Output</th><th>Notes</th></tr></thead>
+                <tbody>
+                  {d.threeWays.map((r) => (
+                    <tr><td>{r.tool}</td><td>{r.runsWhere}</td><td>{r.output}</td><td>{r.notes}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        <section aria-labelledby="faq-heading" id="faq-client-side" class="tool-section">
+          <h2 id="faq-heading">{d.faqHeading}</h2>
+          <div class="faq-list">
+            {d.faq.map((f, i) => (
+              <details class="faq-details" data-faq-index={i}>
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="more-conversions-heading" class="tool-section">
+          <h2 id="more-conversions-heading">{d.moreConversionsHeading}</h2>
+          <ul class="more-conversions">
+            {d.moreConversions.map((m) => (
+              <li><a href={`/convert/${m.slug}/`}>{m.label}</a></li>
+            ))}
+            <li><a href="/convert/">Browse all converters</a></li>
+          </ul>
+        </section>
+
+        <div class="prose-note"><Content /></div>
+
+        <script>
+          import { track } from '../lib/analytics';
+
+          document.querySelectorAll<HTMLDetailsElement>('.faq-details').forEach((el) => {
+            el.addEventListener('toggle', () => {
+              if (el.open) track('faq_opened', { index: Number(el.dataset.faqIndex ?? -1) });
+            });
+          });
+
+          document.getElementById('ext-bridge-cta')?.addEventListener('click', () => {
+            track('extension_bridge_clicked', { surface: 'ext-bridge-section' });
+          });
+
+          document.getElementById('continue-photopea')?.addEventListener('click', () => {
+            track('photopea_open_clicked', { surface: 'continue-section' });
+          });
+
+          document.getElementById('continue-again')?.addEventListener('click', () => {
+            track('convert_another_clicked', { surface: 'continue-section' });
+            document.getElementById('tool-widget-shell')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+        </script>
+      </Fragment>
+    ) : (
+      <Fragment>
+        <!-- Block 1: Hero — H1 + answer-first + privacy line, all above the fold -->
+        <section class="hero">
+          <h1>{d.h1}</h1>
+          <p class="answer-first">{d.answerFirst}</p>
+        </section>
+
+        <!-- Block 2: Tool — dispatch on inputKind + outputKind together (see
+             content.config.ts): 'raster' input is shared by three different
+             widgets depending on what comes out.
+             pptx              -> CheckerWidget    (on-page report, no download)
+             outputKind pdf     -> JpgToPdfWidget   (several files in, one PDF out)
+             inputKind pdf      -> PdfToJpgWidget   (one PDF in, JPG(s)/ZIP out)
+             outputKind favicon -> FaviconWidget    (one image in, ZIP of sizes out)
+             everything else (raster/psd/webp -> psd/png/jpg) -> ConverterWidget -->
+        {d.inputKind === 'pptx' ? (
+          <CheckerWidget toolHeading={d.toolHeading} related={related} />
+        ) : d.outputKind === 'pdf' ? (
+          <JpgToPdfWidget toolHeading={d.toolHeading} related={related} />
+        ) : d.inputKind === 'pdf' ? (
+          <PdfToJpgWidget toolHeading={d.toolHeading} related={related} />
+        ) : d.outputKind === 'favicon' ? (
+          <FaviconWidget toolHeading={d.toolHeading} related={related} />
+        ) : (
+          <ConverterWidget
+            toolHeading={d.toolHeading}
+            input={d.inputKind as 'raster' | 'psd' | 'webp'}
+            output={d.outputKind as 'psd' | 'png' | 'jpg'}
+            related={related}
+          />
+        )}
+
+        <NetworkGuard />
+
+        <!-- Block 3: How it works -->
+        <section aria-labelledby="how-it-works-heading">
+          <h2 id="how-it-works-heading">{d.howItWorksHeading}</h2>
+          <ol class="how-it-works">
+            {d.howTo.map((s) => (
+              <li><strong>{s.step}.</strong> {s.text}</li>
+            ))}
+          </ol>
+        </section>
+
+        <!-- Block 4: What's preserved -->
+        <section aria-labelledby="preserved-heading">
+          <h2 id="preserved-heading">{d.preservedHeading}</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>What</th><th>Preserved?</th></tr>
+              </thead>
+              <tbody>
+                {d.preserved.map((p) => (
+                  <tr><td>{p.item}</td><td>{p.value}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Block 5: Comparison -->
+        <section aria-labelledby="comparison-heading">
+          <h2 id="comparison-heading">{d.comparisonHeading}</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Tool</th><th>Where it runs</th><th>Output</th><th>Free limits</th></tr>
+              </thead>
+              <tbody>
+                {d.competitors.map((c) => (
+                  <tr>
+                    <td>{c.name}</td>
+                    <td>{c.where}</td>
+                    <td>
+                      {c.outputUrl ? (
+                        <a href={c.outputUrl} rel="nofollow noopener">{c.output}</a>
+                      ) : (
+                        c.output
+                      )}
+                    </td>
+                    <td>{c.limits}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>{d.competitorNote}</p>
+        </section>
+
+        <!-- Block 6: FAQ -->
+        <section aria-labelledby="faq-heading" id="faq-client-side">
+          <h2 id="faq-heading">{d.faqHeading}</h2>
+          {d.faq.map((f) => (
+            <div class="faq-item">
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </div>
+          ))}
+        </section>
+
+        <!-- Block 7: More conversions — live links to sibling converter pages -->
+        <section aria-labelledby="more-conversions-heading">
+          <h2 id="more-conversions-heading">{d.moreConversionsHeading}</h2>
+          <ul class="more-conversions">
+            {d.moreConversions.map((m) => (
+              <li><a href={`/convert/${m.slug}/`}>{m.label}</a></li>
+            ))}
+            <li><a href="/convert/">Browse all converters</a></li>
+          </ul>
+        </section>
+
+        <div class="prose-note"><Content /></div>
+
+        {showExtensionFooterLine && <ExtensionFooterLine surface={`convert/${d.key}`} />}
+      </Fragment>
+    )}
+  </article>
+</BaseLayout>

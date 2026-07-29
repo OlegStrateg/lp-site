@@ -1,0 +1,58 @@
+---
+// Honest "Site vs. extension" comparison — sells the extension on facts,
+// not by making the site look worse than it is. Row 1 ("Install needed")
+// deliberately reads in the site's favor: no install is a real advantage
+// for a one-off conversion, and pretending otherwise would be dishonest.
+//
+// SLEEPS until at least one extension in src/data/extensions.ts has a real
+// storeUrl. Mounted only on /guides/export-from-ai-builders/ today (see
+// ArticleLayout.astro's EXTENSION_RELEVANT_SLUGS) — this table is about
+// live-page capture, so it belongs next to ExtensionCTA, not on file
+// converter pages.
+import { extensions } from '../data/extensions';
+
+const live = extensions.some((e) => e.storeUrl !== null);
+---
+
+{live && (
+  <section class="site-vs-extension" aria-labelledby="site-vs-extension-heading">
+    <h2 id="site-vs-extension-heading">Site vs. extension</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">This site</th>
+            <th scope="col">Extension</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Works on</th>
+            <td>A file you already have</td>
+            <td>Any live page you're looking at</td>
+          </tr>
+          <tr>
+            <th scope="row">Install needed</th>
+            <td>No — open the page and go</td>
+            <td>Yes, one-time browser install</td>
+          </tr>
+          <tr>
+            <th scope="row">Capture method</th>
+            <td>Drop or choose a file</td>
+            <td>Right-click the page itself</td>
+          </tr>
+          <tr>
+            <th scope="row">Reuse</th>
+            <td>One-off conversion, one output</td>
+            <td>Capture repeatedly across pages, no re-upload each time</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="site-vs-extension-note">
+      For a single file you already have, the site is the faster path — no install, no permissions.
+      The extension earns its place when the thing you need is on a page, not in a file.
+    </p>
+  </section>
+)}

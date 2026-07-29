@@ -1,0 +1,312 @@
+---
+// Single image in, a favicon set out: this needs a "multiple outputs" success
+// view (inline preview per size + one ZIP download) that neither
+// ConverterWidget nor CheckerWidget's success states cover, so it's its own
+// component, same 5-state vanilla shape as the others.
+import Icon from './Icon.astro';
+
+interface Props {
+  toolHeading: string;
+  related?: { href: string; label: string; target: string }[];
+}
+const { toolHeading, related = [] } = Astro.props;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="favicon-widget"
+    class="converter-widget"
+    data-state="empty"
+    role="group"
+    aria-label="Image to favicon set converter"
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="folder" /></div>
+      <p class="dz-title">Drop a PNG or JPG — or click to choose a file</p>
+      <p class="dz-sub">It never leaves this tab.</p>
+      <button type="button" class="btn" id="choose-file-btn">Choose file — it's free</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden>
+      <p class="dz-title">Drop to convert</p>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">Building your favicon set&hellip;</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title">Your favicon set is ready</p>
+      <ul class="favicon-preview" id="favicon-preview"></ul>
+      <a class="btn" id="download-link" download>Download ZIP (no signup)</a>
+      <div class="favicon-tags">
+        <p class="dz-sub">Add these to your site's &lt;head&gt; (filenames match the ZIP):</p>
+        <pre class="favicon-tags-code" id="favicon-tags-code">{`<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">`}</pre>
+        <button type="button" class="btn secondary" id="copy-tags-btn">Copy tags</button>
+      </div>
+      <div>
+        <button type="button" class="btn secondary" id="convert-another-btn">Convert another</button>
+      </div>
+      {related.length > 0 && (
+        <div class="cross-sell" id="cross-sell">
+          <p class="cross-sell-label">Related converters</p>
+          <div class="cross-sell-cards">
+            {related.map((r) => (
+              <a class="cross-sell-card" href={r.href} data-target={r.target}>{r.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">That file didn't make it. Try again?</p>
+      <button type="button" class="btn" id="retry-btn">Retry</button>
+    </div>
+
+    <input type="file" id="file-input" accept="image/png,image/jpeg" hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% client-side — nothing leaves your device</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  const MAX_BYTES = 30 * 1024 * 1024; // 30 MB guardrail, same as other raster engines
+  const MAX_DIMENSION = 6000;
+
+  const widget = document.getElementById('favicon-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const downloadLink = document.getElementById('download-link') as HTMLAnchorElement;
+  const errorMessage = document.getElementById('error-message')!;
+  const previewList = document.getElementById('favicon-preview')!;
+  const tagsCode = document.getElementById('favicon-tags-code')!;
+  const copyTagsBtn = document.getElementById('copy-tags-btn')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const crossSellLinks = document.querySelectorAll<HTMLAnchorElement>('#cross-sell .cross-sell-card');
+
+  const objectUrls: string[] = [];
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  type State = 'empty' | 'drag-over' | 'processing' | 'success' | 'error';
+
+  function announce(state: State) {
+    if (state === 'processing') statusEl.textContent = 'Converting…';
+    else if (state === 'success') statusEl.textContent = 'Done. Your favicon set is ready to download.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: State) {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeAllUrls() {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
+    objectUrls.length = 0;
+  }
+
+  function resetToEmpty() {
+    revokeAllUrls();
+    fileInput.value = '';
+    setState('empty');
+  }
+
+  async function resolveMimeType(file: File): Promise<string> {
+    if (file.type) return file.type;
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
+      if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+    } catch {
+      /* fall through */
+    }
+    return '';
+  }
+
+  async function handleFile(file: File) {
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+    track('upload_start', { file_type: 'image', size_bucket: sizeBucket(file.size) });
+
+    const mimeType = await resolveMimeType(file);
+    if (!['image/png', 'image/jpeg'].includes(mimeType)) {
+      showError('unsupported_format', 'This file type is not supported. Drop a PNG or JPG image.');
+      return;
+    }
+
+    if (file.size > MAX_BYTES) {
+      showError('too_large', `This file is larger than ${MAX_BYTES / (1024 * 1024)} MB. Try a smaller image.`);
+      return;
+    }
+
+    setState('processing');
+
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      showError('corrupt', 'This file could not be read. It may be corrupted or in an unsupported format.');
+      return;
+    }
+
+    if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+      bitmap.close();
+      showError('too_large_dimensions', `This image is larger than ${MAX_DIMENSION}×${MAX_DIMENSION}px. Try a smaller image.`);
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/ico/favicon.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        revokeAllUrls();
+        const zipUrl = URL.createObjectURL(new Blob([msg.zipBuffer], { type: 'application/zip' }));
+        objectUrls.push(zipUrl);
+        downloadLink.href = zipUrl;
+        downloadLink.download = 'favicons.zip';
+
+        previewList.innerHTML = '';
+        for (const { size, buffer } of msg.previews as { size: number; buffer: ArrayBuffer }[]) {
+          const url = URL.createObjectURL(new Blob([buffer], { type: 'image/png' }));
+          objectUrls.push(url);
+          const li = document.createElement('li');
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = `${size}×${size} favicon preview`;
+          img.width = Math.min(size, 64);
+          img.height = Math.min(size, 64);
+          const label = document.createElement('span');
+          label.textContent = `${size}×${size}`;
+          li.appendChild(img);
+          li.appendChild(label);
+          previewList.appendChild(li);
+        }
+
+        setState('success');
+        track('convert_success', { duration_bucket: durationBucket(msg.durationMs) });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', msg.message || 'Conversion failed. Please try again.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'Conversion failed unexpectedly. Please try again.');
+      worker.terminate();
+    };
+
+    worker.postMessage({ type: 'convert', bitmap }, [bitmap]);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+
+  widget.addEventListener('click', (e) => {
+    if (widget.dataset.state === 'empty' && !(e.target as HTMLElement).closest('button, a')) {
+      fileInput.click();
+    }
+  });
+
+  widget.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (e) => e.preventDefault());
+  widget.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToEmpty();
+  });
+  convertAnotherBtn.addEventListener('click', () => resetToEmpty());
+  downloadLink.addEventListener('click', () => track('download_click'));
+  crossSellLinks.forEach((link) => {
+    link.addEventListener('click', () => track('cross_sell_click', { target: link.dataset.target ?? '' }));
+  });
+
+  copyTagsBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(tagsCode.textContent ?? '');
+      const original = copyTagsBtn.textContent;
+      copyTagsBtn.textContent = 'Copied!';
+      track('copy_tags_click');
+      setTimeout(() => {
+        copyTagsBtn.textContent = original;
+      }, 1500);
+    } catch {
+      /* clipboard API unavailable/denied — the <pre> text is still selectable by hand */
+    }
+  });
+
+  // Home-dropzone handoff: run the stored image through the normal
+  // handleFile path (magic bytes / size / dimension guardrails all apply).
+  takeHandoff(['png', 'jpg']).then((file) => {
+    if (file) handleFile(file);
+  });
+</script>

@@ -1,0 +1,564 @@
+---
+// Vanilla island — no UI framework. Static markup below covers every state so the
+// page is meaningful with JS disabled; the inline <script> (module, deferred by
+// Astro automatically) swaps data-state and content once hydrated.
+//
+// Direction-aware: `input`/`output` pick the accept filter, the worker module,
+// and the state-view copy. Three directions exist today:
+//  - input="raster", output="psd"        -> pngToPsd.worker.ts    (write path)
+//  - input="psd",    output="png"|"jpg"  -> psdToImage.worker.ts  (read path)
+//  - input="webp",   output="jpg"        -> webpToJpg.worker.ts   (wave 2)
+import Icon from './Icon.astro';
+
+interface Props {
+  toolHeading: string;
+  input: 'raster' | 'psd' | 'webp';
+  output: 'psd' | 'png' | 'jpg';
+  related?: { href: string; label: string; target: string }[];
+  // Shows an "Open in Photopea" button on the success state once a PSD is
+  // built (see src/lib/photopea.ts) -- only meaningful when output === 'psd'.
+  // Gated by the page's own `continuePhotopea` content flag (currently
+  // jpg-to-psd only; png-to-psd uses the dedicated ConverterWidgetV2).
+  enablePhotopea?: boolean;
+}
+const { toolHeading, input, output, related = [], enablePhotopea = false } = Astro.props;
+const showPhotopea = enablePhotopea && output === 'psd';
+// Bonus, cheap add-on (ТЗ 19.07): the psd->png read path already has the
+// flattened RGBA composite in memory before it's ever handed to
+// OffscreenCanvas, so a real alpha-channel scan costs one extra pass over
+// pixels already in hand -- not a second decode. Only meaningful for PNG
+// output; JPG has no alpha (see flattenOnWhite in readPsdComposite.ts).
+const showTransparencyPill = input === 'psd' && output === 'png';
+
+const acceptAttr = input === 'psd' ? '.psd' : input === 'webp' ? 'image/webp' : 'image/png,image/jpeg';
+const dropTitle = input === 'psd'
+  ? 'Drop a PSD file — or click to choose one'
+  : input === 'webp'
+    ? 'Drop a WebP image — or click to choose one'
+    : 'Drop a PNG or JPG — or click to choose a file';
+const ariaLabel = `${input === 'psd' ? 'PSD file' : input === 'webp' ? 'WebP file' : 'PNG or JPG file'} to ${output.toUpperCase()} converter`;
+const processingTitle = output === 'psd' ? 'Building your PSD…' : `Exporting your ${output.toUpperCase()}…`;
+const successTitle = `Your ${output.toUpperCase()} is ready`;
+const downloadLabel = `Download ${output.toUpperCase()} (no signup)`;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="converter-widget"
+    class="converter-widget"
+    data-state="empty"
+    data-input={input}
+    data-output={output}
+    role="group"
+    aria-label={ariaLabel}
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="folder" /></div>
+      <p class="dz-title">{dropTitle}</p>
+      <p class="dz-sub">It never leaves this tab.</p>
+      <button type="button" class="btn" id="choose-file-btn">Choose file — it's free</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden>
+      <p class="dz-title">Drop to convert</p>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">{processingTitle}</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title">{successTitle}</p>
+      <ul class="layer-preview" id="layer-preview-list"></ul>
+      {showTransparencyPill && (
+        <p class="file-card-pills"><span class="pill" id="transparency-pill" hidden></span></p>
+      )}
+      <a class="btn" id="download-link" download>{downloadLabel}</a>
+      <div>
+        {showPhotopea && <button type="button" class="btn secondary" id="photopea-btn" hidden>Open in Photopea</button>}
+        <button type="button" class="btn secondary" id="convert-another-btn">Convert another</button>
+      </div>
+      {related.length > 0 && (
+        <div class="cross-sell" id="cross-sell">
+          <p class="cross-sell-label">Related converters</p>
+          <div class="cross-sell-cards">
+            {related.map((r) => (
+              <a class="cross-sell-card" href={r.href} data-target={r.target}>{r.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">That file didn't make it. Try again?</p>
+      <button type="button" class="btn" id="retry-btn">Retry</button>
+    </div>
+
+    <input type="file" id="file-input" accept={acceptAttr} hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% client-side — nothing leaves your device</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { looksLikeWebpBytes } from '../lib/converter/webpSignature';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+  import { PHOTOPEA_MAX_PSD_BYTES, openInPhotopea } from '../lib/photopea';
+
+  const MAX_RASTER_BYTES = 30 * 1024 * 1024; // 30 MB guardrail (PNG/JPG input)
+  const MAX_PSD_BYTES = 60 * 1024 * 1024; // 60 MB guardrail (PSD input — read path is heavier)
+  const MAX_WEBP_BYTES = 30 * 1024 * 1024; // 30 MB guardrail (WebP input), same budget as raster
+  const MAX_DIMENSION = 6000; // 6000x6000 px guardrail (raster decode)
+
+  const widget = document.getElementById('converter-widget')!;
+  const input = widget.dataset.input as 'raster' | 'psd' | 'webp';
+  const output = widget.dataset.output as 'psd' | 'png' | 'jpg';
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const downloadLink = document.getElementById('download-link') as HTMLAnchorElement;
+  const errorMessage = document.getElementById('error-message')!;
+  const layerList = document.getElementById('layer-preview-list')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const crossSellLinks = document.querySelectorAll<HTMLAnchorElement>('#cross-sell .cross-sell-card');
+  const photopeaBtn = document.getElementById('photopea-btn') as HTMLButtonElement | null;
+  const transparencyPill = document.getElementById('transparency-pill') as HTMLElement | null;
+
+  let currentObjectUrl: string | null = null;
+  let currentPsdBuffer: ArrayBuffer | null = null;
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  function announce(state: string) {
+    if (state === 'processing') statusEl.textContent = 'Converting…';
+    else if (state === 'success') statusEl.textContent = 'Done. Your file is ready to download.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: 'empty' | 'drag-over' | 'processing' | 'success' | 'error') {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function outExtension(): string {
+    return output === 'psd' ? '.psd' : output === 'jpg' ? '.jpg' : '.png';
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function layerBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 5) return '2-5';
+    if (n <= 20) return '6-20';
+    return '>20';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeCurrentUrl() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+    currentPsdBuffer = null;
+  }
+
+  function resetToEmpty() {
+    revokeCurrentUrl();
+    fileInput.value = '';
+    if (photopeaBtn) photopeaBtn.hidden = true;
+    if (transparencyPill) transparencyPill.hidden = true;
+    setState('empty');
+  }
+
+  function guessFileType(file: File): string {
+    if (input === 'psd') return 'psd';
+    if (file.type === 'image/jpeg') return 'jpg';
+    if (file.type === 'image/png') return 'png';
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+    if (ext === 'png') return 'png';
+    return 'unknown';
+  }
+
+  // file.type can be empty on Windows even for a valid PNG/JPG — fall back
+  // to magic bytes (89 50 4E 47 for PNG, FF D8 FF for JPEG).
+  async function resolveMimeType(file: File): Promise<string> {
+    if (file.type) return file.type;
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+        return 'image/png';
+      }
+      if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+        return 'image/jpeg';
+      }
+    } catch {
+      /* fall through */
+    }
+    return '';
+  }
+
+  // PSD magic bytes: 38 42 50 53 = "8BPS". file.type is unreliable for .psd
+  // across browsers/OSes, so this is the only format check for the read path.
+  async function looksLikePsd(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      return bytes[0] === 0x38 && bytes[1] === 0x42 && bytes[2] === 0x50 && bytes[3] === 0x53;
+    } catch {
+      return false;
+    }
+  }
+
+  // file.type can be empty/wrong for WebP on some OS+browser combos, same
+  // reasoning as PSD above — sniff the magic bytes instead. The byte check
+  // itself lives in webpSignature.ts (shared with the node smoke gate).
+  async function looksLikeWebp(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+      return looksLikeWebpBytes(bytes);
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleWebpToJpg(file: File) {
+    track('upload_start', { file_type: 'webp', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikeWebp(file))) {
+      showError('unsupported_format', 'This file does not look like a WebP image. Drop a .webp file.');
+      return;
+    }
+
+    if (file.size > MAX_WEBP_BYTES) {
+      showError('too_large', 'This file is larger than 30 MB. Try a smaller image.');
+      return;
+    }
+
+    setState('processing');
+
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      showError('corrupt', 'This file could not be read. It may be corrupted or in an unsupported format.');
+      return;
+    }
+
+    if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+      bitmap.close();
+      showError('too_large_dimensions', `This image is larger than ${MAX_DIMENSION}×${MAX_DIMENSION}px. Try a smaller image.`);
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/converter/webpToJpg.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        const blob = new Blob([msg.buffer], { type: 'image/jpeg' });
+        revokeCurrentUrl();
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        downloadLink.download = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+
+        layerList.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = `\u{1F5BC}️ ${file.name.replace(/\.[^.]+$/, '')}.jpg (${msg.width}×${msg.height})`;
+        layerList.appendChild(li);
+
+        setState('success');
+        track('convert_success', {
+          duration_bucket: durationBucket(msg.durationMs),
+          layer_bucket: '1',
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', msg.message || 'Conversion failed. Please try again.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'Conversion failed unexpectedly. Please try again.');
+      worker.terminate();
+    };
+
+    worker.postMessage({ type: 'convert', bitmap }, [bitmap]);
+  }
+
+  async function handlePsdToImage(file: File) {
+    track('upload_start', { file_type: 'psd', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikePsd(file))) {
+      showError('unsupported_format', 'This file does not look like a PSD. Drop a .psd file.');
+      return;
+    }
+
+    if (file.size > MAX_PSD_BYTES) {
+      showError('too_large', 'This PSD is larger than 60 MB. Try a smaller file.');
+      return;
+    }
+
+    setState('processing');
+
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch {
+      showError('corrupt', 'This file could not be read.');
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/converter/psdToImage.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        const blob = new Blob([msg.buffer], { type: msg.mime });
+        revokeCurrentUrl();
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        downloadLink.download = file.name.replace(/\.[^.]+$/, '') + outExtension();
+
+        layerList.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = `\u{1F5BC}️ ${file.name.replace(/\.[^.]+$/, '')}${outExtension()} (${msg.width}×${msg.height})`;
+        layerList.appendChild(li);
+
+        if (transparencyPill && typeof msg.hasAlpha === 'boolean') {
+          transparencyPill.hidden = false;
+          transparencyPill.textContent = msg.hasAlpha ? 'Transparency preserved' : 'Opaque image';
+          transparencyPill.classList.toggle('pill-trust', msg.hasAlpha);
+        }
+
+        setState('success');
+        track('convert_success', {
+          duration_bucket: durationBucket(msg.durationMs),
+          layer_bucket: layerBucket(msg.layerCount),
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', msg.message || 'Conversion failed. Please try again.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'Conversion failed unexpectedly. Please try again.');
+      worker.terminate();
+    };
+
+    worker.postMessage({ type: 'convert', buffer, output, fileName: file.name }, [buffer]);
+  }
+
+  async function handleRasterToPsd(file: File) {
+    const mimeType = await resolveMimeType(file);
+    if (!['image/png', 'image/jpeg'].includes(mimeType)) {
+      showError('unsupported_format', 'This file type is not supported. Drop a PNG or JPG image.');
+      return;
+    }
+
+    if (file.size > MAX_RASTER_BYTES) {
+      showError('too_large', 'This file is larger than 30 MB. Try a smaller image.');
+      return;
+    }
+
+    setState('processing');
+
+    // Decode. Dimension guardrail runs IMMEDIATELY after createImageBitmap —
+    // before any canvas/drawImage/getImageData copies — so an oversized image
+    // is rejected before the heavy allocations, not after.
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      showError('corrupt', 'This file could not be read. It may be corrupted or in an unsupported format.');
+      return;
+    }
+
+    if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+      bitmap.close();
+      showError('too_large_dimensions', `This image is larger than ${MAX_DIMENSION}×${MAX_DIMENSION}px. Try a smaller image.`);
+      return;
+    }
+
+    let decoded: { width: number; height: number; data: Uint8ClampedArray };
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('canvas 2d context unavailable');
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      decoded = { width: imageData.width, height: imageData.height, data: imageData.data };
+    } catch {
+      bitmap.close();
+      showError('corrupt', 'This file could not be read. It may be corrupted or in an unsupported format.');
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/converter/pngToPsd.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        const blob = new Blob([msg.buffer], { type: 'image/vnd.adobe.photoshop' });
+        // Repeat conversion over a previous success: release the old URL first.
+        revokeCurrentUrl();
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        downloadLink.download = file.name.replace(/\.[^.]+$/, '') + outExtension();
+
+        layerList.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = `\u{1F5BC}️ ${file.name.replace(/\.[^.]+$/, '')} (${decoded.width}×${decoded.height})`;
+        layerList.appendChild(li);
+
+        if (photopeaBtn && output === 'psd') {
+          currentPsdBuffer = msg.buffer;
+          photopeaBtn.hidden = msg.buffer.byteLength > PHOTOPEA_MAX_PSD_BYTES;
+        }
+
+        setState('success');
+        track('convert_success', {
+          duration_bucket: durationBucket(msg.durationMs),
+          layer_bucket: layerBucket(msg.layerCount),
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', 'Conversion failed. Please try again.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'Conversion failed unexpectedly. Please try again.');
+      worker.terminate();
+    };
+
+    worker.postMessage(
+      { type: 'convert', width: decoded.width, height: decoded.height, data: decoded.data, fileName: file.name },
+      [decoded.data.buffer],
+    );
+  }
+
+  async function handleFile(file: File) {
+    // Busy-guard: ignore a second drop while a conversion is running.
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+
+    if (input === 'psd') {
+      // Funnel integrity: upload_start fires for EVERY attempt, before any
+      // guardrail — otherwise rejections produce convert_error with no matching
+      // upload_start and the funnel math breaks. handlePsdToImage fires it itself.
+      await handlePsdToImage(file);
+      return;
+    }
+
+    if (input === 'webp') {
+      await handleWebpToJpg(file);
+      return;
+    }
+
+    track('upload_start', { file_type: guessFileType(file), size_bucket: sizeBucket(file.size) });
+    await handleRasterToPsd(file);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    // Clear immediately so picking the same file again re-fires `change`.
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+
+  widget.addEventListener('click', (e) => {
+    // Whole dropzone is clickable in the empty state, except the explicit
+    // button/link controls (which have their own handlers).
+    if (widget.dataset.state === 'empty' && !(e.target as HTMLElement).closest('button, a')) {
+      fileInput.click();
+    }
+  });
+
+  widget.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (e) => e.preventDefault());
+  widget.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    fileInput.value = '';
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToEmpty();
+  });
+  convertAnotherBtn.addEventListener('click', () => resetToEmpty());
+  downloadLink.addEventListener('click', () => track('download_click'));
+  photopeaBtn?.addEventListener('click', () => {
+    track('photopea_open_clicked', { surface: 'widget' });
+    if (currentPsdBuffer) openInPhotopea(currentPsdBuffer);
+  });
+  crossSellLinks.forEach((link) => {
+    link.addEventListener('click', () => track('cross_sell_click', { target: link.dataset.target ?? '' }));
+  });
+
+  // Home-dropzone handoff: if the universal dropzone stored a fresh file of
+  // a format this widget accepts, run it through the normal handleFile path
+  // (all guardrails apply). Anything else is silently discarded by takeHandoff.
+  const handoffAccept = input === 'psd' ? ['psd'] : input === 'webp' ? ['webp'] : ['png', 'jpg'];
+  takeHandoff(handoffAccept).then((file) => {
+    if (file) handleFile(file);
+  });
+</script>

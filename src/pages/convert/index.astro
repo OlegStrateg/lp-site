@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+// Same order the homepage's tool grid uses, so a visitor bouncing between
+// "/" and "/convert/" sees a consistent list rather than a re-shuffled one.
+// canva-to-google-slides is split into its own "Checkers" group below — it's
+// a compatibility checker (report, no download), not a file converter.
+// Порядок = спрос (Semrush) + полезность: сначала частотные (jpg-to-pdf 246K,
+// pdf-to-jpg 201K, favicon 12.1K, webp 5.4K), затем PSD-семейство —
+// дифференциатор слоёв. Синхронизирован с «Popular tools» главной.
+const ORDER = [
+  'jpg-to-pdf',
+  'pdf-to-jpg',
+  'favicon-generator',
+  'webp-to-jpg',
+  'psd-to-png',
+  'psd-to-jpg',
+  'png-to-psd',
+  'jpg-to-psd',
+];
+const CHECKER_ORDER = ['canva-to-google-slides'];
+// Card label override: the page's own H1 (used for URL/SEO) stays untouched,
+// but the /convert/ hub card for the checker reads as a checker, not a converter.
+const CARD_LABEL_OVERRIDE: Record<string, string> = {
+  'canva-to-google-slides': 'Canva → Slides Import Checker',
+};
+const all = await getCollection('converters');
+const converters = ORDER.map((key) => all.find((c) => c.data.key === key)).filter(
+  (c): c is NonNullable<typeof c> => Boolean(c),
+);
+const checkers = CHECKER_ORDER.map((key) => all.find((c) => c.data.key === key)).filter(
+  (c): c is NonNullable<typeof c> => Boolean(c),
+);
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+---
+
+<BaseLayout
+  title="Free File Converters — LayerPorter"
+  description="Browse LayerPorter's free, in-browser file converters. No uploads, no accounts."
+  canonicalPath="/convert/"
+  ogImage={`${site}/og/home.png`}
+>
+  <section class="hero">
+    <h1>File converters</h1>
+    <p class="answer-first">Every converter here runs on your device. No files are uploaded to a server.</p>
+  </section>
+
+  <section aria-labelledby="converters-heading">
+    <h2 id="converters-heading">Available converters</h2>
+    <div class="tool-cards">
+      {converters.map((c) => (
+        <a class="tool-card" href={`/convert/${c.data.key}/`}>
+          <h3>{c.data.h1.split('—')[0].trim()}</h3>
+          <p>{c.data.cardBlurb}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section aria-labelledby="checkers-heading">
+    <h2 id="checkers-heading">Checkers</h2>
+    <div class="tool-cards">
+      {checkers.map((c) => (
+        <a class="tool-card" href={`/convert/${c.data.key}/`}>
+          <h3>{CARD_LABEL_OVERRIDE[c.data.key] ?? c.data.h1.split('—')[0].trim()}</h3>
+          <p>{c.data.cardBlurb}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

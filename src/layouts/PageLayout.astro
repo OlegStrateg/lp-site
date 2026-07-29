@@ -1,0 +1,21 @@
+---
+// Simple typographic layout for static pages (/about/, /privacy/, /terms/) —
+// no tools, just prose rendered with the site's base styles.
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  robots?: string;
+  ogImage?: string;
+}
+
+const { title, description, canonicalPath, robots, ogImage } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} canonicalPath={canonicalPath} robots={robots} ogImage={ogImage}>
+  <article class="page-prose">
+    <slot />
+  </article>
+</BaseLayout>

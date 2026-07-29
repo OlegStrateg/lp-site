@@ -1,0 +1,425 @@
+---
+// PDF -> JPG(s) island. Deliberately NOT routed through our own dedicated
+// Worker, unlike every other engine on this site — pdf.js's own worker-spawn
+// code (PDFWorker#initialize) reads `window.location` directly, which does
+// not exist inside a plain Web Worker (only `self` does), so nesting it
+// inside our own worker throws. Running it from this component's own
+// main-thread module script lets pdf.js manage its OWN worker for parsing
+// (set via GlobalWorkerOptions.workerSrc, a separate lazy-loaded chunk — see
+// report for gzip numbers); only the render-to-canvas step per page runs on
+// this thread, same tradeoff every pdf.js integration makes.
+//
+// Isolation still holds: pdf.js is imported ONLY by this component, so no
+// other page's bundle pays for it (verified in the build's chunk graph).
+import Icon from './Icon.astro';
+
+interface Props {
+  toolHeading: string;
+  related?: { href: string; label: string; target: string }[];
+}
+const { toolHeading, related = [] } = Astro.props;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="pdf-jpg-widget"
+    class="converter-widget"
+    data-state="empty"
+    role="group"
+    aria-label="PDF file to JPG converter"
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="file" /></div>
+      <p class="dz-title">Drop a PDF — or click to choose one</p>
+      <p class="dz-sub">It never leaves this tab.</p>
+      <button type="button" class="btn" id="choose-file-btn">Choose file — it's free</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden>
+      <p class="dz-title">Drop to convert</p>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p class="dz-title" id="processing-title">Rendering your pages&hellip;</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title" id="success-title">Your JPG is ready</p>
+      <div id="download-area"></div>
+      <div>
+        <button type="button" class="btn secondary" id="convert-another-btn">Convert another</button>
+      </div>
+      {related.length > 0 && (
+        <div class="cross-sell" id="cross-sell">
+          <p class="cross-sell-label">Related converters</p>
+          <div class="cross-sell-cards">
+            {related.map((r) => (
+              <a class="cross-sell-card" href={r.href} data-target={r.target}>{r.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">That file didn't make it. Try again?</p>
+      <button type="button" class="btn" id="retry-btn">Retry</button>
+    </div>
+
+    <input type="file" id="file-input" accept=".pdf,application/pdf" hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% client-side — nothing leaves your device</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  // pdf.js is ~127 KB gzip on its own (plus its own ~468 KB gzip worker
+  // script, fetched lazily by pdf.js itself only once getDocument() runs) —
+  // dynamic import defers ALL of that until the user actually drops a PDF,
+  // instead of paying for it just to paint the empty dropzone. Cached after
+  // the first load so re-converting on the same page doesn't re-fetch it.
+  let pdfjsLibPromise: ReturnType<typeof loadPdfjs> | null = null;
+  async function loadPdfjs() {
+    const [pdfjsLib, { default: pdfWorkerSrc }] = await Promise.all([
+      import('pdfjs-dist'),
+      import('pdfjs-dist/build/pdf.worker.mjs?url'),
+    ]);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+    return pdfjsLib;
+  }
+
+  const MAX_BYTES = 50 * 1024 * 1024; // 50 MB guardrail
+  const MAX_PAGES = 100; // guardrail
+  const RENDER_SCALE = 2; // 2x pixel scale per the engine plan
+  const JPG_QUALITY = 0.92;
+  const ZIP_THRESHOLD = 3; // > this many pages -> ZIP; else individual links
+
+  const widget = document.getElementById('pdf-jpg-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const errorMessage = document.getElementById('error-message')!;
+  const processingTitle = document.getElementById('processing-title')!;
+  const successTitle = document.getElementById('success-title')!;
+  const downloadArea = document.getElementById('download-area')!;
+  const progressTrack = document.getElementById('progress-track')!;
+  const progressFill = document.getElementById('progress-fill')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const crossSellLinks = document.querySelectorAll<HTMLAnchorElement>('#cross-sell .cross-sell-card');
+
+  const objectUrls: string[] = [];
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  type State = 'empty' | 'drag-over' | 'processing' | 'success' | 'error';
+
+  function announce(state: State) {
+    if (state === 'processing') statusEl.textContent = 'Converting…';
+    else if (state === 'success') statusEl.textContent = 'Done. Your file is ready to download.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  // Real per-page progress: pdf.js renders one page at a time, so the
+  // fraction done is known — swap the indeterminate slide for an actual
+  // width instead of guessing, same numeric source as processingTitle's text.
+  function setPageProgress(current: number, total: number) {
+    const pct = Math.round((current / total) * 100);
+    progressFill.dataset.determinate = 'true';
+    progressFill.style.setProperty('--progress', `${pct}%`);
+    progressTrack.setAttribute('aria-valuenow', String(pct));
+  }
+
+  function resetProgress() {
+    progressFill.dataset.determinate = 'false';
+    progressFill.style.removeProperty('--progress');
+    progressTrack.setAttribute('aria-valuenow', '0');
+  }
+
+  function setState(state: State) {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function pageBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 5) return '2-5';
+    if (n <= 20) return '6-20';
+    return '>20';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeAllUrls() {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
+    objectUrls.length = 0;
+  }
+
+  function resetToEmpty() {
+    revokeAllUrls();
+    fileInput.value = '';
+    resetProgress();
+    setState('empty');
+  }
+
+  // PDF magic bytes: "%PDF" (25 50 44 46).
+  async function looksLikePdf(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+    } catch {
+      return false;
+    }
+  }
+
+  function baseName(file: File): string {
+    return file.name.replace(/\.[^.]+$/, '') || 'converted';
+  }
+
+  async function renderPageToJpeg(page: import('pdfjs-dist').PDFPageProxy): Promise<Uint8Array> {
+    const viewport = page.getViewport({ scale: RENDER_SCALE });
+    const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('2d context unavailable in OffscreenCanvas');
+    // @ts-expect-error - pdf.js's RenderParameters types a Canvas2D context, OffscreenCanvas's is compatible at runtime
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: JPG_QUALITY });
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  async function handleFile(file: File) {
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+    track('upload_start', { file_type: 'pdf', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikePdf(file))) {
+      showError('unsupported_format', 'This does not look like a PDF file.');
+      return;
+    }
+
+    if (file.size > MAX_BYTES) {
+      showError('too_large', `This PDF is larger than ${MAX_BYTES / (1024 * 1024)} MB. Try a smaller file.`);
+      return;
+    }
+
+    if (typeof OffscreenCanvas === 'undefined') {
+      showError(
+        'unsupported_browser',
+        'This browser cannot render PDF pages in the background. Please use a current version of Chrome, Edge, Firefox, or Safari.',
+      );
+      return;
+    }
+
+    resetProgress();
+    setState('processing');
+    const started = performance.now();
+
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch {
+      showError('corrupt', 'This file could not be read.');
+      return;
+    }
+
+    if (!pdfjsLibPromise) pdfjsLibPromise = loadPdfjs();
+    const pdfjsLib = await pdfjsLibPromise;
+
+    let doc;
+    try {
+      doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+    } catch {
+      showError('corrupt', 'This PDF could not be opened. It may be corrupted or password-protected.');
+      return;
+    }
+
+    if (doc.numPages > MAX_PAGES) {
+      showError('too_many_pages', `This PDF has more than ${MAX_PAGES} pages. Try a shorter document.`);
+      return;
+    }
+
+    const jpegPages: Uint8Array[] = [];
+    try {
+      for (let i = 1; i <= doc.numPages; i++) {
+        processingTitle.textContent = `Rendering page ${i} of ${doc.numPages}…`;
+        setPageProgress(i - 1, doc.numPages);
+        const page = await doc.getPage(i);
+        jpegPages.push(await renderPageToJpeg(page));
+        setPageProgress(i, doc.numPages);
+      }
+    } catch (err) {
+      showError('unknown', err instanceof Error ? err.message : 'Rendering failed. Please try again.');
+      return;
+    }
+
+    const name = baseName(file);
+    downloadArea.innerHTML = '';
+    revokeAllUrls();
+
+    // Thumbnail preview grid — shown for every page, regardless of how the
+    // download control below is shaped (single link / per-page list / ZIP).
+    // Reuses the same per-page object URLs the single/list branches download
+    // from, so a 1-3 page PDF doesn't pay for the blob twice.
+    const pageUrls = jpegPages.map((bytes) => {
+      // Cast: lib.dom's BlobPart wants Uint8Array<ArrayBuffer> specifically;
+      // renderPageToJpeg's return type is the broader Uint8Array<ArrayBufferLike>.
+      // Same pre-existing TS-lib strictness this codebase already has in
+      // buildPsd.ts/readPsdComposite.ts — harmless at runtime either way.
+      const url = URL.createObjectURL(new Blob([bytes as unknown as BlobPart], { type: 'image/jpeg' }));
+      objectUrls.push(url);
+      return url;
+    });
+    const previewGrid = document.createElement('ul');
+    previewGrid.className = 'favicon-preview';
+    pageUrls.forEach((url, i) => {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Page ${i + 1} preview`;
+      img.width = 96;
+      img.height = 96;
+      const label = document.createElement('span');
+      label.textContent = `Page ${i + 1}`;
+      li.appendChild(img);
+      li.appendChild(label);
+      previewGrid.appendChild(li);
+    });
+    downloadArea.appendChild(previewGrid);
+
+    if (jpegPages.length === 1) {
+      successTitle.textContent = 'Your JPG is ready';
+      const a = document.createElement('a');
+      a.className = 'btn';
+      a.href = pageUrls[0];
+      a.download = `${name}.jpg`;
+      a.textContent = 'Download JPG (no signup)';
+      a.addEventListener('click', () => track('download_click'));
+      downloadArea.appendChild(a);
+    } else if (jpegPages.length <= ZIP_THRESHOLD) {
+      successTitle.textContent = `Your ${jpegPages.length} JPGs are ready`;
+      const list = document.createElement('ul');
+      list.className = 'staged-list';
+      pageUrls.forEach((url, i) => {
+        const li = document.createElement('li');
+        li.className = 'staged-item';
+        const a = document.createElement('a');
+        a.className = 'btn secondary';
+        a.href = url;
+        a.download = `${name}-page-${i + 1}.jpg`;
+        a.textContent = `Download page ${i + 1}`;
+        a.addEventListener('click', () => track('download_click'));
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      downloadArea.appendChild(list);
+    } else {
+      successTitle.textContent = `Your ${jpegPages.length} JPGs are ready (as a ZIP)`;
+      const { zipSync } = await import('fflate');
+      const zipInput: Record<string, Uint8Array> = {};
+      jpegPages.forEach((bytes, i) => {
+        zipInput[`${name}-page-${i + 1}.jpg`] = bytes;
+      });
+      const zipBytes = zipSync(zipInput, { level: 6 });
+      const url = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+      objectUrls.push(url);
+      const a = document.createElement('a');
+      a.className = 'btn';
+      a.href = url;
+      a.download = `${name}.zip`;
+      a.textContent = `Download ZIP (${jpegPages.length} pages)`;
+      a.addEventListener('click', () => track('download_click'));
+      downloadArea.appendChild(a);
+    }
+
+    setState('success');
+    track('convert_success', {
+      duration_bucket: durationBucket(performance.now() - started),
+      page_bucket: pageBucket(jpegPages.length),
+    });
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+
+  widget.addEventListener('click', (e) => {
+    if (widget.dataset.state === 'empty' && !(e.target as HTMLElement).closest('button, a')) {
+      fileInput.click();
+    }
+  });
+
+  widget.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (e) => e.preventDefault());
+  widget.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToEmpty();
+  });
+  convertAnotherBtn.addEventListener('click', () => resetToEmpty());
+  crossSellLinks.forEach((link) => {
+    link.addEventListener('click', () => track('cross_sell_click', { target: link.dataset.target ?? '' }));
+  });
+
+  // Home-dropzone handoff: run the stored PDF through the normal handleFile
+  // path (magic bytes / size / page guardrails all apply).
+  takeHandoff(['pdf']).then((file) => {
+    if (file) handleFile(file);
+  });
+</script>

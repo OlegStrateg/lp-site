@@ -1,0 +1,16 @@
+---
+import { getCollection } from 'astro:content';
+import ConverterLayout from '../../layouts/ConverterLayout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('converters');
+  return entries.map((entry) => ({
+    params: { slug: entry.data.key },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+---
+
+<ConverterLayout entry={entry} />

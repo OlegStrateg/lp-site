@@ -1,0 +1,51 @@
+---
+// Quiet, single-line cross-sell for pages the extension does NOT upgrade
+// (the file converters). Deliberately not the ExtensionCTA block — this is
+// one small text line, not a pitch. It points at the one page that DOES
+// carry the real CTA (/guides/export-from-ai-builders/) rather than
+// linking straight to a store listing, so the actual sell only ever
+// happens on a page that's genuinely relevant.
+//
+// SLEEPS until at least one extension in src/data/extensions.ts has a real
+// storeUrl — renders nothing while every storeUrl is null.
+//
+// Mount only from ConverterLayout.astro's EXTENSION_FOOTER_CONVERTERS
+// allow-list (currently png-to-psd, jpg-to-psd, psd-to-png, psd-to-jpg).
+// Do NOT mount on favicon-generator, webp-to-jpg, jpg-to-pdf, or
+// pdf-to-jpg — those jobs have nothing to do with capturing a live page,
+// so even this quiet line would be off-topic there.
+import { anyExtensionLive } from '../data/extensions';
+
+interface Props {
+  surface: string; // page/location id, forwarded on extension_cta_click
+}
+const { surface } = Astro.props;
+---
+
+{anyExtensionLive && (
+  <p class="extension-footer-line">
+    Work with live websites, not just files?
+    {' '}
+    <a
+      class="extension-footer-link"
+      href="/guides/export-from-ai-builders/"
+      data-surface={surface}
+      data-ext-id="footer-line"
+    >
+      See our browser extensions →
+    </a>
+  </p>
+)}
+
+<script>
+  import { track } from '../lib/analytics';
+
+  document.querySelectorAll<HTMLAnchorElement>('.extension-footer-link').forEach((link) => {
+    link.addEventListener('click', () => {
+      track('extension_cta_click', {
+        surface: link.dataset.surface ?? '',
+        ext_id: link.dataset.extId ?? '',
+      });
+    });
+  });
+</script>

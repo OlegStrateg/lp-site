@@ -1,0 +1,3801 @@
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f6f7f9;
+  --color-text: #14171f;
+  --color-text-muted: #565d6d;
+  --color-border: #e2e5eb;
+  --color-primary: #2f5df5;
+  --color-primary-hover: #2748c4;
+  --color-success: #1a7f4e;
+  --color-success-bg: #ecf8f1;
+  --color-error: #b3261e;
+  --color-error-bg: #fbeceb;
+  /* Privacy/local-processing accent — separate from --color-success (which
+     marks a completed conversion). --color-trust adapts per theme; the
+     -on-dark variant is fixed (never overridden) for surfaces that stay
+     dark in both themes, like the privacy terminal panel. */
+  --color-trust: #0f7a55;
+  --color-trust-on-dark: #4edea3;
+  --radius: 10px;
+  /* Широкий контейнер по запросу владельца (18.07): 880px выглядел «колонкой»
+     на больших мониторах. Текстовые блоки ограничиваются отдельно (ch-лимиты),
+     виджеты конвертеров — своим max-width ниже. */
+  --max-width: 1152px;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  /* Mockup-v2 atmosphere: soft radial glows over the theme background.
+     color-mix keeps them subtle in BOTH themes (they read as tinted light,
+     not banners). Falls back to plain --color-bg where color-mix is
+     unsupported via the duplicate declaration below. */
+  background: var(--color-bg);
+  background:
+    radial-gradient(circle at 78% 6%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 26%),
+    radial-gradient(circle at 12% 26%, color-mix(in srgb, #7657ff 6%, transparent), transparent 22%),
+    var(--color-bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film-grain noise (mockup v2): inline SVG turbulence, no image request.
+   Fixed overlay behind all content (negative z-index paints above the
+   root-propagated background but under everything else). CSP: img-src
+   allows data: URIs. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E");
+}
+
+a {
+  color: var(--color-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.wrap {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-2);
+}
+
+/* Sticky, backdrop-blurred header (home-v2 visual language, site-wide).
+   Solid --color-bg fallback first for browsers without color-mix/blur. */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-1) 0;
+  background: var(--color-bg);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .site-header {
+    background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+}
+
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) 0;
+  margin-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+  line-height: 1.15;
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.answer-first {
+  font-size: 1.05rem;
+  color: var(--color-text);
+  max-width: 62ch;
+}
+
+.privacy-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.privacy-line::before {
+  content: "";
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6.5 11V8a5.5 5.5 0 0 1 11 0v3 M5.5 11h13v9a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-9Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6.5 11V8a5.5 5.5 0 0 1 11 0v3 M5.5 11h13v9a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-9Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.hero {
+  padding-top: var(--space-2);
+}
+
+/* Tool widget */
+.tool-heading {
+  margin-top: var(--space-4);
+}
+
+.converter-widget {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-subtle);
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  /* На широком контейнере дропзона не должна растягиваться в «плиту» */
+  max-width: 920px;
+}
+
+.converter-widget[data-state="drag-over"] {
+  border-color: var(--color-primary);
+  background: #eef2ff;
+}
+
+.converter-widget[data-state="error"] {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.converter-widget[data-state="success"] {
+  border-style: solid;
+  border-color: var(--color-trust);
+  background: var(--color-success-bg);
+}
+
+.dz-empty-icon {
+  display: flex;
+  justify-content: center;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.dz-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+
+.dz-sub {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 var(--space-2);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* Кнопка-заглушка «coming soon» у неопубликованных расширений:
+   выглядит как настоящая, но выключена до появления storeUrl. */
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  background: var(--color-border, #cbd2dc);
+  color: var(--color-text-muted, #5b6472);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.btn:disabled:hover,
+.btn[aria-disabled='true']:hover {
+  background: var(--color-border, #cbd2dc);
+  transform: none;
+}
+.extension-install-btn {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  max-width: 320px;
+  margin: 0 auto var(--space-2);
+}
+
+.progress-fill {
+  height: 100%;
+  width: 40%;
+  background: var(--color-primary);
+  animation: indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+/* Real per-page progress (pdf-to-jpg): a numeric width set inline overrides
+   the indeterminate slide via this attribute, and drops the animation. */
+.progress-fill[data-determinate="true"] {
+  animation: none;
+  width: var(--progress, 0%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill {
+    animation: none;
+  }
+}
+
+.layer-preview {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-2);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.layer-preview li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+}
+
+.error-message {
+  color: var(--color-error);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-2) 0;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+ol.how-it-works {
+  padding-left: 1.2rem;
+}
+
+ol.how-it-works li {
+  margin-bottom: var(--space-1);
+}
+
+.faq-item {
+  margin-bottom: var(--space-2);
+}
+
+.faq-item h3 {
+  font-size: 1.05rem;
+  margin: 0 0 0.35rem;
+}
+
+.faq-item p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.more-conversions {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.more-conversions li {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.next-step {
+  margin: var(--space-1) 0 0;
+  font-size: 0.9rem;
+}
+
+.next-step a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+/* Cross-sell cards on the success state (replaces a single grey link with
+   2-3 mini cards — visual weight close to Download, per the success-screen
+   audit) */
+.cross-sell {
+  margin: var(--space-3) 0 0;
+  text-align: left;
+}
+
+.cross-sell-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.cross-sell-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.6rem;
+}
+
+.cross-sell-card {
+  display: block;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  text-align: center;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.cross-sell-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .cross-sell-card {
+    background: var(--color-bg-subtle);
+  }
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-trust);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  margin-top: var(--space-1);
+  text-decoration: none;
+}
+
+/* Privacy terminal panel (see NetworkGuard.astro) — a dark, monospace log
+   panel shown under the tool widget. Stays dark in BOTH themes (it reads as
+   a terminal, not a themed card), so its colors are fixed locals rather
+   than the light/dark --color-* tokens. Fixed min-height so log lines
+   streaming in never shift layout (CLS=0). */
+.privacy-terminal {
+  --pt-bg: #0c0f10;
+  --pt-border: #262a2c;
+  --pt-text: #c7c6ca;
+  --pt-text-dim: #7c7a7b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: var(--pt-bg);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin: var(--space-1) 0 0;
+  min-height: 140px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  color: var(--pt-text);
+  text-align: left;
+}
+
+.privacy-terminal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-trust-on-dark);
+}
+
+.privacy-terminal-dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--color-trust-on-dark);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.privacy-terminal-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.privacy-terminal-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--pt-text);
+  min-height: 4.5em;
+  flex: 1 1 220px;
+}
+
+.privacy-terminal-log li {
+  overflow-wrap: anywhere;
+}
+
+.privacy-terminal-traffic {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.privacy-terminal-traffic-label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--pt-text-dim);
+}
+
+.privacy-terminal-traffic-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-trust-on-dark);
+  white-space: nowrap;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .privacy-terminal-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .privacy-terminal-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .privacy-terminal-traffic {
+    text-align: left;
+  }
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.site-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Header "Local engine" pill — every page. Green pill with a pulsing dot,
+   monospace uppercase (home-v2 visual language). Deliberately does NOT
+   claim "Connection: Active": there is no connection (CSP connect-src
+   'self'), and that's the honest selling point. */
+.local-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-trust) 35%, var(--color-bg));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-trust) 9%, var(--color-bg));
+  color: var(--color-trust);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.local-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-trust);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-trust) 14%, transparent);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .local-pill-dot {
+    animation: none;
+  }
+}
+
+/* Mockup pattern: header nav links yield to the pill on narrow screens —
+   every nav destination is also reachable from the home page content. */
+@media (max-width: 620px) {
+  .site-nav {
+    display: none;
+  }
+}
+
+.footer-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: var(--space-1);
+}
+
+.footer-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  color: var(--color-text-muted);
+}
+
+/* Checker report (canva-to-google-slides) */
+.check-report {
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  margin: 0 auto var(--space-2);
+  max-width: 560px;
+  font-size: 0.95rem;
+}
+
+.check-report p {
+  margin: 0 0 0.5rem;
+}
+
+.check-report p:last-child {
+  margin-bottom: 0;
+}
+
+.check-flag {
+  color: var(--color-error);
+}
+
+.check-ok {
+  color: var(--color-success);
+}
+
+/* Home tool cards */
+.tool-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-2);
+}
+
+.tool-card {
+  display: block;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-subtle);
+  padding: var(--space-2);
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.tool-card {
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.tool-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.tool-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--color-primary);
+}
+
+.tool-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.all-tools-link {
+  margin-top: var(--space-2);
+  font-size: 0.95rem;
+}
+
+/* Static prose pages (about / privacy / terms) */
+.page-prose {
+  max-width: 70ch;
+}
+
+.page-prose h1 {
+  margin-bottom: var(--space-2);
+}
+
+.page-prose h2 {
+  margin-top: var(--space-3);
+}
+
+/* Articles (/formats/, /guides/) */
+.breadcrumb {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+
+.breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.article-prose p {
+  max-width: 68ch;
+}
+
+.article-prose ol,
+.article-prose ul {
+  max-width: 68ch;
+}
+
+/* Article page grid (19.07 — owner flagged the dead right half): 70ch prose
+   plus a sticky rail of the tools the article is about. Collapses to one
+   column with the rail below the article on narrow screens. */
+.article-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: start;
+}
+
+.article-rail {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: var(--space-3);
+}
+
+.rail-card {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-subtle);
+}
+
+.rail-head {
+  margin: 0 0 4px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.rail-sub {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.rail-tool {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  margin-top: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.rail-tool:hover {
+  transform: translateX(3px);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+}
+
+.rail-ext .text-link {
+  font-size: 0.88rem;
+}
+
+@media (max-width: 900px) {
+  .article-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .article-rail {
+    position: static;
+    max-width: 480px;
+  }
+}
+
+/* Multi-file staging list (jpg-to-pdf) and per-page download list (pdf-to-jpg) */
+.staged-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.staged-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+}
+
+.staged-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staged-controls {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.staged-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-subtle);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.staged-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.staged-remove {
+  color: var(--color-error);
+}
+
+.staged-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Favicon size preview grid */
+.favicon-preview {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.favicon-preview li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.favicon-preview img {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.favicon-tags {
+  margin: var(--space-2) auto;
+  max-width: 480px;
+}
+
+.favicon-tags-code {
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  font-size: 0.8rem;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0 0 var(--space-1);
+}
+
+/* Extension CTA (sleeps until src/data/extensions.ts has a real storeUrl —
+   see the components in src/components/Extension*.astro, SiteVsExtension*) */
+.extension-cta {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-subtle);
+  padding: var(--space-3);
+}
+
+.extension-cta-lead {
+  max-width: 62ch;
+}
+
+.extension-cta-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.extension-cta-item {
+  max-width: 320px;
+}
+
+.extension-cta-blurb {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.extension-footer-line {
+  margin-top: var(--space-3);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.extension-footer-link {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.site-vs-extension th[scope="row"] {
+  text-transform: none;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: normal;
+}
+
+.site-vs-extension-note {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* /extensions/ showcase page (see src/pages/extensions.astro) — pre-launch
+   cards for the two extensions in src/data/extensions.ts, both storeUrl:
+   null today. Reuses .trust-badge for the status pill. */
+.extension-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.extension-show-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  background: var(--color-bg-subtle);
+}
+
+.extension-show-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: var(--space-1);
+}
+
+.extension-show-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.extension-status-badge {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  margin-top: 0;
+}
+
+.extension-show-bullets {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.extension-show-bullets li {
+  padding-left: 1.3em;
+  position: relative;
+}
+
+.extension-show-bullets li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--color-trust);
+  font-weight: 700;
+}
+
+.extension-show-bridge {
+  margin: var(--space-2) 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.extension-why-not-yet {
+  margin-top: var(--space-3);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  max-width: 62ch;
+}
+
+@media (max-width: 480px) {
+  .converter-widget {
+    padding: var(--space-3) var(--space-1);
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #14171f;
+    --color-bg-subtle: #1c2029;
+    --color-text: #eef0f4;
+    --color-text-muted: #9aa1b2;
+    --color-border: #2c3140;
+    --color-error-bg: #3a1f1f;
+    /* Success-state widget surface: was a light pastel green (#ecf8f1)
+       fixed for both themes — unreadable/washed-out on a dark page. Same
+       dark-surface treatment as --color-error-bg above. */
+    --color-success-bg: #16301f;
+    /* #2f5df5 is under 4.5:1 against this dark background; lightened for
+       WCAG AA body-text contrast (link/button text, focus ring). */
+    --color-primary: #5b82ff;
+    /* #0f7a55 is under 4.5:1 against this dark background; swap to the
+       -on-dark variant (10.5:1 here) for AA body-text contrast. */
+    --color-trust: #4edea3;
+  }
+}
+
+/* ============================================================
+   HOME V2 вЂ” owner mockup visual language (hero grid + universal
+   dropzone + tools grid + metrics band + dark extensions band +
+   learn grid). All colors go through the theme tokens so light
+   AND dark stay readable; surfaces that are dark by design (the
+   status terminal, extensions band, featured article) use fixed
+   locals like .privacy-terminal does.
+   ============================================================ */
+
+.hero2 {
+  padding: clamp(2rem, 5vw, 4rem) 0 1.5rem;
+}
+
+.hero2-grid {
+  display: grid;
+  /* Mockup-v3 (21.07): copy column widened from 0.9fr so the bigger title
+     still holds "Move digital work." on one line at desktop widths. */
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: center;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 1.1rem;
+  color: var(--color-trust);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-trust);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-trust) 14%, transparent);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eyebrow-dot {
+    animation: none;
+  }
+}
+
+.hero2-title {
+  margin: 0;
+  /* Mockup-v3 (21.07, owner: "визуально охуенный", too timid the first pass):
+     bumped from clamp(2.3rem,4.1vw,3.5rem) to read as a premium hero, not a
+     corporate strip. Sized so "Move digital work." still holds one line
+     inside the 0.9fr hero column at the max clamp value. */
+  font-size: clamp(2.75rem, 4.7vw, 4.1rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  font-weight: 800;
+}
+
+.hero2-title .accent {
+  display: block;
+  color: var(--color-trust);
+}
+
+.hero2-lead {
+  max-width: 600px;
+  margin: 1.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+.trust-chip {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.83rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 1.6rem;
+}
+
+/* --- Compact dropzone strip under the hero grid (the dropzone is a real
+   tool and stays; mockup v2 just gives the hero art the spotlight).
+   The component renders .udz-shell + .udz-status as siblings, so the strip
+   lays them out side by side. --- */
+.hero2-dropstrip {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.hero2-dropstrip .udz-status {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero2-dropstrip .udz-terminal {
+  flex: 1;
+}
+
+.hero2-dropstrip .udz-zone {
+  min-height: 216px;
+  padding: 22px;
+}
+
+.hero2-dropstrip .udz-file-icon {
+  width: 46px;
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: 9px;
+  box-shadow: 6px 6px 0 color-mix(in srgb, var(--color-primary) 12%, var(--color-bg));
+}
+
+.hero2-dropstrip .udz-file-icon::before {
+  width: 16px;
+  height: 16px;
+  border-radius: 0 7px 0 6px;
+}
+
+.hero2-dropstrip .udz-file-icon::after {
+  font-size: 20px;
+}
+
+.hero2-dropstrip .udz-title {
+  font-size: 1.3rem;
+}
+
+.hero2-dropstrip .udz-sub {
+  margin: 6px 0 14px;
+  font-size: 0.9rem;
+}
+
+.hero2-dropstrip .udz-formats {
+  margin-top: 12px;
+}
+
+/* --- Trust strip (mockup v2): four cells in ONE frame — replaces the old
+   metrics band, so the page has a single block of numbers. --- */
+.trust-section {
+  margin-top: clamp(2rem, 4vw, 3rem);
+}
+
+.trust-box {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg-subtle);
+  box-shadow: 0 10px 30px rgba(15, 19, 28, 0.07);
+}
+
+.trust-item {
+  padding: 22px;
+  border-right: 1px solid var(--color-border);
+}
+
+.trust-item:last-child {
+  border-right: 0;
+}
+
+.trust-item b {
+  display: block;
+  font-size: 1.7rem;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.trust-item span {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* --- Universal dropzone (UniversalDropzone.astro) --- */
+.udz-shell {
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 30px;
+  background: var(--color-bg-subtle);
+  box-shadow: 0 18px 50px rgba(17, 20, 28, 0.08);
+}
+
+.udz-zone {
+  min-height: 430px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border: 1.5px dashed color-mix(in srgb, var(--color-text-muted) 55%, var(--color-bg));
+  border-radius: 23px;
+  background:
+    linear-gradient(color-mix(in srgb, var(--color-bg) 92%, transparent), color-mix(in srgb, var(--color-bg) 92%, transparent)),
+    repeating-linear-gradient(90deg, transparent 0 24px, color-mix(in srgb, var(--color-primary) 5%, transparent) 24px 25px);
+  text-align: center;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.udz-zone:hover,
+.udz-zone.dragging {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .udz-zone,
+  .udz-zone:hover,
+  .udz-zone.dragging {
+    transform: none;
+  }
+}
+
+.udz-file-icon {
+  width: 74px;
+  height: 88px;
+  position: relative;
+  margin-bottom: 24px;
+  border: 2px solid var(--color-text);
+  border-radius: 13px;
+  background: var(--color-bg);
+  box-shadow: 10px 10px 0 color-mix(in srgb, var(--color-primary) 12%, var(--color-bg));
+}
+
+.udz-file-icon::before {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  width: 24px;
+  height: 24px;
+  border-left: 2px solid var(--color-text);
+  border-bottom: 2px solid var(--color-text);
+  border-radius: 0 10px 0 8px;
+  background: var(--color-bg-subtle);
+}
+
+.udz-file-icon::after {
+  content: "\2192";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-primary);
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.udz-title {
+  margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+}
+
+.udz-sub {
+  margin: 10px 0 22px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  max-width: 34ch;
+}
+
+.udz-formats {
+  margin: 15px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.udz-result {
+  margin-top: 18px;
+  width: 100%;
+}
+
+.udz-detected {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-trust) 35%, var(--color-bg));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-trust) 9%, var(--color-bg));
+  color: var(--color-trust);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.udz-routes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.udz-route {
+  font-size: 0.9rem;
+}
+
+.udz-noroute {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.udz-again {
+  margin-top: 14px;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 0.5rem;
+}
+
+/* Dropzone status block вЂ” dark in BOTH themes, same family as
+   .privacy-terminal. Lines are real events only (see component). */
+.udz-status {
+  --pt-bg: #0c0f10;
+  --pt-border: #262a2c;
+  margin-top: 16px;
+  border: 1px solid var(--pt-border);
+  border-radius: 16px;
+  background: var(--pt-bg);
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  text-align: left;
+}
+
+.udz-status-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #21262a;
+  color: var(--color-trust-on-dark);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.udz-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.udz-status-dot {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--color-trust-on-dark);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .udz-status-dot {
+    animation: none;
+  }
+}
+
+.udz-terminal {
+  min-height: 64px;
+  padding: 14px 16px;
+  color: #8ff0c9;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* --- Shared section chrome (tools / metrics / extensions / learn) --- */
+.home-section {
+  margin-top: clamp(3rem, 6vw, 4.5rem);
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.section-head h2,
+.ext-copy h2 {
+  margin: 0;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+}
+
+.section-copy {
+  max-width: 560px;
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.text-link {
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Home tools grid --- */
+/* "Two ways" split section (mockup v3, 21.07). */
+.path-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.path-card {
+  display: block;
+  min-height: 190px;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-bg-subtle);
+  text-decoration: none;
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+.path-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 48px rgba(15, 19, 28, 0.1);
+}
+
+.path-card h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.path-card p {
+  max-width: 40ch;
+  margin: 10px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.path-cta {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.path-card-ext {
+  background: linear-gradient(145deg, var(--color-primary), #6a55ef);
+  border-color: transparent;
+}
+
+.path-card-ext h3,
+.path-card-ext .path-cta {
+  color: #fff;
+}
+
+.path-card-ext p {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+@media (max-width: 640px) {
+  .path-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-tools {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.home-tool-card {
+  position: relative;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-subtle);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+/* Mockup v2 "layer stack": two ghost frames behind the card content that
+   fan out on hover — the product metaphor (layers) as a micro-interaction.
+   Replaces the old ::after "↗" arrow. transform/opacity only. */
+.home-tool-card::before,
+.home-tool-card::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-radius: 16px;
+  pointer-events: none;
+  transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+.home-tool-card::before {
+  transform: translate(8px, 8px);
+  opacity: 0.28;
+}
+
+.home-tool-card::after {
+  transform: translate(15px, 15px);
+  opacity: 0.12;
+}
+
+.home-tool-card:hover {
+  transform: translateY(-7px);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  box-shadow: 0 24px 48px rgba(15, 19, 28, 0.1);
+}
+
+.home-tool-card:hover::before {
+  transform: translate(12px, 12px);
+  opacity: 0.5;
+}
+
+.home-tool-card:hover::after {
+  transform: translate(22px, 22px);
+  opacity: 0.26;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-tool-card:hover,
+  .home-tool-card:hover::before,
+  .home-tool-card:hover::after {
+    transform: none;
+  }
+
+  .home-tool-card::before,
+  .home-tool-card::after {
+    transition: none;
+  }
+
+  .home-tool-card:hover::before {
+    transform: translate(8px, 8px);
+  }
+
+  .home-tool-card:hover::after {
+    transform: translate(15px, 15px);
+  }
+}
+
+/* Card top row: input-format chip + monospace LOCAL tag (mockup v2). */
+.tool-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+/* Mockup-v3 (21.07): from->to colored chip pair replaces the single-letter
+   badge so each card scans as "what goes in, what comes out" at a glance. */
+.tool-flow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tool-chip {
+  min-width: 40px;
+  height: 34px;
+  padding: 0 8px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.tool-arrow {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.fmt-png { background: linear-gradient(145deg, color-mix(in srgb, var(--color-trust) 78%, #fff), var(--color-trust)); }
+.fmt-jpg { background: linear-gradient(145deg, #a78bfa, #7c5cf0); }
+.fmt-psd { background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 68%, #fff), var(--color-primary)); }
+.fmt-pdf { background: linear-gradient(145deg, #ff8a7a, #e14b3a); }
+.fmt-ico { background: linear-gradient(145deg, #ffc069, #e08a1e); }
+.fmt-img { background: linear-gradient(145deg, #9aa4b8, #616d82); }
+
+@media (prefers-color-scheme: dark) {
+  .tool-chip {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+}
+
+.local-mini {
+  color: var(--color-trust);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.home-tool-card strong {
+  display: block;
+  max-width: 85%;
+  margin-bottom: 12px;
+  color: var(--color-primary);
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+.home-tool-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.tool-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 20px;
+  color: var(--color-trust);
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tool-meta-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-trust);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-trust) 14%, transparent);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-meta-dot {
+    animation: none;
+  }
+}
+
+/* --- Extensions band: dark in BOTH themes by design --- */
+.ext-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 480px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #101318;
+  color: #fff;
+}
+
+.ext-copy {
+  padding: clamp(34px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.ext-copy .eyebrow {
+  color: var(--color-trust-on-dark);
+}
+
+.ext-copy h2 {
+  color: #fff;
+}
+
+.ext-lead {
+  max-width: 500px;
+  margin: 1rem 0 0;
+  color: #aeb6c5;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.ext-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 1.4rem;
+}
+
+.ext-soon-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #3d4551;
+  border-radius: var(--radius);
+  background: transparent;
+  color: #aeb6c5;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.ext-visual {
+  position: relative;
+  min-height: 480px;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  perspective: 1200px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(53, 92, 255, 0.48), transparent 30%),
+    linear-gradient(135deg, #151926, #090b0f);
+  overflow: hidden;
+}
+
+/* Standalone dark container for the scene on /extensions/ (reuses the same
+   LayerScene component). Fixed min-height + centered scene => CLS 0. */
+.scene-band {
+  display: grid;
+  place-items: center;
+  min-height: 440px;
+  margin: var(--space-3) 0;
+  padding: 24px;
+  border-radius: 28px;
+  perspective: 1200px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(53, 92, 255, 0.48), transparent 30%),
+    linear-gradient(135deg, #151926, #090b0f);
+  overflow: hidden;
+}
+
+/* --- Isometric exploded-layers scene (LayerScene.astro v2, 19.07). Replaces
+   the flying-cards story: four parallel plates move ONLY along the stack
+   axis (translateZ), so they stay parallel forever and no frame of the loop
+   can ever look piled-up. Lives ONLY on dark surfaces (.ext-visual /
+   .scene-band) in both themes => fixed local colors, same policy as
+   .privacy-terminal. All motion is transform/opacity on absolutely
+   positioned children inside a fixed-aspect container — zero CLS. --- */
+.scene {
+  position: relative;
+  width: min(88%, 380px);
+  aspect-ratio: 1.06;
+}
+
+.scene-band .scene {
+  width: min(88%, 420px);
+}
+
+/* Isometric wrapper: rotateX·rotateZ = classic exploded-view angle. The
+   slow float only wobbles ±2°, small enough that billboarded labels stay
+   visually screen-facing. */
+.iso {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: translateY(4%) rotateX(56deg) rotateZ(-38deg);
+  animation: isoFloat 12s ease-in-out infinite;
+}
+
+@keyframes isoFloat {
+  0%,
+  100% {
+    transform: translateY(4%) rotateX(56deg) rotateZ(-38deg);
+  }
+  50% {
+    transform: translateY(1%) rotateX(54deg) rotateZ(-36deg);
+  }
+}
+
+/* One plate per captured layer. --z is the exploded height; the cycle
+   collapses the stack into a single "window" and re-explodes it with a
+   0.12s stagger per plate. translate(-50%,-50%) centers in the iso plane
+   and must be repeated in every keyframe. */
+.plate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 82%;
+  aspect-ratio: 10 / 7;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05));
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) translateZ(var(--z));
+  animation: plateCycle 11s ease-in-out infinite;
+}
+
+@keyframes plateCycle {
+  0%,
+  5% {
+    transform: translate(-50%, -50%) translateZ(6px);
+  }
+  16%,
+  88% {
+    transform: translate(-50%, -50%) translateZ(var(--z));
+  }
+  100% {
+    transform: translate(-50%, -50%) translateZ(6px);
+  }
+}
+
+.p-bg {
+  --z: 0px;
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px) 0 0 / 14px 14px,
+    linear-gradient(160deg, #1c2333, #0c0f16);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.p-img {
+  --z: 46px;
+  animation-delay: 0.12s;
+}
+
+.p-content {
+  --z: 92px;
+  animation-delay: 0.24s;
+}
+
+.p-nav {
+  --z: 138px;
+  animation-delay: 0.36s;
+}
+
+/* Skeleton elements drawn on their own layer's plate. */
+.plate i {
+  position: absolute;
+  display: block;
+}
+
+.el-img {
+  right: 8%;
+  top: 16%;
+  width: 38%;
+  height: 56%;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 70% 28%, rgba(255, 255, 255, 0.85), transparent 16%),
+    linear-gradient(135deg, #7b8fff, #3658ff 55%, #141b34);
+  box-shadow: 0 14px 30px rgba(49, 88, 255, 0.35);
+}
+
+.el-title {
+  left: 9%;
+  top: 24%;
+  width: 42%;
+  height: 11%;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.el-copy {
+  left: 9%;
+  top: 44%;
+  width: 34%;
+  height: 5%;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.el-copy.c2 {
+  top: 54%;
+  width: 26%;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.el-btn {
+  left: 9%;
+  top: 68%;
+  width: 20%;
+  height: 11%;
+  border-radius: 9px;
+  background: #3158ff;
+  box-shadow: 0 8px 22px rgba(49, 88, 255, 0.5);
+}
+
+.el-chrome {
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 24%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.el-chrome b {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.el-navbar {
+  left: 8%;
+  top: 38%;
+  width: 84%;
+  height: 24%;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Billboarded label pill on each plate's left edge: rotateZ(38)·rotateX(-56)
+   inverts the iso wrapper's rotation so the pill faces the screen; the
+   trailing translateX then runs in screen space, pushing it left of the
+   plate. Plates sit at different Z => anchors are naturally staggered on
+   screen, so pills can't overlap. Opacity follows the plate's own cycle
+   via animation-delay: inherit. */
+.pl-tag {
+  position: absolute;
+  left: -6px;
+  bottom: 16%;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(8, 11, 18, 0.88);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: rotateZ(38deg) rotateX(-56deg) translateX(-84%);
+  animation: tagCycle 11s ease-in-out infinite;
+  animation-delay: inherit;
+}
+
+.pl-tag::after {
+  content: "";
+  width: 14px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+@keyframes tagCycle {
+  0%,
+  12% {
+    opacity: 0;
+  }
+  22%,
+  84% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Scan beam: a glowing plane that sweeps up through the exploded stack
+   right after it opens — the "capture" gesture. */
+.beam {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 90%;
+  aspect-ratio: 10 / 7;
+  border-radius: 16px;
+  border: 1px solid rgba(120, 150, 255, 0.4);
+  background: radial-gradient(ellipse at center, rgba(96, 133, 255, 0.4), transparent 65%);
+  opacity: 0;
+  transform: translate(-50%, -50%) translateZ(-16px);
+  animation: beamSweep 11s linear infinite;
+}
+
+@keyframes beamSweep {
+  0%,
+  20% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateZ(-16px);
+  }
+  26% {
+    opacity: 0.9;
+  }
+  44% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) translateZ(150px);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateZ(180px);
+  }
+}
+
+/* Screen-facing output badges — the story's destination side. Two cards for
+   the two REAL extension outputs: a Canva card peeking from behind the PSD
+   card. Static position (never crosses the stack), gentle group pulse only. */
+.scene-out {
+  position: absolute;
+  right: 0;
+  bottom: 4%;
+  width: 25%;
+  aspect-ratio: 0.84;
+  animation: psdPulse 4.5s ease-in-out infinite;
+}
+
+.out-card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.out-card span {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+
+.out-canva {
+  transform: translate(-36%, -34%) rotate(-8deg) scale(0.94);
+  align-items: start;
+  padding-top: 12px;
+  border: 1px solid rgba(190, 160, 255, 0.5);
+  background: linear-gradient(135deg, #00c4cc, #7d2ae8);
+  box-shadow: 0 14px 40px rgba(125, 42, 232, 0.4);
+}
+
+.out-canva span {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.out-psd {
+  border: 1px solid rgba(140, 165, 255, 0.5);
+  background: linear-gradient(145deg, #2f5bff, #0c1d8f);
+  box-shadow: 0 18px 50px rgba(31, 64, 255, 0.45);
+}
+
+@keyframes psdPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.04);
+  }
+}
+
+/* Reduced motion: freeze the stack fully exploded with labels visible —
+   the whole story in one static picture. No loop, no beam. */
+@media (prefers-reduced-motion: reduce) {
+  .iso,
+  .plate,
+  .pl-tag,
+  .scene-out {
+    animation: none;
+  }
+
+  .plate {
+    transform: translate(-50%, -50%) translateZ(var(--z));
+  }
+
+  .pl-tag {
+    opacity: 1;
+  }
+
+  .beam {
+    display: none;
+  }
+}
+
+/* --- Use-cases (v2, 19.07 — owner rejected the generic layer blobs): three
+   audience cards, each visual is that audience's REAL output. Designers get
+   the png-to-psd Layers panel (Your image + Background — the converter's
+   actual result), frontend devs get the favicon size set + .ico, product
+   teams get jpg-to-pdf's fanned pages. Hover = small transform-only lift.
+   Tokens keep both themes readable. --- */
+.use-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.use-card {
+  position: relative;
+  min-height: 290px;
+  padding: 24px;
+  padding-bottom: 190px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-subtle);
+  overflow: hidden;
+}
+
+.use-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+.use-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.use-visual {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  height: 150px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-bg));
+  overflow: hidden;
+}
+
+/* Designers: mini Layers panel + PSD file — the literal png-to-psd output. */
+.uvl-panel {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  bottom: 14px;
+  width: 58%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  box-shadow: 0 10px 24px rgba(15, 19, 28, 0.07);
+}
+
+.uvl-head {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.uvl-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  font-size: 10.5px;
+  color: var(--color-text);
+  transition: transform 0.25s ease;
+}
+
+.uvl-row:nth-of-type(3) {
+  transition-delay: 0.05s;
+}
+
+.sw {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.sw-img {
+  background: linear-gradient(135deg, #7890ff, #3158ff);
+}
+
+/* Checkerboard = transparency, same convention as the converter previews. */
+.sw-bg {
+  border: 1px solid var(--color-border);
+  background: repeating-conic-gradient(#e3e6ee 0% 25%, #ffffff 0% 50%) 0 0 / 8px 8px;
+}
+
+.uvl-file {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 62px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #2f5bff, #0c1d8f);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  box-shadow: 0 12px 26px rgba(49, 88, 255, 0.3);
+  transition: transform 0.28s ease;
+}
+
+.use-card:hover .uvl-row {
+  transform: translateX(4px);
+}
+
+.use-card:hover .uvl-file {
+  transform: translateY(-6px) rotate(2deg);
+}
+
+/* Frontend devs: the favicon generator's size run + .ico chip. */
+.uv-favicon .uvf-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 36px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+}
+
+.uvf {
+  display: block;
+  border-radius: 22%;
+  background:
+    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.85), transparent 22%),
+    linear-gradient(135deg, #7b8fff, #3658ff);
+  box-shadow: 0 10px 22px rgba(49, 88, 255, 0.28);
+  transition: transform 0.28s ease;
+}
+
+.uvf.s48 {
+  width: 48px;
+  height: 48px;
+}
+
+.uvf.s32 {
+  width: 32px;
+  height: 32px;
+}
+
+.uvf.s16 {
+  width: 16px;
+  height: 16px;
+}
+
+.uvf-chip {
+  align-self: flex-end;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.uvf-sizes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  text-align: center;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+.use-card:hover .s48 {
+  transform: translateY(-6px);
+}
+
+.use-card:hover .s32 {
+  transform: translateY(-10px);
+  transition-delay: 0.05s;
+}
+
+.use-card:hover .s16 {
+  transform: translateY(-13px);
+  transition-delay: 0.1s;
+}
+
+/* Product teams: jpg-to-pdf's fanned pages + PDF chip. */
+.uvp-page {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 40%;
+  aspect-ratio: 0.75;
+  margin-left: -20%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  box-shadow: 0 10px 24px rgba(15, 19, 28, 0.08);
+  transition: transform 0.28s ease;
+}
+
+.uvp-page.pg2 {
+  transform: rotate(5deg) translateX(14px);
+}
+
+.uvp-page.pg3 {
+  transform: rotate(-6deg) translateX(-16px);
+}
+
+.uvp-page.pg1 i,
+.uvp-page.pg1 b {
+  position: absolute;
+  display: block;
+  border-radius: 4px;
+}
+
+.uvp-page.pg1 .ln1 {
+  left: 12%;
+  top: 12%;
+  width: 56%;
+  height: 8%;
+  background: var(--color-border);
+}
+
+.uvp-page.pg1 .ln2 {
+  left: 12%;
+  top: 26%;
+  width: 40%;
+  height: 8%;
+  background: color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.uvp-page.pg1 b {
+  left: 12%;
+  top: 42%;
+  width: 76%;
+  height: 44%;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #7b8fff, #3658ff 60%, #1c2b6e);
+}
+
+.uvp-chip {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.use-card:hover .pg2 {
+  transform: rotate(8deg) translateX(24px);
+}
+
+.use-card:hover .pg3 {
+  transform: rotate(-9deg) translateX(-26px);
+}
+
+.use-card:hover .pg1 {
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .use-card:hover .uvl-row,
+  .use-card:hover .uvl-file,
+  .use-card:hover .uvf,
+  .use-card:hover .uvp-page {
+    transform: none;
+  }
+
+  .use-card:hover .pg2 {
+    transform: rotate(5deg) translateX(14px);
+  }
+
+  .use-card:hover .pg3 {
+    transform: rotate(-6deg) translateX(-16px);
+  }
+}
+
+/* --- Learn grid: featured card + article list --- */
+.learn-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 14px;
+}
+
+.article-large,
+.article-list {
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-bg-subtle);
+}
+
+.article-large {
+  min-height: 330px;
+  padding: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background:
+    linear-gradient(180deg, transparent 20%, rgba(17, 20, 28, 0.83)),
+    radial-gradient(circle at 70% 30%, rgba(53, 92, 255, 0.85), transparent 30%),
+    #202532;
+  color: #fff;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.article-large span {
+  color: #aeb8ff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.article-large h3 {
+  max-width: 600px;
+  margin: 12px 0 0;
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.article-list {
+  padding: 8px 24px;
+}
+
+.learn-article {
+  display: block;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none;
+}
+
+.learn-article:last-child {
+  border-bottom: 0;
+}
+
+.learn-article b {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.learn-article span {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* Final conversion banner (mockup v3, 21.07) — the page had no closing CTA;
+   it just ended at Learn. Two real destinations, no new claim. */
+.final-cta-section {
+  margin-bottom: clamp(3rem, 6vw, 4.5rem);
+}
+
+.final-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: clamp(28px, 4vw, 42px);
+  border-radius: 28px;
+  background: linear-gradient(145deg, var(--color-primary), #6a55ef);
+  color: #fff;
+  box-shadow: 0 32px 70px rgba(47, 93, 245, 0.22);
+}
+
+.final-cta h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  letter-spacing: -0.03em;
+}
+
+.final-cta p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.final-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn-light {
+  background: #fff;
+  color: var(--color-primary);
+}
+
+.btn-light:hover {
+  background: #eef1ff;
+}
+
+.btn-outline-light {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: transparent;
+  color: #fff;
+}
+
+.btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 640px) {
+  .final-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .final-cta-actions {
+    width: 100%;
+  }
+  .final-cta-actions .btn {
+    flex: 1;
+  }
+}
+
+/* --- Home v2 responsive --- */
+@media (max-width: 900px) {
+  .hero2-grid,
+  .ext-band,
+  .learn-grid,
+  .hero2-dropstrip {
+    grid-template-columns: 1fr;
+  }
+
+  /* On a stacked hero, copy first, art second — keep the art from towering. */
+  .hero-demo {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .home-tools {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .use-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .use-card {
+    min-height: 0;
+  }
+
+  .trust-box {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .trust-item:nth-child(2) {
+    border-right: 0;
+  }
+
+  .trust-item:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .udz-zone {
+    min-height: 360px;
+  }
+
+  .hero2-dropstrip .udz-zone {
+    min-height: 216px;
+  }
+}
+
+@media (max-width: 620px) {
+  .hero2 {
+    padding-top: 1.75rem;
+  }
+
+  .hero2-grid {
+    gap: 2rem;
+  }
+
+  .home-tools,
+  .trust-box {
+    grid-template-columns: 1fr;
+  }
+
+  .trust-item {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .trust-item:last-child {
+    border-bottom: 0;
+  }
+
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .udz-zone {
+    min-height: 320px;
+    padding: 28px 18px;
+  }
+
+  .hero2-dropstrip .udz-zone {
+    min-height: 200px;
+    padding: 20px 16px;
+  }
+
+  .scene-band {
+    min-height: 360px;
+  }
+}
+
+/* ============================================================
+   TOOL PAGE V2 (ТЗ 19.07) — png-to-psd rebuilt to the owner's tool-page
+   prototype. All colors go through the same --color-* and --radius tokens
+   as home-v2 above (hero2/udz-shell classes are reused directly, not
+   duplicated), so this section only adds what's genuinely new: the
+   converter-shell state card, the file-card/checkerboard preview, the
+   expectation/truth-note block, the What-you-get + Use-cases card grid
+   (shared class), the dark extension-bridge's layer-stack visual, and the
+   "continue working" cards. Gated by content.layoutVariant === 'v2' — see
+   ConverterLayout.astro. Generalized 19.07 from a png-to-psd-only pilot to
+   all 9 converter/checker pages; the hero-shell now mounts whichever real
+   widget (ConverterWidget/JpgToPdfWidget/PdfToJpgWidget/FaviconWidget/
+   CheckerWidget/ConverterWidgetV2) that page's content dispatches to.
+   ============================================================ */
+
+.tool-hero2 {
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.tool-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--color-trust);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.tool-hero2 .answer-first {
+  margin-top: 1rem;
+}
+
+.tool-section {
+  margin-top: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+/* --- Converter shell: privacy log lives INSIDE the same padded frame as
+   the widget (owner mockup), reusing .udz-shell's 8px pad / 30px radius. --- */
+.tool-shell .privacy-terminal {
+  margin-top: 8px;
+}
+
+/* Generalized 19.07: the 5 shared widgets (ConverterWidget, JpgToPdfWidget,
+   PdfToJpgWidget, FaviconWidget, CheckerWidget) each render their own
+   <section class="tool-section"><h2 class="tool-heading">...</h2> — correct
+   as a standalone page block in v1, but that top margin/heading size was
+   tuned for sitting between two other full-width sections, not for being
+   the first thing inside the compact hero shell. Flatten both when nested
+   inside .tool-shell so every widget looks the same size regardless of
+   which one is mounted; the widget's own dashed .converter-widget border
+   still provides its own visual frame inside the outer .udz-shell, the same
+   two-layer nesting ConverterWidgetV2's .udz-zone already uses. */
+.tool-shell .tool-section {
+  margin-top: 0;
+}
+
+.tool-shell .tool-heading {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.05rem;
+}
+
+.tool-zone {
+  min-height: 0;
+  padding: 34px 28px;
+}
+
+.tool-zone[data-state="error"] {
+  border-color: var(--color-error);
+}
+
+.tool-zone[data-state="success"] {
+  border-style: solid;
+  border-color: var(--color-trust);
+}
+
+.tool-state-success {
+  width: 100%;
+  text-align: left;
+}
+
+.tool-hint {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.tool-privacy-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  color: var(--color-trust);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tool-privacy-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-trust) 16%, transparent);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-privacy-dot {
+    animation: none;
+  }
+}
+
+.tool-micro-bridge {
+  margin: 14px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  max-width: 32ch;
+}
+
+/* --- Success state --- */
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-trust) 12%, var(--color-bg));
+  color: var(--color-trust);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.state-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-trust) 14%, transparent);
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-badge-dot {
+    animation: none;
+  }
+}
+
+.tool-success-title {
+  margin: 0 0 16px;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.file-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 14px;
+  margin-bottom: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg);
+}
+
+.file-card-preview.checkerboard {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #eef0f3;
+  background-image:
+    linear-gradient(45deg, #d9dce2 25%, transparent 25%, transparent 75%, #d9dce2 75%, #d9dce2),
+    linear-gradient(45deg, #d9dce2 25%, transparent 25%, transparent 75%, #d9dce2 75%, #d9dce2);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .file-card-preview.checkerboard {
+    background-color: #262b36;
+    background-image:
+      linear-gradient(45deg, #333a48 25%, transparent 25%, transparent 75%, #333a48 75%, #333a48),
+      linear-gradient(45deg, #333a48 25%, transparent 25%, transparent 75%, #333a48 75%, #333a48);
+  }
+}
+
+.file-card-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.file-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-card-name {
+  margin: 0 0 4px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.file-card-dims {
+  margin: 0 0 10px;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.file-card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pill-trust {
+  border-color: color-mix(in srgb, var(--color-trust) 35%, var(--color-bg));
+  background: color-mix(in srgb, var(--color-trust) 9%, var(--color-bg));
+  color: var(--color-trust);
+}
+
+.tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.success-next {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg-subtle);
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.success-next-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.success-next-sub {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.error-bridge {
+  margin: -6px 0 14px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+/* --- Expectation block + truth-note --- */
+.expect-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 1rem 0;
+}
+
+.expect-card {
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-subtle);
+}
+
+.expect-card h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.expect-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.truth-note {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border: 1px solid #d9a72c;
+  border-radius: 12px;
+  background: color-mix(in srgb, #d9a72c 14%, var(--color-bg));
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .truth-note {
+    border-color: #a9791f;
+    background: color-mix(in srgb, #d9a72c 16%, var(--color-bg));
+  }
+}
+
+/* --- What-you-get / Use-cases: shared 4-card grid --- */
+.wyg-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 1rem 0;
+}
+
+.wyg-card {
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-subtle);
+}
+
+.wyg-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+}
+
+.wyg-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+/* --- Dark extension-bridge: reuses .ext-band/.ext-copy/.ext-visual, swaps
+   the home page's browser-capture visual for a layer-stack visual. --- */
+.layer-stack {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.layer-chip {
+  padding: 13px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  transform: translateX(calc(var(--i, 0) * 12px));
+}
+
+/* --- Continue working with your file ---
+   auto-fit instead of a fixed 3-track grid: the Photopea card only renders
+   when content.continuePhotopea is true (png-to-psd, jpg-to-psd today), so
+   most pages show 2 cards, not 3 — a fixed third track would leave visible
+   empty space. minmax keeps cards from squashing on 2-card pages either. */
+.continue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 1rem 0;
+}
+
+.continue-card {
+  display: block;
+  width: 100%;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.continue-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .continue-card:hover {
+    transform: none;
+  }
+}
+
+.continue-card.primary {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg));
+}
+
+.continue-card h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.continue-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* --- FAQ (details/summary) --- */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faq-details {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.faq-details summary {
+  padding: 12px 4px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-details summary::before {
+  content: "+";
+  display: inline-block;
+  width: 1em;
+  margin-right: 0.5em;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.faq-details[open] summary::before {
+  content: "\2212";
+}
+
+.faq-details p {
+  margin: 0 0 14px 1.5em;
+  color: var(--color-text-muted);
+}
+
+/* --- Tool page v2 responsive --- */
+@media (max-width: 900px) {
+  .expect-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wyg-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .continue-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .wyg-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-zone {
+    padding: 26px 18px;
+  }
+
+  .file-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tool-actions .btn {
+    width: 100%;
+  }
+}
+
+/* --- Feedback hub (этап 1, 20.07) --- */
+/* Shared by /feedback/ and /uninstall/ — a plain bordered card holding a
+   form, with a data-state swap (form <-> done) instead of a redirect. */
+.feedback-about {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  margin-top: var(--space-1);
+}
+
+/* [hidden] and .feedback-about both have specificity (0,1,0) — without this
+   override the later `display: inline-flex` above wins the cascade and the
+   plaque stays visible (empty) even when JS leaves it hidden. */
+.feedback-about[hidden] {
+  display: none;
+}
+
+.feedback-about span {
+  color: var(--color-text);
+}
+
+.feedback-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-subtle);
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  max-width: 640px;
+}
+
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Same cascade-tie fix as .feedback-about[hidden] above — form.hidden = true
+   (set on submit success) must beat the class's own `display: flex`. */
+.feedback-form[hidden] {
+  display: none;
+}
+
+.field-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin: var(--space-1) 0 0;
+}
+
+.field-label:first-child {
+  margin-top: 0;
+}
+
+.feedback-textarea,
+.feedback-input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+}
+
+.feedback-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.feedback-textarea:focus-visible,
+.feedback-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.field-helper {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.field-error {
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.feedback-submit {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+
+.feedback-fineprint {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0.4rem 0 0;
+}
+
+.feedback-error {
+  color: var(--color-error);
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0;
+}
+
+.feedback-done h2 {
+  margin-top: 0;
+}
+
+/* Segmented "what's this about" control — a fieldset of radios with the
+   native input visually hidden (not display:none, so it stays focusable
+   and keyboard-operable) and the adjacent <span> styled as the visible
+   pill. Sibling selector, no :has() needed. */
+.segment-control {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.segment-control legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  padding: 0;
+  margin: 0 0 0.4rem;
+  width: 100%;
+}
+
+.segment-option {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.segment-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segment-option span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.segment-option span small {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.segment-option input:checked + span {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.segment-option input:checked + span small {
+  color: color-mix(in srgb, #fff 80%, transparent);
+}
+
+.segment-option input:focus-visible + span {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Uninstall reason chips — same visually-hidden-input pattern as the
+   segment control, but checkboxes (multi-select) instead of radios, and a
+   squared-off chip shape instead of a pill. */
+.chip-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip-group legend {
+  padding: 0;
+  margin: 0 0 0.4rem;
+  width: 100%;
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.chip input:checked + span {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.chip input:focus-visible + span {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.uninstall-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.uninstall-skip {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+
+.uninstall-skip:hover {
+  color: var(--color-text);
+}
+
+
+/* --- Feedback hub polish (20.07, owner pass: «сделай норм форму,
+   оптимизируй под все устройства»). Destination-page layout: the column is
+   centered (these pages have no browsing context to justify a rail), the
+   card is elevated on the page background with a soft brand glow, and every
+   control is touch-sized. Appended after the base block so these overrides
+   win the cascade without touching it. --- */
+.fbx {
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: clamp(4px, 2vw, 20px) 0 var(--space-3);
+}
+
+/* Soft glow behind the card — same family as the hero's demo-glow, toned
+   down. z-index -1 keeps it behind text; pointer-events off always. */
+/* Kept inside the wrapper's own box (no negative insets): anything wider
+   makes the page horizontally scrollable on phones — caught at 390px. */
+.fbx::before {
+  content: "";
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: 60px;
+  height: 400px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-primary) 13%, transparent),
+    transparent 72%
+  );
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.fbx h1 {
+  text-align: center;
+  font-size: clamp(1.9rem, 4.5vw, 2.5rem);
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-1);
+}
+
+.fbx .answer-first {
+  text-align: center;
+  max-width: 46ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fbx .feedback-about {
+  margin: var(--space-1) auto 0;
+  width: fit-content;
+  display: flex;
+  background: var(--color-bg);
+}
+
+.fbx .feedback-about[hidden] {
+  display: none;
+}
+
+.fbx .feedback-card {
+  max-width: none;
+  background: var(--color-bg);
+  border-radius: 20px;
+  padding: clamp(20px, 4vw, 34px);
+  margin-top: var(--space-2);
+  box-shadow:
+    0 24px 60px rgba(15, 19, 28, 0.1),
+    0 2px 8px rgba(15, 19, 28, 0.05);
+}
+
+.fbx .feedback-form {
+  gap: 0.7rem;
+}
+
+/* 16px inputs: below that iOS Safari zooms the page on focus. */
+.fbx .feedback-textarea,
+.fbx .feedback-input {
+  font-size: 16px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+}
+
+.fbx .feedback-textarea {
+  min-height: 140px;
+}
+
+/* Touch targets ≥44px for every selectable pill/chip. */
+.fbx .segment-option span,
+.fbx .chip span {
+  min-height: 44px;
+  padding: 0.55rem 1.05rem;
+}
+
+.fbx .feedback-submit {
+  min-height: 46px;
+  padding-left: 1.6rem;
+  padding-right: 1.6rem;
+}
+
+.fbx .feedback-done {
+  text-align: center;
+  padding: var(--space-2) 0;
+}
+
+.fbx .feedback-fineprint {
+  text-align: center;
+}
+
+.fbx .uninstall-actions {
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .fbx .feedback-card {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .fbx .feedback-submit,
+  .fbx .uninstall-actions .btn {
+    width: 100%;
+  }
+
+  .fbx .uninstall-actions {
+    flex-direction: column;
+  }
+
+  .fbx .segment-control,
+  .fbx .chip-group {
+    gap: 0.45rem;
+  }
+
+  .fbx .segment-option,
+  .fbx .segment-option span,
+  .fbx .chip,
+  .fbx .chip span {
+    width: 100%;
+  }
+}
+
+/* Diagnostics opt-in box on /feedback/ (GPT-ТЗ 20.07): checkbox + the full
+   visible list of what would be sent. Transparency IS the design — no
+   hidden payload. */
+.diag-box {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.diag-box[hidden] {
+  display: none;
+}
+
+.diag-box input {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.diag-box b {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.diag-box em {
+  font-style: normal;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Desktop submit: never a tiny pill (mobile already goes full-width). */
+@media (min-width: 641px) {
+  .fbx .feedback-submit {
+    min-width: 200px;
+  }
+}
+
+/* --- Service-page pass (20.07, owner: «приведи сайт в норм вид»). Prose
+   pages center themselves; 404 and the article-hub indexes reuse the .fbx
+   destination layout so no page is a bare left column in an empty
+   viewport. --- */
+
+/* about / privacy / terms: same 70ch measure, centered in the container.
+   Articles keep their two-column grid — the rail supplies the balance
+   there, so the prose stays left in its own grid column. */
+.page-prose {
+  margin-inline: auto;
+}
+
+.article-grid .page-prose {
+  margin-inline: 0;
+}
+
+/* 404 */
+.nf {
+  text-align: center;
+}
+
+.nf-code {
+  margin: 0;
+  font-size: clamp(64px, 12vw, 120px);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--color-primary), #7657ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nf-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: var(--space-2) 0;
+}
+
+.nf-popular {
+  max-width: 380px;
+  margin: var(--space-2) auto 0;
+  text-align: left;
+}
+
+/* formats/guides hubs: centered header, cards below, cross-link to tools. */
+.hub-idx h1,
+.hub-idx .answer-first {
+  text-align: center;
+}
+
+.hub-idx .tool-cards {
+  margin-top: var(--space-2);
+}
+
+.hub-cross {
+  margin-top: var(--space-2);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}

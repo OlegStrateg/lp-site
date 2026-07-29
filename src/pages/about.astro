@@ -1,0 +1,15 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import * as about from '../copy/about.md';
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+---
+
+<PageLayout
+  title="About LayerPorter"
+  description="LayerPorter builds small, single-purpose file converters that run entirely in your browser — no upload, no account, no server copy of your files."
+  canonicalPath="/about/"
+  ogImage={`${site}/og/home.png`}
+>
+  <about.Content />
+</PageLayout>

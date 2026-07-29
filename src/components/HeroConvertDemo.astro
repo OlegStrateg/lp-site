@@ -1,0 +1,462 @@
+---
+// Animated hero "live conversion" demo — replaces the old static hero-art
+// webp + pointer-parallax (mockup v2, 20.07). Cycles through three REAL
+// tools (highest-search-volume + the layers differentiator), each frame
+// showing input file → local processing chamber → output file. Pure CSS
+// animation for the chamber; JS only swaps the active scenario (tab click
+// or auto-cycle) — same reduced-motion-respecting pattern as LayerScene
+// and the eyebrow pulse dot elsewhere on this page.
+const scenarios = [
+  {
+    id: 'png-psd',
+    tab: 'PNG → PSD',
+    inExt: 'PNG',
+    inLabel: 'PNG image',
+    inNote: 'Transparent source',
+    outExt: 'PSD',
+    outLabel: 'Photoshop PSD',
+    outNote: 'Image on its own layer',
+    status: 'Converted locally',
+  },
+  {
+    id: 'pdf-jpg',
+    tab: 'PDF → JPG',
+    inExt: 'PDF',
+    inLabel: 'PDF document',
+    inNote: 'Multiple pages',
+    outExt: 'JPG',
+    outLabel: 'JPG pages',
+    outNote: 'One image per page',
+    status: 'Rendered locally',
+  },
+  {
+    id: 'jpg-pdf',
+    tab: 'JPG → PDF',
+    inExt: 'JPG',
+    inLabel: 'JPG images',
+    inNote: 'One or more files',
+    outExt: 'PDF',
+    outLabel: 'PDF document',
+    outNote: 'One page per image',
+    status: 'Combined locally',
+  },
+];
+---
+
+<div class="hcd" id="hcd">
+  <div class="hcd-glow" aria-hidden="true"></div>
+
+  <div class="hcd-tabs" role="tablist" aria-label="Conversion examples">
+    {scenarios.map((s, i) => (
+      <button
+        type="button"
+        class="hcd-tab"
+        class:list={[{ active: i === 0 }]}
+        data-scene={i}
+        role="tab"
+        aria-selected={i === 0 ? 'true' : 'false'}
+      >
+        {s.tab}
+      </button>
+    ))}
+  </div>
+
+  <div class="hcd-stage">
+    {scenarios.map((s, i) => (
+      <div class="hcd-scene" class:list={[{ active: i === 0 }]} data-scene-panel={i}>
+        <div class="hcd-side">
+          <span class="hcd-side-label">Input</span>
+          <div class="hcd-file">
+            <div class={`hcd-file-icon hcd-ext-${s.inExt.toLowerCase()}`}>{s.inExt}</div>
+            <b>{s.inLabel}</b>
+            <span>{s.inNote}</span>
+          </div>
+        </div>
+
+        <div class="hcd-process">
+          <div class="hcd-line" aria-hidden="true"></div>
+          <div class="hcd-chamber" aria-hidden="true">
+            <div class="hcd-scan"></div>
+            <div class="hcd-bits">
+              <i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <div class="hcd-status">
+            <span class="hcd-check">✓</span>
+            <span class="hcd-status-text">
+              <b>{s.status}</b>
+              <small>0 B uploaded</small>
+            </span>
+          </div>
+        </div>
+
+        <div class="hcd-side">
+          <span class="hcd-side-label">Output</span>
+          <div class="hcd-file">
+            <div class={`hcd-file-icon hcd-ext-${s.outExt.toLowerCase()}`}>{s.outExt}</div>
+            <b>{s.outLabel}</b>
+            <span>{s.outNote}</span>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<script>
+  const root = document.getElementById('hcd');
+  if (root) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('.hcd-tab')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-scene-panel]')];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let active = 0;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const show = (index: number) => {
+      active = index;
+      tabs.forEach((t, i) => {
+        t.classList.toggle('active', i === index);
+        t.setAttribute('aria-selected', i === index ? 'true' : 'false');
+      });
+      panels.forEach((p, i) => p.classList.toggle('active', i === index));
+    };
+
+    const startCycle = () => {
+      if (reduceMotion) return;
+      clearInterval(timer);
+      timer = setInterval(() => show((active + 1) % panels.length), 4200);
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => {
+        show(index);
+        startCycle();
+      });
+    });
+
+    startCycle();
+  }
+</script>
+
+<style>
+  .hcd {
+    position: relative;
+    padding: 22px 18px 26px;
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    background: var(--color-bg-subtle);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .hcd-glow {
+    position: absolute;
+    width: min(70%, 380px);
+    aspect-ratio: 1;
+    left: 50%;
+    top: 46%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    z-index: -1;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-primary) 16%, transparent),
+      color-mix(in srgb, #7657ff 6%, transparent) 45%,
+      transparent 72%
+    );
+    filter: blur(10px);
+    animation: hcd-glow 7s ease-in-out infinite;
+  }
+
+  @keyframes hcd-glow {
+    0%, 100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.75; }
+    50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+  }
+
+  .hcd-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .hcd-tab {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .hcd-tab.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+
+  .hcd-stage {
+    position: relative;
+    min-height: 300px;
+  }
+
+  .hcd-scene {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 1fr;
+    gap: 16px;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .hcd-scene.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .hcd-side {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding-top: 26px;
+  }
+
+  .hcd-side-label {
+    position: absolute;
+    top: 0;
+    color: var(--color-text-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .hcd-file {
+    width: 100%;
+    max-width: 150px;
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg);
+    box-shadow: 0 18px 40px rgba(15, 19, 28, 0.08);
+    transition: transform 0.3s ease;
+  }
+
+  .hcd-scene.active .hcd-file {
+    animation: hcd-file-in 0.5s ease;
+  }
+
+  @keyframes hcd-file-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hcd-file-icon {
+    width: 46px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  }
+
+  .hcd-ext-png { background: linear-gradient(145deg, color-mix(in srgb, var(--color-trust) 75%, #fff), var(--color-trust)); }
+  .hcd-ext-jpg { background: linear-gradient(145deg, #a78bfa, #7c5cf0); }
+  .hcd-ext-psd { background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 65%, #fff), var(--color-primary)); }
+  .hcd-ext-pdf { background: linear-gradient(145deg, #ff8a7a, #e14b3a); }
+
+  .hcd-file b {
+    display: block;
+    font-size: 0.86rem;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+  }
+
+  .hcd-file span {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
+  .hcd-process {
+    position: relative;
+    height: 220px;
+    display: grid;
+    place-items: center;
+  }
+
+  .hcd-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 42%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-primary) 45%, transparent),
+      var(--color-primary),
+      color-mix(in srgb, var(--color-trust) 45%, transparent),
+      transparent
+    );
+  }
+
+  .hcd-chamber {
+    position: relative;
+    width: 132px;
+    height: 132px;
+    border-radius: 28px;
+    display: grid;
+    place-items: center;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 22px 44px rgba(15, 19, 28, 0.1);
+    overflow: hidden;
+  }
+
+  .hcd-chamber::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: conic-gradient(
+      transparent,
+      color-mix(in srgb, var(--color-primary) 22%, transparent),
+      transparent 35%,
+      color-mix(in srgb, var(--color-trust) 20%, transparent),
+      transparent 65%,
+      color-mix(in srgb, #7657ff 20%, transparent),
+      transparent
+    );
+    filter: blur(10px);
+    animation: hcd-spin 6s linear infinite;
+  }
+
+  @keyframes hcd-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .hcd-scan {
+    position: absolute;
+    top: 8%;
+    bottom: 8%;
+    width: 2px;
+    left: 20%;
+    background: linear-gradient(180deg, transparent, var(--color-trust), transparent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--color-trust) 70%, transparent);
+    animation: hcd-scan 2.6s ease-in-out infinite;
+  }
+
+  @keyframes hcd-scan {
+    0%, 100% { left: 20%; }
+    50% { left: 80%; }
+  }
+
+  .hcd-bits {
+    position: relative;
+    width: 62px;
+    height: 46px;
+    z-index: 1;
+  }
+
+  .hcd-bits i {
+    position: absolute;
+    border-radius: 6px;
+    background: var(--color-text);
+    opacity: 0.85;
+    animation: hcd-float 3s ease-in-out infinite;
+  }
+
+  .hcd-bits i:nth-child(1) { left: 2px; top: 2px; width: 34px; height: 10px; }
+  .hcd-bits i:nth-child(2) { right: 0; top: 4px; width: 16px; height: 26px; background: var(--color-primary); }
+  .hcd-bits i:nth-child(3) { left: 6px; bottom: 2px; width: 24px; height: 8px; opacity: 0.4; }
+  .hcd-bits i:nth-child(4) { left: 10px; top: 18px; width: 16px; height: 8px; background: var(--color-primary); }
+
+  @keyframes hcd-float {
+    50% { transform: translateY(-4px); }
+  }
+
+  .hcd-status {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    min-width: 170px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg);
+    box-shadow: 0 10px 24px rgba(15, 19, 28, 0.08);
+  }
+
+  .hcd-check {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--color-trust);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 900;
+  }
+
+  .hcd-status-text b {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--color-text);
+  }
+
+  .hcd-status-text small {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-trust);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 640px) {
+    .hcd-scene {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 10px;
+    }
+    .hcd-side { padding-top: 22px; }
+    .hcd-process { height: 190px; }
+    .hcd-chamber { width: 108px; height: 108px; }
+    .hcd-stage { min-height: 420px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hcd-glow,
+    .hcd-chamber::before,
+    .hcd-scan,
+    .hcd-bits i {
+      animation: none;
+    }
+    .hcd-scene.active .hcd-file {
+      animation: none;
+    }
+    .hcd-tab {
+      transition: none;
+    }
+  }
+</style>

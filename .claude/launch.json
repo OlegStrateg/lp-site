@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "layerporter-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "4322"],
+      "port": 4322
+    },
+    {
+      "name": "layerporter-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview", "--", "--port", "4321"],
+      "port": 4321
+    },
+    {
+      "name": "layerporter-preview-4501",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview", "--", "--port", "4501"],
+      "port": 4501
+    }
+  ]
+}
