@@ -1,88 +1,9 @@
 <!DOCTYPE html><html class="light" lang="ru" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="./welcome.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "tertiary-container": "#a65000",
-                        "surface-variant": "#e5e1e4",
-                        "surface-container-high": "#eae7ea",
-                        "secondary-fixed-dim": "#c6c5d2",
-                        "on-primary-fixed-variant": "#4024c2",
-                        "on-error-container": "#93000a",
-                        "primary-fixed-dim": "#c7bfff",
-                        "surface-tint": "#5944da",
-                        "on-tertiary-fixed": "#311300",
-                        "primary": "#4a32cb",
-                        "on-secondary-fixed": "#1a1b24",
-                        "tertiary-fixed": "#ffdbc7",
-                        "on-tertiary-fixed-variant": "#733500",
-                        "on-tertiary": "#ffffff",
-                        "surface": "#fcf8fb",
-                        "on-secondary-fixed-variant": "#464650",
-                        "surface-container": "#f0edef",
-                        "on-secondary": "#ffffff",
-                        "on-error": "#ffffff",
-                        "inverse-primary": "#c7bfff",
-                        "on-tertiary-container": "#ffe3d3",
-                        "surface-container-lowest": "#ffffff",
-                        "on-surface": "#1b1b1d",
-                        "inverse-surface": "#303032",
-                        "on-background": "#1b1b1d",
-                        "secondary": "#5d5d68",
-                        "on-surface-variant": "#474555",
-                        "surface-container-low": "#f6f3f5",
-                        "surface-bright": "#fcf8fb",
-                        "on-primary-container": "#eae5ff",
-                        "tertiary": "#813d00",
-                        "surface-container-highest": "#e5e1e4",
-                        "secondary-container": "#e3e1ee",
-                        "inverse-on-surface": "#f3f0f2",
-                        "primary-container": "#634fe4",
-                        "on-primary-fixed": "#170065",
-                        "on-primary": "#ffffff",
-                        "outline": "#787586",
-                        "tertiary-fixed-dim": "#ffb688",
-                        "error-container": "#ffdad6",
-                        "on-secondary-container": "#63636e",
-                        "surface-dim": "#dcd9dc",
-                        "secondary-fixed": "#e3e1ee",
-                        "outline-variant": "#c8c4d7",
-                        "primary-fixed": "#e4dfff",
-                        "error": "#ba1a1a",
-                        "background": "#fcf8fb"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.5rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "item-gap": "8px",
-                        "gutter-stack": "12px",
-                        "popup-width": "360px",
-                        "margin-page": "16px",
-                        "padding-card": "16px"
-                    },
-                    "fontFamily": {
-                        "body-sm": ["Inter"],
-                        "headline-sm": ["Inter"],
-                        "body-md": ["Inter"],
-                        "headline-md": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "label-md": ["Inter"]
-                    }
-                }
-            }
-        }
-    </script>
 <style>
         body { font-family: 'Inter', sans-serif; }
         .material-symbols-outlined {
@@ -487,7 +408,23 @@
 >
   Остался один шаг — добавьте Picture Converter на панель Chrome.
 </p>
-<div class="browser-scale-shell" id="browser-scale-shell">
+<div class="browser-scale-shell" id="browser-scale-shell"><script>
+window.updateResponsiveBrowserScale = function updateResponsiveBrowserScale() {
+    var shell = document.getElementById('browser-scale-shell');
+    if (!shell) return;
+    var bodyStyles = window.getComputedStyle(document.body);
+    var horizontalPadding =
+        parseFloat(bodyStyles.paddingLeft || '0')
+        + parseFloat(bodyStyles.paddingRight || '0');
+    var availableWidth = Math.max(
+        260,
+        document.documentElement.clientWidth - horizontalPadding
+    );
+    var scale = Math.min(1, availableWidth / 900);
+    shell.style.setProperty('--browser-scale', String(Math.max(0.28, scale)));
+};
+window.updateResponsiveBrowserScale();
+</script>
 <div class="browser-scale-frame" id="browser-scale-frame">
 <main class="w-full max-w-[900px] glass-panel rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)] border border-white/50 overflow-hidden flex flex-col relative">
 <!-- Floating Hints Overlay - Positioned to not overlap dropdown -->
@@ -1228,25 +1165,8 @@
             btnIcon.classList.add('animate-pulse');
         }
 
-        // Исходная анимация браузера сохраняется.
-        // Пользователям с reduced motion сразу показываем финальное состояние.
-        const prefersReducedMotion =
-            window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-
-        if (prefersReducedMotion) {
-            dropdown.style.opacity = '1';
-            dropdown.style.transform = 'scale(1) translateY(0)';
-            dropdown.style.pointerEvents = 'auto';
-            extensionRow.classList.add('bg-primary/5');
-            pinIcon.style.fontVariationSettings = "'FILL' 1";
-            pinIcon.classList.remove('text-gray-400');
-            pinIcon.classList.add('text-primary');
-            document.getElementById('main-cursor')?.classList.remove('cursor-active');
-            unlockButton();
-        } else {
-            runAnimationCycle();
-            setInterval(runAnimationCycle, 10000);
-        }
+        runAnimationCycle();
+        setInterval(runAnimationCycle, 10000);
 
         const PAGE_MESSAGE_SOURCE = 'picture-converter-welcome-page';
         const EXTENSION_MESSAGE_SOURCE = 'picture-converter-extension';
@@ -1387,39 +1307,15 @@
             showOpenStatus('', 'success');
         });
     
-        function updateResponsiveBrowserScale() {
-            const shell = document.getElementById('browser-scale-shell');
-            if (!shell) return;
-
-            const bodyStyles = window.getComputedStyle(document.body);
-            const horizontalPadding =
-                parseFloat(bodyStyles.paddingLeft || '0')
-                + parseFloat(bodyStyles.paddingRight || '0');
-
-            const availableWidth = Math.max(
-                260,
-                document.documentElement.clientWidth - horizontalPadding
-            );
-
-            const scale = Math.min(1, availableWidth / 900);
-
-            shell.style.setProperty(
-                '--browser-scale',
-                String(Math.max(0.28, scale))
-            );
-        }
-
-        updateResponsiveBrowserScale();
-
         window.addEventListener(
             'resize',
-            updateResponsiveBrowserScale,
+            window.updateResponsiveBrowserScale,
             { passive: true }
         );
 
         window.addEventListener(
             'orientationchange',
-            updateResponsiveBrowserScale,
+            window.updateResponsiveBrowserScale,
             { passive: true }
         );
 
