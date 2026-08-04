@@ -71,10 +71,15 @@ const reasons = [
 <script>
   import { track } from '../lib/analytics';
 
-  const params = new URLSearchParams(window.location.search);
-  const p = params.get('p') || 'unknown';
+  const TOOL_NAMES: Record<string, string> = {
+    ic: 'Image Converter',
+  };
 
-  track('un_view', { p });
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('product') || 'unknown';
+  const v = params.get('v') || '';
+
+  track('un_view', { p, v });
 
   const widget = document.getElementById('uninstall-widget')!;
   const form = document.getElementById('uninstall-form') as HTMLFormElement;
@@ -141,7 +146,7 @@ const reasons = [
       src: 'uninstall',
       type: 'uninstall',
       text,
-      v: '',
+      v,
     });
 
     widget.dataset.state = 'done';
@@ -162,7 +167,7 @@ const reasons = [
       src: 'uninstall',
       type: 'uninstall_skip',
       text: '(skipped — no feedback left)',
-      v: '',
+      v,
     });
   });
 
@@ -182,7 +187,7 @@ const reasons = [
       src: 'uninstall',
       type: 'uninstall_partial',
       text: `draft: ${selected.join(' | ')}`,
-      v: '',
+      v,
     });
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/feedback', new Blob([payload], { type: 'application/json' }));
