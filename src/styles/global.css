@@ -3550,6 +3550,24 @@ ol.how-it-works li {
   color: var(--color-text);
 }
 
+.win-back-note {
+  margin-top: var(--space-1);
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.win-back-note[hidden] {
+  display: none;
+}
+
+.reinstall-note {
+  margin-top: var(--space-1);
+}
+
 
 /* --- Feedback hub polish (20.07, owner pass: «сделай норм форму,
    оптимизируй под все устройства»). Destination-page layout: the column is
