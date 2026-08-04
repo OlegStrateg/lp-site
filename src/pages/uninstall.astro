@@ -7,6 +7,13 @@
 // captured even if the visitor never hits Send), and Send posts the full
 // aggregate. Both are best-effort — this funnel never blocks on the network
 // (the visitor has already uninstalled; the UI shouldn't make that worse).
+//
+// popup-cro pass (04.08): win-back copy (reassurance, never guilt-tripping)
+// keyed off the selected reason, plus a placeholder reinstall link — real
+// Chrome Web Store URL doesn't exist yet, filled in once the extension ships.
+// i18n is client-side text-swap (reason keys stay in English for KV/Telegram,
+// only the visible copy changes) — the static build has no per-request
+// locale, so <html lang> stays "en" site-wide; only .fbx text is translated.
 import PageLayout from '../layouts/PageLayout.astro';
 
 const reasons = [
@@ -28,24 +35,26 @@ const reasons = [
   robots="noindex, nofollow"
 >
   <div class="fbx">
-  <h1>Before you go</h1>
-  <p class="answer-first">
+  <h1 id="un-title">Before you go</h1>
+  <p class="answer-first" id="un-intro">
     This takes ten seconds, no email, nothing saved to an account. It just tells us what to fix.
   </p>
 
   <div class="feedback-card" id="uninstall-widget" data-state="form">
     <form id="uninstall-form" class="feedback-form" novalidate>
       <fieldset class="chip-group">
-        <legend class="field-label">What made you uninstall?</legend>
+        <legend class="field-label" id="un-chip-legend">What made you uninstall?</legend>
         {reasons.map((r) => (
           <label class="chip">
             <input type="checkbox" data-key={r.key} value={r.label} />
-            <span>{r.label}</span>
+            <span data-i18n-key={r.key}>{r.label}</span>
           </label>
         ))}
       </fieldset>
 
-      <label class="field-label" for="uninstall-text">Anything else?</label>
+      <div class="win-back-note" id="un-winback" hidden></div>
+
+      <label class="field-label" for="uninstall-text" id="un-text-label">Anything else?</label>
       <textarea
         id="uninstall-text"
         class="feedback-textarea"
@@ -59,27 +68,348 @@ const reasons = [
     </form>
 
     <div class="feedback-done" id="uninstall-done" hidden>
-      <h2>Thanks for the two seconds.</h2>
-      <p>If you ever need it again, it's one click away in the Chrome Web Store — nothing to reconfigure.</p>
+      <h2 id="un-done-title">Thanks for the two seconds.</h2>
+      <p id="un-done-text">Your answer helps us fix what's actually broken.</p>
+      <p class="reinstall-note" id="un-reinstall">
+        Change your mind? <!-- TODO(owner): swap href for the real Chrome Web Store URL once published --><a
+          href="#"
+          id="un-reinstall-link"
+          data-pending="chrome-store-url"
+          rel="noopener"
+        >reinstall it here</a>.
+      </p>
     </div>
   </div>
 
-  <p class="feedback-fineprint">Prefer email? <a href="mailto:hello@layerporter.com">hello@layerporter.com</a></p>
+  <p class="feedback-fineprint" id="un-email-fineprint">
+    Prefer email? <a href="mailto:hello@layerporter.com">hello@layerporter.com</a>
+  </p>
   </div>
 </PageLayout>
 
 <script>
   import { track } from '../lib/analytics';
 
-  const TOOL_NAMES: Record<string, string> = {
-    ic: 'Image Converter',
+  type Locale = 'en' | 'ru' | 'es' | 'de' | 'fr' | 'pt' | 'ja';
+  const SUPPORTED_LOCALES: Locale[] = ['en', 'ru', 'es', 'de', 'fr', 'pt', 'ja'];
+
+  interface Strings {
+    title: string;
+    intro: string;
+    chipLegend: string;
+    reasons: Record<string, string>;
+    textLabel: string;
+    textPlaceholder: string;
+    followUp: Record<string, string>;
+    send: string;
+    skip: string;
+    doneTitle: string;
+    doneText: string;
+    reinstallPrefix: string;
+    reinstallLink: string;
+    emailPrefix: string;
+    winBack: {
+      bug: string;
+      alt: string;
+      generic: string;
+    };
+  }
+
+  const TRANSLATIONS: Record<Locale, Strings> = {
+    en: {
+      title: 'Before you go',
+      intro: "This takes ten seconds, no email, nothing saved to an account. It just tells us what to fix.",
+      chipLegend: 'What made you uninstall?',
+      reasons: {
+        capture: "Didn't capture the page correctly",
+        'missing-feature': 'Missing a feature I needed',
+        'slow-crash': 'Too slow, or it crashed',
+        'found-alternative': 'Found something that fit better',
+        'unsure-how': "Wasn't sure how to use it",
+        'trying-out': 'Just trying it out, not a permanent no',
+        privacy: 'Privacy or permissions concern',
+        other: 'Other',
+      },
+      textLabel: 'Anything else?',
+      textPlaceholder: 'Optional — a sentence is enough.',
+      followUp: {
+        capture: 'What went wrong?',
+        'missing-feature': 'What feature did you need?',
+        privacy: 'What concerned you?',
+        'slow-crash': 'What were you capturing when it slowed down or crashed?',
+        'found-alternative': 'Which tool fit better?',
+      },
+      send: 'Send',
+      skip: 'Skip',
+      doneTitle: 'Thanks for the two seconds.',
+      doneText: "Your answer helps us fix what's actually broken.",
+      reinstallPrefix: 'Change your mind? ',
+      reinstallLink: 'reinstall it here',
+      emailPrefix: 'Prefer email? ',
+      winBack: {
+        bug: "Sorry it broke. If you can spare one more sentence on what happened, it goes straight to the person who'll fix it.",
+        alt: 'Fair enough — thanks for giving it a try.',
+        generic: "No hard feelings. If anything above was close but not quite right, a line about it helps a lot.",
+      },
+    },
+    ru: {
+      title: 'Прежде чем вы уйдёте',
+      intro: 'Это займёт десять секунд, без почты, ничего не сохраняется на аккаунт. Просто подскажите, что исправить.',
+      chipLegend: 'Почему вы удалили расширение?',
+      reasons: {
+        capture: 'Неправильно захватывало страницу',
+        'missing-feature': 'Не хватило нужной функции',
+        'slow-crash': 'Слишком медленно или падало',
+        'found-alternative': 'Нашёл что-то более подходящее',
+        'unsure-how': 'Не разобрался, как пользоваться',
+        'trying-out': 'Просто пробовал, не окончательное "нет"',
+        privacy: 'Вопросы приватности или разрешений',
+        other: 'Другое',
+      },
+      textLabel: 'Что-то ещё?',
+      textPlaceholder: 'Необязательно — достаточно одной фразы.',
+      followUp: {
+        capture: 'Что пошло не так?',
+        'missing-feature': 'Какая функция была нужна?',
+        privacy: 'Что именно беспокоило?',
+        'slow-crash': 'Что вы конвертировали, когда стало медленно или упало?',
+        'found-alternative': 'Какой инструмент подошёл лучше?',
+      },
+      send: 'Отправить',
+      skip: 'Пропустить',
+      doneTitle: 'Спасибо за эти две секунды.',
+      doneText: 'Ваш ответ помогает исправить то, что действительно не работает.',
+      reinstallPrefix: 'Передумали? ',
+      reinstallLink: 'установить снова',
+      emailPrefix: 'Удобнее по почте? ',
+      winBack: {
+        bug: 'Жаль, что не сработало. Если найдётся ещё пара слов о том, что случилось — они попадут прямо к тому, кто это чинит.',
+        alt: 'Понимаем — спасибо, что попробовали.',
+        generic: 'Без обид. Если что-то из выбранного было близко, но не совсем то — короткое пояснение очень поможет.',
+      },
+    },
+    es: {
+      title: 'Antes de irte',
+      intro: 'Son diez segundos, sin correo, nada se guarda en una cuenta. Solo nos dice qué arreglar.',
+      chipLegend: '¿Por qué desinstalaste la extensión?',
+      reasons: {
+        capture: 'No capturaba la página correctamente',
+        'missing-feature': 'Le faltaba una función que necesitaba',
+        'slow-crash': 'Muy lenta, o se bloqueaba',
+        'found-alternative': 'Encontré algo que me quedó mejor',
+        'unsure-how': 'No sabía bien cómo usarla',
+        'trying-out': 'Solo la estaba probando, no es un no definitivo',
+        privacy: 'Preocupación de privacidad o permisos',
+        other: 'Otro motivo',
+      },
+      textLabel: '¿Algo más?',
+      textPlaceholder: 'Opcional — una frase es suficiente.',
+      followUp: {
+        capture: '¿Qué salió mal?',
+        'missing-feature': '¿Qué función necesitabas?',
+        privacy: '¿Qué te preocupó?',
+        'slow-crash': '¿Qué estabas capturando cuando se puso lenta o se bloqueó?',
+        'found-alternative': '¿Qué herramienta te quedó mejor?',
+      },
+      send: 'Enviar',
+      skip: 'Omitir',
+      doneTitle: 'Gracias por esos dos segundos.',
+      doneText: 'Tu respuesta ayuda a arreglar lo que realmente está roto.',
+      reinstallPrefix: '¿Cambiaste de opinión? ',
+      reinstallLink: 'reinstálala aquí',
+      emailPrefix: '¿Prefieres correo? ',
+      winBack: {
+        bug: 'Lamentamos que fallara. Si puedes añadir una frase más sobre qué pasó, llega directo a quien lo va a arreglar.',
+        alt: 'Entendido — gracias por probarla.',
+        generic: 'Sin problema. Si algo de lo elegido se acercaba pero no era exacto, una línea al respecto ayuda mucho.',
+      },
+    },
+    de: {
+      title: 'Bevor du gehst',
+      intro: 'Das dauert zehn Sekunden, keine E-Mail, nichts wird in einem Konto gespeichert. Es sagt uns nur, was zu reparieren ist.',
+      chipLegend: 'Warum hast du die Erweiterung deinstalliert?',
+      reasons: {
+        capture: 'Hat die Seite nicht richtig erfasst',
+        'missing-feature': 'Eine benötigte Funktion hat gefehlt',
+        'slow-crash': 'Zu langsam, oder abgestürzt',
+        'found-alternative': 'Etwas Besseres gefunden',
+        'unsure-how': 'War mir nicht sicher, wie man sie benutzt',
+        'trying-out': 'Nur ausprobiert, kein endgültiges Nein',
+        privacy: 'Bedenken zu Datenschutz oder Berechtigungen',
+        other: 'Anderer Grund',
+      },
+      textLabel: 'Sonst noch etwas?',
+      textPlaceholder: 'Optional — ein Satz reicht.',
+      followUp: {
+        capture: 'Was ist schiefgelaufen?',
+        'missing-feature': 'Welche Funktion hast du gebraucht?',
+        privacy: 'Was hat dich beschäftigt?',
+        'slow-crash': 'Was hast du konvertiert, als es langsam wurde oder abstürzte?',
+        'found-alternative': 'Welches Tool hat besser gepasst?',
+      },
+      send: 'Senden',
+      skip: 'Überspringen',
+      doneTitle: 'Danke für die zwei Sekunden.',
+      doneText: 'Deine Antwort hilft, das zu reparieren, was wirklich kaputt ist.',
+      reinstallPrefix: 'Meinung geändert? ',
+      reinstallLink: 'hier neu installieren',
+      emailPrefix: 'Lieber per E-Mail? ',
+      winBack: {
+        bug: 'Schade, dass es nicht funktioniert hat. Ein Satz mehr dazu, was passiert ist, geht direkt an die Person, die es behebt.',
+        alt: 'Verstehen wir — danke, dass du es probiert hast.',
+        generic: 'Kein Problem. Falls etwas davon nah dran war, aber nicht ganz passte, hilft eine kurze Zeile dazu sehr.',
+      },
+    },
+    fr: {
+      title: 'Avant de partir',
+      intro: "Ça prend dix secondes, sans e-mail, rien n'est enregistré sur un compte. Ça nous dit juste quoi corriger.",
+      chipLegend: "Pourquoi as-tu désinstallé l'extension ?",
+      reasons: {
+        capture: 'Ne capturait pas correctement la page',
+        'missing-feature': 'Manquait une fonctionnalité dont j\'avais besoin',
+        'slow-crash': 'Trop lent, ou ça plantait',
+        'found-alternative': 'Trouvé quelque chose qui convenait mieux',
+        'unsure-how': "Je ne savais pas trop comment l'utiliser",
+        'trying-out': "Je testais juste, ce n'est pas un non définitif",
+        privacy: 'Préoccupation de confidentialité ou de permissions',
+        other: 'Autre raison',
+      },
+      textLabel: 'Autre chose ?',
+      textPlaceholder: 'Facultatif — une phrase suffit.',
+      followUp: {
+        capture: "Qu'est-ce qui s'est mal passé ?",
+        'missing-feature': 'Quelle fonctionnalité te fallait-il ?',
+        privacy: "Qu'est-ce qui t'inquiétait ?",
+        'slow-crash': 'Que convertissais-tu quand ça a ralenti ou planté ?',
+        'found-alternative': 'Quel outil convenait mieux ?',
+      },
+      send: 'Envoyer',
+      skip: 'Passer',
+      doneTitle: 'Merci pour ces deux secondes.',
+      doneText: 'Ta réponse aide à corriger ce qui est vraiment cassé.',
+      reinstallPrefix: 'Changé d\'avis ? ',
+      reinstallLink: 'réinstalle-la ici',
+      emailPrefix: 'Tu préfères l\'e-mail ? ',
+      winBack: {
+        bug: "Désolé que ça ait cassé. Une phrase de plus sur ce qui s'est passé va directement à la personne qui va le corriger.",
+        alt: "Compris — merci de l'avoir essayée.",
+        generic: "Pas de souci. Si l'un des choix ci-dessus était proche sans être exact, une ligne à ce sujet aide beaucoup.",
+      },
+    },
+    pt: {
+      title: 'Antes de você ir',
+      intro: 'Leva dez segundos, sem e-mail, nada é salvo em uma conta. Só nos diz o que corrigir.',
+      chipLegend: 'Por que você desinstalou a extensão?',
+      reasons: {
+        capture: 'Não capturava a página corretamente',
+        'missing-feature': 'Faltava um recurso que eu precisava',
+        'slow-crash': 'Muito lenta, ou travava',
+        'found-alternative': 'Encontrei algo que se encaixou melhor',
+        'unsure-how': 'Não tinha certeza de como usar',
+        'trying-out': 'Só estava testando, não é um não definitivo',
+        privacy: 'Preocupação com privacidade ou permissões',
+        other: 'Outro motivo',
+      },
+      textLabel: 'Mais alguma coisa?',
+      textPlaceholder: 'Opcional — uma frase é suficiente.',
+      followUp: {
+        capture: 'O que deu errado?',
+        'missing-feature': 'Que recurso você precisava?',
+        privacy: 'O que te preocupou?',
+        'slow-crash': 'O que você estava convertendo quando ficou lento ou travou?',
+        'found-alternative': 'Qual ferramenta se encaixou melhor?',
+      },
+      send: 'Enviar',
+      skip: 'Pular',
+      doneTitle: 'Obrigado por esses dois segundos.',
+      doneText: 'Sua resposta ajuda a corrigir o que realmente está quebrado.',
+      reinstallPrefix: 'Mudou de ideia? ',
+      reinstallLink: 'reinstale aqui',
+      emailPrefix: 'Prefere e-mail? ',
+      winBack: {
+        bug: 'Sentimos que não funcionou. Se puder acrescentar mais uma frase sobre o que aconteceu, ela vai direto para quem vai corrigir.',
+        alt: 'Entendido — obrigado por experimentar.',
+        generic: 'Sem problemas. Se alguma opção acima estava perto mas não exata, uma linha sobre isso ajuda bastante.',
+      },
+    },
+    ja: {
+      title: 'ご利用ありがとうございました',
+      intro: '10秒で終わります。メールは不要で、アカウントには何も保存されません。改善のヒントになるだけです。',
+      chipLegend: 'アンインストールした理由は何ですか？',
+      reasons: {
+        capture: 'ページを正しくキャプチャできなかった',
+        'missing-feature': '必要な機能がなかった',
+        'slow-crash': '遅い、またはクラッシュした',
+        'found-alternative': 'もっと合うものを見つけた',
+        'unsure-how': '使い方がよくわからなかった',
+        'trying-out': 'ただ試していただけで、最終的な「いいえ」ではない',
+        privacy: 'プライバシーや権限が気になった',
+        other: 'その他',
+      },
+      textLabel: '他に何かありますか？',
+      textPlaceholder: '任意 — 一言で十分です。',
+      followUp: {
+        capture: '何がうまくいきませんでしたか？',
+        'missing-feature': 'どの機能が必要でしたか？',
+        privacy: '何が気になりましたか？',
+        'slow-crash': '遅くなったりクラッシュしたとき、何を変換していましたか？',
+        'found-alternative': 'どのツールがより合っていましたか？',
+      },
+      send: '送信',
+      skip: 'スキップ',
+      doneTitle: '2秒のご協力ありがとうございました。',
+      doneText: 'いただいた回答は、実際の不具合の修正に役立ちます。',
+      reinstallPrefix: '気が変わったら？ ',
+      reinstallLink: 'こちらから再インストール',
+      emailPrefix: 'メールの方がよければ？ ',
+      winBack: {
+        bug: '不具合があり申し訳ありません。何が起きたかもう一言いただけると、修正担当者に直接届きます。',
+        alt: '承知しました — お試しいただきありがとうございました。',
+        generic: 'ご遠慮なく。選んだ内容が近いけれど少し違う場合、一言添えていただけると大変助かります。',
+      },
+    },
   };
+
+  function detectLocale(): Locale {
+    const fromParam = new URLSearchParams(window.location.search).get('locale');
+    const candidates = fromParam ? [fromParam] : Array.from(navigator.languages ?? [navigator.language]);
+    for (const candidate of candidates) {
+      const base = candidate.toLowerCase().split('-')[0] as Locale;
+      if (SUPPORTED_LOCALES.includes(base)) return base;
+    }
+    return 'en';
+  }
+
+  const locale = detectLocale();
+  const t = TRANSLATIONS[locale];
+
+  document.getElementById('un-title')!.textContent = t.title;
+  document.getElementById('un-intro')!.textContent = t.intro;
+  document.getElementById('un-chip-legend')!.textContent = t.chipLegend;
+  document.getElementById('un-text-label')!.textContent = t.textLabel;
+  document.getElementById('uninstall-send-btn')!.textContent = t.send;
+  document.getElementById('uninstall-skip-link')!.textContent = t.skip;
+  document.getElementById('un-done-title')!.textContent = t.doneTitle;
+  document.getElementById('un-done-text')!.textContent = t.doneText;
+  document.getElementById('un-reinstall-link')!.textContent = t.reinstallLink;
+  {
+    const reinstallEl = document.getElementById('un-reinstall')!;
+    reinstallEl.firstChild!.textContent = t.reinstallPrefix;
+  }
+  {
+    const emailEl = document.getElementById('un-email-fineprint')!;
+    emailEl.firstChild!.textContent = t.emailPrefix;
+  }
+  document.querySelectorAll<HTMLElement>('.chip span[data-i18n-key]').forEach((span) => {
+    const key = span.dataset.i18nKey!;
+    span.textContent = t.reasons[key] ?? span.textContent ?? '';
+  });
 
   const params = new URLSearchParams(window.location.search);
   const p = params.get('product') || 'unknown';
   const v = params.get('v') || '';
 
-  track('un_view', { p, v });
+  track('un_view', { p, v, locale });
 
   const widget = document.getElementById('uninstall-widget')!;
   const form = document.getElementById('uninstall-form') as HTMLFormElement;
@@ -87,6 +417,10 @@ const reasons = [
   const doneEl = document.getElementById('uninstall-done')!;
   const skipLink = document.getElementById('uninstall-skip-link')!;
   const chipInputs = document.querySelectorAll<HTMLInputElement>('.chip input[type="checkbox"]');
+  const winBackEl = document.getElementById('un-winback')!;
+
+  textEl.placeholder = t.textPlaceholder;
+  const DEFAULT_PLACEHOLDER = t.textPlaceholder;
 
   function postFeedback(payload: Record<string, unknown>) {
     fetch('/api/feedback', {
@@ -99,17 +433,37 @@ const reasons = [
     });
   }
 
-  // One contextual follow-up per reason (GPT-ТЗ 20.07, принято): the last
-  // toggled-ON chip retargets the optional textarea's placeholder — a
-  // question instead of a second form.
-  const FOLLOW_UP: Record<string, string> = {
-    capture: 'What went wrong?',
-    'missing-feature': 'What feature did you need?',
-    privacy: 'What concerned you?',
-    'slow-crash': 'What were you capturing when it slowed down or crashed?',
-    'found-alternative': 'Which tool fit better?',
+  // Which win-back copy fits a reason: bug-shaped reasons get the "sorry,
+  // help us fix it" tone, "found something else" gets a no-guilt goodbye,
+  // everything else gets the generic honest-feedback line. No discounts or
+  // perks are offered anywhere here — none exist, so none are invented.
+  const WIN_BACK_VARIANT: Record<string, 'bug' | 'alt'> = {
+    capture: 'bug',
+    'slow-crash': 'bug',
+    'found-alternative': 'alt',
   };
-  const DEFAULT_PLACEHOLDER = textEl.placeholder;
+
+  function updateWinBack() {
+    const checked = Array.from(chipInputs).filter((i) => i.checked).map((i) => i.dataset.key ?? '');
+    if (checked.length === 0) {
+      winBackEl.hidden = true;
+      return;
+    }
+    const variant = checked.map((k) => WIN_BACK_VARIANT[k]).find(Boolean) ?? 'generic';
+    winBackEl.textContent = t.winBack[variant];
+    winBackEl.hidden = false;
+  }
+
+  chipInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      const key = input.dataset.key ?? 'unknown';
+      if (input.checked) {
+        textEl.placeholder = t.followUp[key] ?? DEFAULT_PLACEHOLDER;
+      }
+      updateWinBack();
+      track('un_chip', { reason: key });
+    });
+  });
 
   // One push per real event, not one per click (21.07 — owner caught this
   // in the Telegram feed: a single user toggling 3 chips then hitting Send
@@ -119,16 +473,6 @@ const reasons = [
   // either on Submit or, as a fallback, once on pagehide if the user
   // picked reasons but never submitted.
   let submitted = false;
-
-  chipInputs.forEach((input) => {
-    input.addEventListener('change', () => {
-      const key = input.dataset.key ?? 'unknown';
-      if (input.checked) {
-        textEl.placeholder = FOLLOW_UP[key] ?? DEFAULT_PLACEHOLDER;
-      }
-      track('un_chip', { reason: key });
-    });
-  });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
