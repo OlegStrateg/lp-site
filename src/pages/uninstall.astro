@@ -80,10 +80,6 @@ const reasons = [
       </p>
     </div>
   </div>
-
-  <p class="feedback-fineprint" id="un-email-fineprint">
-    Prefer email? <a href="mailto:hello@layerporter.com">hello@layerporter.com</a>
-  </p>
   </div>
 </PageLayout>
 
@@ -107,7 +103,6 @@ const reasons = [
     doneText: string;
     reinstallPrefix: string;
     reinstallLink: string;
-    emailPrefix: string;
     winBack: {
       bug: string;
       alt: string;
@@ -145,7 +140,6 @@ const reasons = [
       doneText: "Your answer helps us fix what's actually broken.",
       reinstallPrefix: 'Change your mind? ',
       reinstallLink: 'reinstall it here',
-      emailPrefix: 'Prefer email? ',
       winBack: {
         bug: "Sorry it broke. If you can spare one more sentence on what happened, it goes straight to the person who'll fix it.",
         alt: 'Fair enough — thanks for giving it a try.',
@@ -181,7 +175,6 @@ const reasons = [
       doneText: 'Ваш ответ помогает исправить то, что действительно не работает.',
       reinstallPrefix: 'Передумали? ',
       reinstallLink: 'переустановите её здесь',
-      emailPrefix: 'Удобнее по почте? ',
       winBack: {
         bug: 'Жаль, что не сработало. Если найдётся ещё пара слов о том, что случилось — они попадут прямиком к тому, кто это исправит.',
         alt: 'Понимаем — спасибо, что попробовали.',
@@ -217,7 +210,6 @@ const reasons = [
       doneText: 'Tu respuesta ayuda a arreglar lo que realmente está roto.',
       reinstallPrefix: '¿Cambiaste de opinión? ',
       reinstallLink: 'reinstálala aquí',
-      emailPrefix: '¿Prefieres correo? ',
       winBack: {
         bug: 'Lamentamos que fallara. Si puedes añadir una frase más sobre qué pasó, llega directo a quien lo va a arreglar.',
         alt: 'Entendido — gracias por probarla.',
@@ -253,7 +245,6 @@ const reasons = [
       doneText: 'Deine Antwort hilft, das zu reparieren, was wirklich kaputt ist.',
       reinstallPrefix: 'Meinung geändert? ',
       reinstallLink: 'hier neu installieren',
-      emailPrefix: 'Lieber per E-Mail? ',
       winBack: {
         bug: 'Schade, dass es nicht funktioniert hat. Ein Satz mehr dazu, was passiert ist, geht direkt an die Person, die es behebt.',
         alt: 'Verstehen wir — danke, dass du es probiert hast.',
@@ -289,7 +280,6 @@ const reasons = [
       doneText: 'Ta réponse aide à corriger ce qui est vraiment cassé.',
       reinstallPrefix: 'Changé d\'avis ? ',
       reinstallLink: 'réinstalle-la ici',
-      emailPrefix: 'Tu préfères l\'e-mail ? ',
       winBack: {
         bug: "Désolé que ça n'ait pas fonctionné. Une phrase de plus sur ce qui s'est passé va directement à la personne qui va le corriger.",
         alt: "Compris — merci de l'avoir essayée.",
@@ -325,7 +315,6 @@ const reasons = [
       doneText: 'Sua resposta ajuda a corrigir o que realmente está quebrado.',
       reinstallPrefix: 'Mudou de ideia? ',
       reinstallLink: 'reinstale aqui',
-      emailPrefix: 'Prefere e-mail? ',
       winBack: {
         bug: 'Sentimos que não funcionou. Se puder acrescentar mais uma frase sobre o que aconteceu, ela vai direto para quem vai corrigir.',
         alt: 'Entendido — obrigado por experimentar.',
@@ -361,7 +350,6 @@ const reasons = [
       doneText: 'いただいた回答は、実際の不具合の修正に役立ちます。',
       reinstallPrefix: '気が変わったら？ ',
       reinstallLink: 'こちらから再インストール',
-      emailPrefix: 'メールの方がよければ？ ',
       winBack: {
         bug: '不具合があり申し訳ありません。何が起きたかもう一言いただけると、修正担当者に直接届きます。',
         alt: '承知しました — お試しいただきありがとうございました。',
@@ -395,10 +383,6 @@ const reasons = [
   {
     const reinstallEl = document.getElementById('un-reinstall')!;
     reinstallEl.firstChild!.textContent = t.reinstallPrefix;
-  }
-  {
-    const emailEl = document.getElementById('un-email-fineprint')!;
-    emailEl.firstChild!.textContent = t.emailPrefix;
   }
   document.querySelectorAll<HTMLElement>('.chip span[data-i18n-key]').forEach((span) => {
     const key = span.dataset.i18nKey!;
