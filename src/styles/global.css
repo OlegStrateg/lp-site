@@ -3528,6 +3528,11 @@ ol.how-it-works li {
   color: #fff;
 }
 
+.chip:hover input:not(:checked) + span {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-bg));
+}
+
 .chip input:focus-visible + span {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -3558,14 +3563,48 @@ ol.how-it-works li {
   border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
   font-size: 0.9rem;
   color: var(--color-text);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-behavior: allow-discrete;
 }
 
+/* Reason chips are checkboxes, so a reason can be revealed then cleared —
+   the note needs a real appear/disappear transition, not a hard cut. Uses
+   @starting-style + allow-discrete (Chromium/Safari 17.4+) instead of a JS
+   visibility class: this is the uninstall page of a Chrome extension, so
+   the no-animation fallback (older/other engines) only affects a sliver of
+   visitors and degrades to the previous instant-swap, never to broken. */
 .win-back-note[hidden] {
   display: none;
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
+@starting-style {
+  .win-back-note {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Quiet on purpose: this is a courtesy link after the decision is already
+   made, not a second ask. Tonal fill (not the primary-tinted win-back
+   treatment) keeps it visually subordinate; the link itself carries the one
+   spot of color so it still reads as actionable. */
 .reinstall-note {
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.reinstall-note a {
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 
@@ -3608,6 +3647,22 @@ ol.how-it-works li {
   font-size: clamp(1.9rem, 4.5vw, 2.5rem);
   letter-spacing: -0.03em;
   margin-bottom: var(--space-1);
+}
+
+/* /uninstall/ is a goodbye, not a pitch — the brand-primary glow below reads
+   as "look what you get" on /feedback/, which is wrong tone for someone who
+   just left. Same depth cue (a soft ambient shift, not a flat page), traded
+   to a neutral tone off --color-text instead of --color-primary: calm,
+   not celebratory. */
+.un-quiet::before {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-text) 5%, transparent),
+    transparent 72%
+  );
+  height: 280px;
+  filter: blur(32px);
+  opacity: 0.7;
 }
 
 .fbx .answer-first {
