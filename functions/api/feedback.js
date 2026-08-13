@@ -1,39 +1,32 @@
-// Feedback-hub endpoint (этап 1, 20.07 — see 15_Стратегия-обратной-связи.md).
-// One endpoint for the whole converter line: the site form, the uninstall
-// survey, and (later) Canva apps all POST here. Payload is product-neutral so
-// new products are a registry line, not a new backend.
-//
-// Data policy (mirrors the privacy page): only what the user explicitly
-// submits is stored — no cookies, no fingerprinting, no auto-collection.
-// IP is used ONLY inside the rate limiter (hashed key, 2-minute TTL) and is
-// never written into the stored record or the Telegram message.
-//
-// Delivery: KV archive (90-day TTL) always; Telegram push only when
-// TG_BOT_TOKEN + TG_CHAT_ID secrets are configured (wrangler pages secret).
-// Missing secrets must NOT fail the request — the archive is the source of
-// truth, Telegram is a convenience mirror.
+import { ownerTestInfo, productName } from '../_lib/analytics.js';
 
+// Общий feedback-hub линейки. Хранит только то, что пользователь отправил явно.
+// IP используется только для rate-limit и определения тестов владельца; сырой IP
+// не записывается ни в KV, ни в Telegram.
 const FIELD_LIMITS = { p: 40, channel: 40, src: 40, type: 40, v: 40, text: 5000, email: 200 };
 const RATE_LIMIT_PER_MIN = 10;
+
+const TYPE_RU = {
+  feedback: 'Обратная связь',
+  bug: 'Проблема',
+  problem: 'Проблема',
+  idea: 'Идея',
+  other: 'Другое',
+};
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ ok: false, error: 'bad_json' }, 400);
-  }
+  try { body = await request.json(); }
+  catch { return json({ ok: false, error: 'bad_json' }, 400); }
 
   const record = {};
   for (const [field, max] of Object.entries(FIELD_LIMITS)) {
-    const value = typeof body[field] === 'string' ? body[field].slice(0, max).trim() : '';
-    record[field] = value;
+    record[field] = typeof body[field] === 'string' ? body[field].slice(0, max).trim() : '';
   }
   if (!record.text) return json({ ok: false, error: 'empty_text' }, 400);
 
-  // Rate limit per IP: hashed so the raw IP never becomes a KV key.
   const ip = request.headers.get('cf-connecting-ip') || 'unknown';
   const minute = Math.floor(Date.now() / 60000);
   const rlKey = `rl:${await sha256(`${ip}:${minute}`)}`;
@@ -41,19 +34,28 @@ export async function onRequestPost(context) {
   if (hits >= RATE_LIMIT_PER_MIN) return json({ ok: false, error: 'rate_limited' }, 429);
   await env.FEEDBACK_KV.put(rlKey, String(hits + 1), { expirationTtl: 120 });
 
+  const { isTest, country } = ownerTestInfo(request, env);
   record.at = new Date().toISOString();
+  record.is_test = isTest;
+  record.country = country;
   const key = `fb:${record.at}:${crypto.randomUUID().slice(0, 8)}`;
   await env.FEEDBACK_KV.put(key, JSON.stringify(record), { expirationTtl: 90 * 24 * 3600 });
 
   if (env.TG_BOT_TOKEN && env.TG_CHAT_ID) {
+    const prefix = isTest ? '🧪 МОЙ ТЕСТ — ОБРАТНАЯ СВЯЗЬ' : '💬 ОБРАТНАЯ СВЯЗЬ';
     const lines = [
-      `[${record.p || 'site'} · ${record.channel || 'site'} · ${record.src || 'direct'}] ${record.type || 'feedback'}`,
-      record.v ? `v${record.v}` : null,
+      `${prefix} — ${productName(record.p)}`,
+      `Тип: ${TYPE_RU[record.type] || record.type || 'Обратная связь'}`,
+      record.v ? `Версия: ${record.v}` : null,
+      record.channel ? `Канал: ${record.channel}` : null,
+      record.src ? `Источник: ${record.src}` : null,
+      country ? `Страна: ${country}` : null,
+      isTest ? 'В статистику: НЕ включено' : null,
       '',
       record.text,
-      record.email ? `\nreply-to: ${record.email}` : null,
-    ].filter((l) => l !== null);
-    // Fire-and-forget: a Telegram outage must not fail the user's submit.
+      record.email ? `Ответить: ${record.email}` : null,
+    ].filter((x) => x !== null);
+
     context.waitUntil(
       fetch(`https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`, {
         method: 'POST',

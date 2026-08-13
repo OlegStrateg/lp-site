@@ -2,11 +2,11 @@
 // Uninstall-survey target for the browser extensions' chrome.runtime.setUninstallURL.
 // Deliberately noindex: it is a destination page, not a search landing.
 //
-// Redesigned 20.07: chips replace the old mailto-per-reason links. Each chip
-// click fires its own fire-and-forget POST to /api/feedback (so a reason is
-// captured even if the visitor never hits Send), and Send posts the full
-// aggregate. Both are best-effort — this funnel never blocks on the network
-// (the visitor has already uninstalled; the UI shouldn't make that worse).
+// Analytics pass 12.08: opening this page records one uninstall immediately.
+// If the visitor later submits/skips/abandons after selecting a reason, the
+// same uninstall session is updated server-side and the original Telegram
+// message is edited instead of sending a second uninstall notification.
+// The page remains best-effort and never blocks the visitor on the network.
 //
 // popup-cro pass (04.08): win-back copy (reassurance, never guilt-tripping)
 // keyed off the selected reason, plus a placeholder reinstall link — real
@@ -406,8 +406,12 @@ const reasons = [
   textEl.placeholder = t.textPlaceholder;
   const DEFAULT_PLACEHOLDER = t.textPlaceholder;
 
-  function postFeedback(payload: Record<string, unknown>) {
-    fetch('/api/feedback', {
+  const sid = crypto.randomUUID();
+  const uninstallBase = { p, sid, v, locale };
+
+  function postUninstall(phase: 'open' | 'feedback' | 'skip' | 'partial', extra: Record<string, unknown> = {}) {
+    const payload = { ...uninstallBase, phase, ...extra };
+    fetch('/api/uninstall', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
@@ -416,6 +420,10 @@ const reasons = [
       /* Best-effort only — a failed beacon must never block the uninstall UI. */
     });
   }
+
+  // The uninstall itself is useful information even when the visitor leaves
+  // without touching the survey. The backend deduplicates this sid.
+  postUninstall('open');
 
   // Which win-back copy fits a reason: bug-shaped reasons get the "sorry,
   // help us fix it" tone, "found something else" gets a no-guilt goodbye,
@@ -449,13 +457,8 @@ const reasons = [
     });
   });
 
-  // One push per real event, not one per click (21.07 — owner caught this
-  // in the Telegram feed: a single user toggling 3 chips then hitting Send
-  // produced 4 separate, unlabeled messages, indistinguishable from 4
-  // different users). Chip clicks are local UI state + internal analytics
-  // only; postFeedback (KV + Telegram) fires exactly once per session,
-  // either on Submit or, as a fallback, once on pagehide if the user
-  // picked reasons but never submitted.
+  // One uninstall session = one Telegram message. The initial page open creates
+  // it; later survey actions update that same session/message on the backend.
   let submitted = false;
 
   form.addEventListener('submit', (e) => {
@@ -463,40 +466,23 @@ const reasons = [
     track('un_submit');
     submitted = true;
 
-    const selected = Array.from(chipInputs).filter((i) => i.checked).map((i) => i.value);
+    const selected = Array.from(chipInputs)
+      .filter((i) => i.checked)
+      .map((i) => i.dataset.key ?? '')
+      .filter(Boolean);
     const extra = textEl.value.trim();
-    const parts = extra ? [...selected, extra] : selected;
-    const text = parts.length > 0 ? parts.join(' | ') : '(no reason selected)';
 
-    postFeedback({
-      p,
-      channel: 'chrome-ext',
-      src: 'uninstall',
-      type: 'uninstall',
-      text,
-      v,
-    });
+    postUninstall('feedback', { reasonKeys: selected, comment: extra });
 
     widget.dataset.state = 'done';
     form.hidden = true;
     doneEl.hidden = false;
   });
 
-  // Skip used to send nothing at all (owner caught this 21.07: an uninstall
-  // with Skip left zero signal in Telegram — you couldn't tell it happened).
-  // Now it sends one message too, distinctly labeled so it never reads as
-  // real feedback — this counts the uninstall, not a reason for it.
   skipLink.addEventListener('click', () => {
     track('un_skip');
-    submitted = true; // an explicit skip is a real answer, not an abandoned draft
-    postFeedback({
-      p,
-      channel: 'chrome-ext',
-      src: 'uninstall',
-      type: 'uninstall_skip',
-      text: '(skipped — no feedback left)',
-      v,
-    });
+    submitted = true; // explicit skip updates the already-created uninstall session
+    postUninstall('skip');
   });
 
   // Abandonment fallback: fires at most once, only if the user picked at
@@ -505,22 +491,18 @@ const reasons = [
   // Send. sendBeacon survives tab-close better than a fetch here.
   window.addEventListener('pagehide', () => {
     if (submitted) return;
-    const selected = Array.from(chipInputs).filter((i) => i.checked).map((i) => i.value);
+    const selected = Array.from(chipInputs)
+      .filter((i) => i.checked)
+      .map((i) => i.dataset.key ?? '')
+      .filter(Boolean);
     if (selected.length === 0) return;
     submitted = true;
 
-    const payload = JSON.stringify({
-      p,
-      channel: 'chrome-ext',
-      src: 'uninstall',
-      type: 'uninstall_partial',
-      text: `draft: ${selected.join(' | ')}`,
-      v,
-    });
+    const payload = JSON.stringify({ ...uninstallBase, phase: 'partial', reasonKeys: selected, comment: textEl.value.trim() });
     if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/feedback', new Blob([payload], { type: 'application/json' }));
+      navigator.sendBeacon('/api/uninstall', new Blob([payload], { type: 'application/json' }));
     } else {
-      postFeedback(JSON.parse(payload));
+      postUninstall('partial', { reasonKeys: selected, comment: textEl.value.trim() });
     }
   });
 </script>
