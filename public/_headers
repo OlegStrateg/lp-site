@@ -7,13 +7,9 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
-# Welcome-страница расширения Picture Converter временно использует Tailwind CDN +
-# Google Fonts/Material Symbols (runtime, не собранный локальный бандл) — точечное
-# исключение CSP только для этого пути. Блок объявлен ПОСЛЕ общего /*: Cloudflare
-# Pages комбинирует заголовки совпавших правил в порядке объявления в файле, и "!"
-# гасит только то, что уже установлено ПРЕДЫДУЩИМИ правилами — если бы этот блок
-# стоял раньше общего /*, detach не подействовал бы (проверено на проде).
-# TODO: снять это исключение после замены Tailwind CDN на локальный CSS-бандл.
+# Welcome-страница расширения Picture Converter грузит Inter с Google Fonts —
+# точечное исключение CSP только для font-src/style-src этого пути.
+# Tailwind CDN и Material Symbols удалены (иконки — inline SVG), исключение сужено.
 /picture-converter/welcome/*
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
