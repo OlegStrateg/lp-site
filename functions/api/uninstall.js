@@ -34,8 +34,9 @@ async function sendOrEdit(env, record) {
   const today = await statsForDays(env, record.p, 1);
   const text = uninstallMessage(record, today);
   if (record.telegram_message_id) {
-    const edited = await editTelegram(env, record.telegram_message_id, text);
-    if (edited) return Number(record.telegram_message_id);
+    // Если edit упал — не откатываться к send: это создаёт дубль.
+    await editTelegram(env, record.telegram_message_id, text).catch(() => null);
+    return Number(record.telegram_message_id);
   }
   const sent = await sendTelegram(env, text);
   return sent?.message_id ? Number(sent.message_id) : null;
