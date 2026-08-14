@@ -82,14 +82,9 @@ export async function onRequestPost(context) {
       await saveStatEvent(env, { p, event: 'uninstall', id: sid, ts: Date.now() });
     }
 
-    // Сначала сохраняем сессию, затем отправляем Telegram. Если Telegram временно
-    // недоступен, сам факт удаления всё равно остаётся в KV/статистике.
+    // Telegram не шлём на open: это лишь открытие страницы, а не решённый исход.
+    // Сообщение уходит один раз ниже — после feedback/skip/partial.
     await putUninstallSession(env, sid, record);
-    const messageId = await sendOrEdit(env, record).catch(() => null);
-    if (messageId) {
-      record.telegram_message_id = messageId;
-      await putUninstallSession(env, sid, record);
-    }
     return json({ ok: true });
   }
 
