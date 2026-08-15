@@ -17,6 +17,47 @@ const REASON_RU = {
   other: 'Другая причина',
 };
 
+const COUNTRY_NAMES = {
+  AF:'Афганистан',AL:'Албания',DZ:'Алжир',AD:'Андорра',AO:'Ангола',AG:'Антигуа и Барбуда',
+  AR:'Аргентина',AM:'Армения',AU:'Австралия',AT:'Австрия',AZ:'Азербайджан',
+  BS:'Багамы',BH:'Бахрейн',BD:'Бангладеш',BB:'Барбадос',BY:'Беларусь',BE:'Бельгия',
+  BZ:'Белиз',BJ:'Бенин',BT:'Бутан',BO:'Боливия',BA:'Босния и Герцеговина',
+  BW:'Ботсвана',BR:'Бразилия',BN:'Бруней',BG:'Болгария',BF:'Буркина-Фасо',BI:'Бурунди',
+  CV:'Кабо-Верде',KH:'Камбоджа',CM:'Камерун',CA:'Канада',CF:'ЦАР',TD:'Чад',
+  CL:'Чили',CN:'Китай',CO:'Колумбия',KM:'Коморы',CD:'ДР Конго',CG:'Конго',
+  CR:'Коста-Рика',HR:'Хорватия',CU:'Куба',CY:'Кипр',CZ:'Чехия',DK:'Дания',
+  DJ:'Джибути',DM:'Доминика',DO:'Доминиканская Республика',EC:'Эквадор',EG:'Египет',
+  SV:'Сальвадор',GQ:'Экваториальная Гвинея',ER:'Эритрея',EE:'Эстония',SZ:'Эсватини',
+  ET:'Эфиопия',FJ:'Фиджи',FI:'Финляндия',FR:'Франция',GA:'Габон',GM:'Гамбия',
+  GE:'Грузия',DE:'Германия',GH:'Гана',GR:'Греция',GD:'Гренада',GT:'Гватемала',
+  GN:'Гвинея',GW:'Гвинея-Бисау',GY:'Гайана',HT:'Гаити',HN:'Гондурас',HU:'Венгрия',
+  IS:'Исландия',IN:'Индия',ID:'Индонезия',IR:'Иран',IQ:'Ирак',IE:'Ирландия',
+  IL:'Израиль',IT:'Италия',JM:'Ямайка',JP:'Япония',JO:'Иордания',KZ:'Казахстан',
+  KE:'Кения',KI:'Кирибати',KW:'Кувейт',KG:'Кыргызстан',LA:'Лаос',LV:'Латвия',
+  LB:'Ливан',LS:'Лесото',LR:'Либерия',LY:'Ливия',LI:'Лихтенштейн',LT:'Литва',
+  LU:'Люксембург',MG:'Мадагаскар',MW:'Малави',MY:'Малайзия',MV:'Мальдивы',
+  ML:'Мали',MT:'Мальта',MH:'Маршалловы острова',MR:'Мавритания',MU:'Маврикий',
+  MX:'Мексика',FM:'Микронезия',MD:'Молдова',MC:'Монако',MN:'Монголия',ME:'Черногория',
+  MA:'Марокко',MZ:'Мозамбик',MM:'Мьянма',NA:'Намибия',NR:'Науру',NP:'Непал',
+  NL:'Нидерланды',NZ:'Новая Зеландия',NI:'Никарагуа',NE:'Нигер',NG:'Нигерия',
+  NO:'Норвегия',OM:'Оман',PK:'Пакистан',PW:'Палау',PA:'Панама',PG:'Папуа — Новая Гвинея',
+  PY:'Парагвай',PE:'Перу',PH:'Филиппины',PL:'Польша',PT:'Португалия',QA:'Катар',
+  RO:'Румыния',RU:'Россия',RW:'Руанда',KN:'Сент-Китс и Невис',LC:'Сент-Люсия',
+  VC:'Сент-Винсент',WS:'Самоа',SM:'Сан-Марино',ST:'Сан-Томе и Принсипи',SA:'Саудовская Аравия',
+  SN:'Сенегал',RS:'Сербия',SC:'Сейшелы',SL:'Сьерра-Леоне',SG:'Сингапур',SK:'Словакия',
+  SI:'Словения',SB:'Соломоновы острова',SO:'Сомали',ZA:'ЮАР',SS:'Южный Судан',ES:'Испания',
+  LK:'Шри-Ланка',SD:'Судан',SR:'Суринам',SE:'Швеция',CH:'Швейцария',SY:'Сирия',
+  TW:'Тайвань',TJ:'Таджикистан',TZ:'Танзания',TH:'Таиланд',TL:'Тимор-Лесте',
+  TG:'Того',TO:'Тонга',TT:'Тринидад и Тобаго',TN:'Тунис',TR:'Турция',TM:'Туркменистан',
+  TV:'Тувалу',UG:'Уганда',UA:'Украина',AE:'ОАЭ',GB:'Великобритания',US:'США',
+  UY:'Уругвай',UZ:'Узбекистан',VU:'Вануату',VE:'Венесуэла',VN:'Вьетнам',YE:'Йемен',
+  ZM:'Замбия',ZW:'Зимбабве',
+};
+
+function countryName(code) {
+  return code ? (COUNTRY_NAMES[code.toUpperCase()] || code) : '';
+}
+
 const STATS_TTL = 180 * 24 * 3600;
 const SESSION_TTL = 90 * 24 * 3600;
 
@@ -176,10 +217,10 @@ export function installMessage({ p, v, locale, country, isTest, today }) {
     `${prefix} — ${productName(p)}`,
     v ? `Версия: ${v}` : null,
     locale ? `Язык: ${locale}` : null,
-    country ? `Страна: ${country}` : null,
+    country ? `Страна: ${countryName(country)}` : null,
     isTest ? 'В статистику: НЕ включено' : null,
     '',
-    `Сегодня: установок ${today.install} · удалений ${today.uninstall}`,
+    `Сегодня: установок ${today.install} · удалений ${today.uninstall} · всего ${today.install + today.uninstall}`,
   ].filter((x) => x !== null).join('\n');
 }
 
@@ -195,7 +236,7 @@ export function uninstallMessage(record, today) {
     feedbackLine,
     record.v ? `Версия: ${record.v}` : null,
     record.locale ? `Язык: ${record.locale}` : null,
-    record.country ? `Страна: ${record.country}` : null,
+    record.country ? `Страна: ${countryName(record.country)}` : null,
     record.is_test ? 'В статистику: НЕ включено' : null,
   ];
 
@@ -204,7 +245,7 @@ export function uninstallMessage(record, today) {
   }
   if (record.comment) lines.push(`Комментарий: ${record.comment}`);
 
-  lines.push('', `Сегодня: установок ${today.install} · удалений ${today.uninstall}`);
+  lines.push('', `Сегодня: установок ${today.install} · удалений ${today.uninstall} · всего ${today.install + today.uninstall}`);
   return lines.filter((x) => x !== null).join('\n');
 }
 
@@ -222,4 +263,35 @@ export async function putUninstallSession(env, sid, record) {
 
 export function sanitizeComment(value) {
   return typeof value === 'string' ? value.trim().slice(0, 2000) : '';
+}
+
+export async function getInstallSession(env, sid) {
+  if (!env?.FEEDBACK_KV) return null;
+  const raw = await env.FEEDBACK_KV.get(`install:${sid}`);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+export async function putInstallSession(env, sid, record) {
+  if (!env?.FEEDBACK_KV) return;
+  await env.FEEDBACK_KV.put(`install:${sid}`, JSON.stringify(record), { expirationTtl: SESSION_TTL });
+}
+
+export function installSessionMessage({ record, today }) {
+  const prefix = record.is_test ? '🧪 МОЙ ТЕСТ — УСТАНОВКА' : '🟢 УСТАНОВКА';
+  const statusLines = [];
+  if (record.pinned)        statusLines.push('Запинил: ✅');
+  if (record.panel_opened)  statusLines.push('Открыл панель: ✅');
+  if (record.abandoned)     statusLines.push('Закрыл без действий: ⚠️');
+
+  return [
+    `${prefix} — ${productName(record.p)}`,
+    record.v      ? `Версия: ${record.v}`     : null,
+    record.locale ? `Язык: ${record.locale}`  : null,
+    record.country? `Страна: ${countryName(record.country)}`: null,
+    record.is_test ? 'В статистику: НЕ включено' : null,
+    ...statusLines,
+    '',
+    `Сегодня: установок ${today.install} · удалений ${today.uninstall}`,
+  ].filter((x) => x !== null).join('\n');
 }
