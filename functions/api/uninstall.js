@@ -82,9 +82,17 @@ export async function onRequestPost(context) {
       await saveStatEvent(env, { p, event: 'uninstall', id: sid, ts: Date.now() });
     }
 
-    // Telegram не шлём на open: это лишь открытие страницы, а не решённый исход.
-    // Сообщение уходит один раз ниже — после feedback/skip/partial.
     await putUninstallSession(env, sid, record);
+
+    if (!isTest) {
+      const today = await statsForDays(env, p, 1);
+      const messageId = await sendOrEdit(env, { ...record, feedback_status: 'none' }).catch(() => null);
+      if (messageId) {
+        record.telegram_message_id = messageId;
+        await putUninstallSession(env, sid, record);
+      }
+    }
+
     return json({ ok: true });
   }
 
