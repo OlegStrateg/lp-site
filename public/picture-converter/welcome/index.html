@@ -388,6 +388,18 @@
         }
 
     </style>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111652196', 'ym');
+    ym(111652196, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111652196" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
 </head>
 <body class="bg-[#f3f0f5] min-h-screen flex flex-col items-center p-6 mesh-gradient overflow-hidden">
 <div class="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
@@ -1074,6 +1086,32 @@ window.updateResponsiveBrowserScale();
 
         trackWelcomeEvent('welcome_view');
 
+        // --- install analytics ---
+        const installSid = crypto.randomUUID();
+        let installPanelOpened = false;
+
+        function postInstall(phase) {
+            const payload = JSON.stringify({
+                p: 'ic',
+                sid: installSid,
+                phase,
+                locale: currentLocale,
+            });
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon('/api/install', new Blob([payload], { type: 'application/json' }));
+            } else {
+                fetch('/api/install', { method: 'POST', body: payload,
+                    headers: { 'content-type': 'application/json' }, keepalive: true }).catch(() => {});
+            }
+        }
+
+        postInstall('open');
+
+        window.addEventListener('pagehide', () => {
+            if (!installPanelOpened) postInstall('abandoned');
+        });
+        // --- end install analytics ---
+
         let hasCompletedOnce = false;
 
         function createRipple(container) {
@@ -1291,6 +1329,8 @@ window.updateResponsiveBrowserScale();
             }
 
             trackWelcomeEvent('welcome_open_success');
+            installPanelOpened = true;
+            postInstall('panel_opened');
 
             pendingOpenRequestId = null;
             delete finalBtn.dataset.openRequestId;
