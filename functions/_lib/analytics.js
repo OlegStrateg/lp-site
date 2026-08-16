@@ -211,7 +211,7 @@ export function reasonTextRu(keys = []) {
   return clean.map((k) => REASON_RU[k] || k).join('; ');
 }
 
-export function installMessage({ p, v, locale, country, isTest, today }) {
+export function installMessage({ p, v, locale, country, isTest, today, total }) {
   const prefix = isTest ? '🧪 МОЙ ТЕСТ — УСТАНОВКА' : '🟢 УСТАНОВКА';
   return [
     `${prefix} — ${productName(p)}`,
@@ -221,10 +221,11 @@ export function installMessage({ p, v, locale, country, isTest, today }) {
     isTest ? 'В статистику: НЕ включено' : null,
     '',
     `Сегодня: установок ${today.install} · удалений ${today.uninstall} · всего ${today.install + today.uninstall}`,
+    `Всего: установок ${total.install} · удалений ${total.uninstall} · всего ${total.install + total.uninstall}`,
   ].filter((x) => x !== null).join('\n');
 }
 
-export function uninstallMessage(record, today) {
+export function uninstallMessage(record, today, total) {
   const prefix = record.is_test ? '🧪 МОЙ ТЕСТ — УДАЛЕНИЕ' : '🔴 УДАЛЕНИЕ';
   let feedbackLine = 'Обратная связь: нет';
   if (record.feedback_status === 'submitted') feedbackLine = 'Обратная связь: ✅ есть';
@@ -246,6 +247,7 @@ export function uninstallMessage(record, today) {
   if (record.comment) lines.push(`Комментарий: ${record.comment}`);
 
   lines.push('', `Сегодня: установок ${today.install} · удалений ${today.uninstall} · всего ${today.install + today.uninstall}`);
+  lines.push(`Всего: установок ${total.install} · удалений ${total.uninstall} · всего ${total.install + total.uninstall}`);
   return lines.filter((x) => x !== null).join('\n');
 }
 

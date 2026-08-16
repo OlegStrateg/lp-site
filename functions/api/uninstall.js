@@ -31,8 +31,11 @@ function cleanReasonKeys(value) {
 }
 
 async function sendOrEdit(env, record) {
-  const today = await statsForDays(env, record.p, 1);
-  const text = uninstallMessage(record, today);
+  const [today, total] = await Promise.all([
+    statsForDays(env, record.p, 1),
+    statsForDays(env, record.p, 90),
+  ]);
+  const text = uninstallMessage(record, today, total);
   if (record.telegram_message_id) {
     // Если edit упал — не откатываться к send: это создаёт дубль.
     await editTelegram(env, record.telegram_message_id, text).catch(() => null);
@@ -84,13 +87,10 @@ export async function onRequestPost(context) {
 
     await putUninstallSession(env, sid, record);
 
-    if (!isTest) {
-      const today = await statsForDays(env, p, 1);
-      const messageId = await sendOrEdit(env, { ...record, feedback_status: 'none' }).catch(() => null);
-      if (messageId) {
-        record.telegram_message_id = messageId;
-        await putUninstallSession(env, sid, record);
-      }
+    const messageId = await sendOrEdit(env, { ...record, feedback_status: 'none' }).catch(() => null);
+    if (messageId) {
+      record.telegram_message_id = messageId;
+      await putUninstallSession(env, sid, record);
     }
 
     return json({ ok: true });

@@ -119,7 +119,10 @@ async function processEvent(request, env, raw) {
   if (raw.e === 'install') {
     const seenKey = `${isTest ? 'test:' : ''}${raw.p}:install:${raw.iid}`;
     if (await markSeen(env, seenKey, 30 * 24 * 3600)) {
-      const today = await statsForDays(env, raw.p, 1);
+      const [today, total] = await Promise.all([
+        statsForDays(env, raw.p, 1),
+        statsForDays(env, raw.p, 90),
+      ]);
       await sendTelegram(env, installMessage({
         p: raw.p,
         v: raw.v || '',
@@ -127,6 +130,7 @@ async function processEvent(request, env, raw) {
         country,
         isTest,
         today,
+        total,
       }));
     }
   }
