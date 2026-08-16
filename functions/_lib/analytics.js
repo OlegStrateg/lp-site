@@ -238,13 +238,14 @@ export function installMessage({ p, v, locale, country, isTest, today, total }) 
   const prefix = isTest ? '🧪 МОЙ ТЕСТ — УСТАНОВКА' : '🟢 УСТАНОВКА';
   return [
     `${prefix} — ${productName(p)}`,
+    '',
     v ? `Версия: ${v}` : null,
     locale ? `Язык: ${locale}` : null,
     country ? `Страна: ${countryName(country)}` : null,
     isTest ? 'В статистику: НЕ включено' : null,
     '',
-    `Сегодня: установок ${today.install} · удалений ${today.uninstall} · всего ${today.install + today.uninstall}`,
-    `Всего: установок ${total.install} · удалений ${total.uninstall} · всего ${total.install + total.uninstall}`,
+    `Сегодня: установок ${today.install} · удалений ${today.uninstall}`,
+    `Всего: установок ${total.install} · удалений ${total.uninstall}`,
   ].filter((x) => x !== null).join('\n');
 }
 
@@ -252,12 +253,35 @@ export function uninstallMessage(record, today, total) {
   const prefix = record.is_test ? '🧪 МОЙ ТЕСТ — УДАЛЕНИЕ' : '🔴 УДАЛЕНИЕ';
   let feedbackLine = 'Обратная связь: нет';
   if (record.feedback_status === 'submitted') feedbackLine = 'Обратная связь: ✅ есть';
-  if (record.feedback_status === 'skipped') feedbackLine = 'Обратная связь: не оставил (нажал «Пропустить»)';
-  if (record.feedback_status === 'partial') feedbackLine = 'Обратная связь: частично выбрал причину, но не отправил';
+  if (record.feedback_status === 'skipped') feedbackLine = 'Обратная связь: пропустил';
+  if (record.feedback_status === 'partial') feedbackLine = 'Обратная связь: частично';
+
+  // Вычисляем время использования
+  let usageTime = null;
+  if (record.created_at) {
+    const installed = new Date(record.created_at).getTime();
+    const uninstalled = record.updated_at ? new Date(record.updated_at).getTime() : Date.now();
+    const diffMs = uninstalled - installed;
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) {
+      usageTime = `Использовал: ${diffDays} дн.`;
+    } else if (diffHours > 0) {
+      usageTime = `Использовал: ${diffHours} ч.`;
+    } else if (diffMinutes > 0) {
+      usageTime = `Использовал: ${diffMinutes} мин.`;
+    } else {
+      usageTime = `Использовал: <1 мин.`;
+    }
+  }
 
   const lines = [
     `${prefix} — ${productName(record.p)}`,
     feedbackLine,
+    usageTime,
+    '',
     record.v ? `Версия: ${record.v}` : null,
     record.locale ? `Язык: ${record.locale}` : null,
     record.country ? `Страна: ${countryName(record.country)}` : null,
@@ -265,12 +289,12 @@ export function uninstallMessage(record, today, total) {
   ];
 
   if (record.feedback_status === 'submitted' || record.feedback_status === 'partial') {
-    lines.push(`Причина: ${reasonTextRu(record.reason_keys)}`);
+    lines.push('', `Причина: ${reasonTextRu(record.reason_keys)}`);
   }
   if (record.comment) lines.push(`Комментарий: ${record.comment}`);
 
-  lines.push('', `Сегодня: установок ${today.install} · удалений ${today.uninstall} · всего ${today.install + today.uninstall}`);
-  lines.push(`Всего: установок ${total.install} · удалений ${total.uninstall} · всего ${total.install + total.uninstall}`);
+  lines.push('', `Сегодня: установок ${today.install} · удалений ${today.uninstall}`);
+  lines.push(`Всего: установок ${total.install} · удалений ${total.uninstall}`);
   return lines.filter((x) => x !== null).join('\n');
 }
 

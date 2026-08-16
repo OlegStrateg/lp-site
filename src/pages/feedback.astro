@@ -195,6 +195,51 @@ import PageLayout from '../layouts/PageLayout.astro';
   const againBtn = document.getElementById('feedback-again-btn')!;
   const submitBtn = document.getElementById('feedback-submit-btn') as HTMLButtonElement;
 
+  // Собираем fingerprint при загрузке страницы
+  let fingerprintData: any = null;
+
+  async function collectFingerprint() {
+    // Client ID — localStorage (постоянный)
+    let clientId = localStorage.getItem('lp_client_id');
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+      localStorage.setItem('lp_client_id', clientId);
+    }
+
+    // Session ID — sessionStorage (до закрытия вкладки)
+    let sessionId = sessionStorage.getItem('lp_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('lp_session_id', sessionId);
+    }
+
+    const clientData = {
+      client_id: clientId,
+      session_id: sessionId,
+      screen: `${screen.width}x${screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      canvas_fp: '', // TODO: добавить canvas fingerprint если нужно
+    };
+
+    try {
+      const res = await fetch('/api/fingerprint', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(clientData),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        fingerprintData = data.fingerprint;
+      }
+    } catch (err) {
+      console.error('fingerprint collection failed:', err);
+    }
+  }
+
+  // Собираем fingerprint асинхронно при загрузке
+  collectFingerprint();
+
   track('fb_view', { p });
 
   // fb_start fires once, on the first time any field in the form gets
@@ -239,7 +284,16 @@ import PageLayout from '../layouts/PageLayout.astro';
     // Diagnostics ride inside `text` (the endpoint schema stays neutral);
     // only when the block is visible AND the box is still checked.
     const diag = !diagBox.hidden && diagCheck.checked ? `\n---\n${diagParts.join(' | ')}` : '';
-    const payload = { p, channel, src, type, text: text + diag, email, v };
+    const payload = {
+      p,
+      channel,
+      src,
+      type,
+      text: text + diag,
+      email,
+      v,
+      fingerprint: fingerprintData, // добавляем собранный fingerprint
+    };
 
     submitBtn.disabled = true;
     try {
