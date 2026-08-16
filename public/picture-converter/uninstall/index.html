@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Удалили расширение? — Image Converter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 560px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .icon {
+            font-size: 64px;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeIn 0.6s ease-out;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            text-align: center;
+            line-height: 1.3;
+            animation: fadeIn 0.6s ease-out 0.1s both;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 32px;
+            text-align: center;
+            line-height: 1.5;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+
+        /* Форма обратной связи */
+        .feedback-form {
+            animation: fadeIn 0.6s ease-out 0.3s both;
+        }
+        .form-section {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .reason-option {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .reason-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        .reason-option input[type="radio"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .reason-option label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 15px;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 16px;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .submit-button {
+            width: 100%;
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .submit-button:active {
+            transform: translateY(0);
+        }
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .skip-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #999;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .skip-link:hover {
+            color: #667eea;
+        }
+
+        /* Спасибо экран */
+        .thank-you {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+        .thank-you.active {
+            display: block;
+        }
+        .thank-you-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .thank-you h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+        .thank-you p {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        .reinstall-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 18px 48px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+        .reinstall-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+        }
+        .reinstall-button:active {
+            transform: translateY(0);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 36px 28px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .subtitle {
+                font-size: 15px;
+            }
+            .reinstall-button {
+                font-size: 16px;
+                padding: 16px 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="feedbackScreen">
+            <div class="icon">😢</div>
+            <h1>Почему удалили расширение?</h1>
+            <div class="subtitle">Ваш отзыв поможет нам стать лучше</div>
+
+            <form class="feedback-form" id="feedbackForm">
+                <div class="form-section">
+                    <label class="form-label">Выберите причину:</label>
+                    <div class="reason-option">
+                        <input type="radio" name="reason" value="not-needed" id="reason1">
+                        <label for="reason1">Больше не нужно</label>
+                    </div>
+                    <div class="reason-option">
+                        <input type="radio" name="reason" value="found-better" id="reason2">
+                        <label for="reason2">Нашёл лучшую альтернативу</label>
+                    </div>
+                    <div class="reason-option">
+                        <input type="radio" name="reason" value="bug" id="reason3">
+                        <label for="reason3">Не работает / баги</label>
+                    </div>
+                    <div class="reason-option">
+                        <input type="radio" name="reason" value="hard-to-use" id="reason4">
+                        <label for="reason4">Сложно пользоваться</label>
+                    </div>
+                    <div class="reason-option">
+                        <input type="radio" name="reason" value="other" id="reason5">
+                        <label for="reason5">Другая причина</label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <label class="form-label" for="comment">Расскажите подробнее (необязательно):</label>
+                    <textarea id="comment" placeholder="Что можно улучшить?"></textarea>
+                </div>
+
+                <button type="submit" class="submit-button" id="submitBtn">Отправить отзыв</button>
+                <a href="#" class="skip-link" id="skipLink">Пропустить</a>
+            </form>
+        </div>
+
+        <div class="thank-you" id="thankYouScreen">
+            <div class="thank-you-icon">💙</div>
+            <h2>Спасибо за отзыв!</h2>
+            <p>Мы учтём ваше мнение. Если удалили по ошибке — можете установить заново одним кликом.</p>
+            <a href="https://chromewebstore.google.com/detail/image-converter/ooiklbnjmhbcfnllkgjahadblibecgfj" class="reinstall-button">
+                <span>🔄</span>
+                <span>Установить заново</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const sid = params.get('sid') || crypto.randomUUID();
+        const version = params.get('v') || '';
+        const locale = params.get('locale') || navigator.language || 'en';
+
+        // Отправить open событие
+        fetch('/api/uninstall', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                p: 'ic',
+                sid,
+                v: version,
+                locale,
+                phase: 'open'
+            })
+        }).catch(() => {});
+
+        // Обработка формы
+        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Отправка...';
+
+            const selectedReason = document.querySelector('input[name="reason"]:checked');
+            const comment = document.getElementById('comment').value.trim();
+
+            const reasonKeys = selectedReason ? [selectedReason.value] : [];
+
+            try {
+                await fetch('/api/uninstall', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        p: 'ic',
+                        sid,
+                        v: version,
+                        locale,
+                        phase: reasonKeys.length > 0 || comment ? 'feedback' : 'partial',
+                        reasonKeys,
+                        comment
+                    })
+                });
+            } catch (err) {
+                console.error(err);
+            }
+
+            showThankYou();
+        });
+
+        // Пропустить
+        document.getElementById('skipLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            try {
+                await fetch('/api/uninstall', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        p: 'ic',
+                        sid,
+                        v: version,
+                        locale,
+                        phase: 'skip'
+                    })
+                });
+            } catch (err) {
+                console.error(err);
+            }
+
+            showThankYou();
+        });
+
+        function showThankYou() {
+            document.getElementById('feedbackScreen').style.display = 'none';
+            document.getElementById('thankYouScreen').classList.add('active');
+        }
+    </script>
+</body>
+</html>
