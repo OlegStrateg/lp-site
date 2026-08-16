@@ -2,6 +2,7 @@ import {
   ownerTestInfo,
   saveStatEvent,
   statsForDays,
+  statsTotal,
   sendTelegram,
   editTelegram,
   uninstallMessage,
@@ -33,7 +34,7 @@ function cleanReasonKeys(value) {
 async function sendOrEdit(env, record) {
   const [today, total] = await Promise.all([
     statsForDays(env, record.p, 1),
-    statsForDays(env, record.p, 90),
+    statsTotal(env, record.p),
   ]);
   const text = uninstallMessage(record, today, total);
   if (record.telegram_message_id) {

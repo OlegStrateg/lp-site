@@ -154,6 +154,29 @@ export async function statsForDays(env, p, days = 7) {
   return { days: bounded, ...counts };
 }
 
+export async function statsTotal(env, p) {
+  const counts = {
+    install: 0,
+    uninstall: 0,
+  };
+
+  if (!env?.FEEDBACK_KV) return counts;
+
+  let cursor;
+  do {
+    const page = await env.FEEDBACK_KV.list({ prefix: `stats:${p}:`, cursor, limit: 1000 });
+    for (const { name } of page.keys) {
+      const parts = name.split(':');
+      const event = parts[3] || '';
+      if (event === 'install') counts.install += 1;
+      else if (event === 'uninstall') counts.uninstall += 1;
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+
+  return counts;
+}
+
 export function formatStats(stats) {
   const notClicked = Math.max(0, stats.welcome_view - stats.welcome_open_click);
   const clickRate = stats.welcome_view > 0

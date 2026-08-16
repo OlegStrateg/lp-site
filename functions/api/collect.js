@@ -3,6 +3,7 @@ import {
   saveStatEvent,
   markSeen,
   statsForDays,
+  statsTotal,
   sendTelegram,
   installMessage,
   isOwnerTestIid,
@@ -121,7 +122,7 @@ async function processEvent(request, env, raw) {
     if (await markSeen(env, seenKey, 30 * 24 * 3600)) {
       const [today, total] = await Promise.all([
         statsForDays(env, raw.p, 1),
-        statsForDays(env, raw.p, 90),
+        statsTotal(env, raw.p),
       ]);
       await sendTelegram(env, installMessage({
         p: raw.p,
