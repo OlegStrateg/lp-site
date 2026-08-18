@@ -326,7 +326,7 @@ export async function putInstallSession(env, sid, record) {
   await env.FEEDBACK_KV.put(`install:${sid}`, JSON.stringify(record), { expirationTtl: SESSION_TTL });
 }
 
-export function installSessionMessage({ record, today }) {
+export function installSessionMessage({ record, today, total }) {
   const prefix = record.is_test ? '🧪 МОЙ ТЕСТ — УСТАНОВКА' : '🟢 УСТАНОВКА';
   const statusLines = [];
   if (record.pinned)        statusLines.push('Запинил: ✅');
@@ -342,5 +342,6 @@ export function installSessionMessage({ record, today }) {
     ...statusLines,
     '',
     `Сегодня: установок ${today.install} · удалений ${today.uninstall}`,
+    total ? `Всего: установок ${total.install} · удалений ${total.uninstall}` : null,
   ].filter((x) => x !== null).join('\n');
 }
