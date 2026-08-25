@@ -1,34 +1,18 @@
 // Single source of truth for LayerPorter's browser extensions.
 //
-// SLEEPING BY DESIGN: every extension below has storeUrl: null until its
-// Chrome/Edge Web Store listing is actually published. ExtensionCTA,
-// ExtensionFooterLine, and SiteVsExtensionTable (src/components/) all check
-// storeUrl before rendering anything, so with every storeUrl null none of
-// those components emit any markup on any page.
+// storeUrl is null until the extension is actually published.
+// Gated CTAs must check BOTH availability and job relevance: a live image
+// converter must never wake up a CTA that promises live website capture.
 //
-// The one deliberate exception is /extensions/ (src/pages/extensions.astro)
-// — a pre-launch showcase page that talks about both extensions on purpose,
-// with a "coming to Chrome Web Store" status badge instead of an install
-// button. That page becomes the CTA hub once a storeUrl below goes live.
+// Jobs:
+// - image-conversion: converts images/files in the browser.
+// - media-download: saves media from the active browser page.
+// - website-capture: turns a live webpage into editable design output.
 //
-// TO ACTIVATE: once a listing URL exists, fill in ONLY that extension's
-// storeUrl below. Every gated CTA across the site wakes up at once for that
-// extension — no other file needs to change. Do not invent a URL.
-//
-// job: what real, live task the extension does that the static
-// file-converter pages on this site cannot. Today both extensions do the
-// same job — capturing a live website into layers — which is deliberate:
-// the site's file converters (png-to-psd, jpg-to-psd, psd-to-png,
-// psd-to-jpg, jpg-to-pdf, pdf-to-jpg, favicon-generator, webp-to-jpg) only
-// ever touch a file you already have, never a live page, so none of them
-// share this job. Only pages whose job genuinely matches an extension here
-// get a CTA — see the relevance rule in ConverterLayout.astro and
-// ArticleLayout.astro. If a new extension is added with a different job,
-// it needs its own matching placement, not a copy-paste of an existing one.
 export interface Extension {
   id: string;
   name: string;
-  job: 'website-capture';
+  job: 'image-conversion' | 'media-download' | 'website-capture';
   storeUrl: string | null;
   blurb: string;
   // Fields below are for /extensions/ (src/pages/extensions.astro) — the
@@ -40,6 +24,22 @@ export interface Extension {
 }
 
 export const extensions: Extension[] = [
+  {
+    id: 'picture-converter',
+    name: 'Downloader',
+    job: 'media-download',
+    storeUrl: 'https://chromewebstore.google.com/detail/downloader/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=extensions-page',
+    blurb: "Download Pinterest images, GIFs, and videos from Chrome — one Pin or a whole board, with batch ZIP export.",
+    whatItDoes:
+      "Save Pinterest images, GIFs, and videos without leaving the page. Download a single Pin or collect available media from a board and export the batch as a ZIP.",
+    bullets: [
+      'Images, GIFs, and videos from Pinterest',
+      'Single-Pin and whole-board workflows',
+      'Batch selection with ZIP export',
+    ],
+    bridgeHref: '/convert/',
+    bridgeLabel: 'Browse LayerPorter tools',
+  },
   {
     id: 'site-to-canva',
     name: 'Site to Canva',
@@ -76,5 +76,9 @@ export const extensions: Extension[] = [
   },
 ];
 
-// Convenience for gates that only need a yes/no, not the list itself.
+export function liveExtensionsForJob(job: Extension['job']): Extension[] {
+  return extensions.filter((e) => e.job === job && e.storeUrl !== null);
+}
+
+// Convenience for truly global surfaces that only need a yes/no.
 export const anyExtensionLive = extensions.some((e) => e.storeUrl !== null);

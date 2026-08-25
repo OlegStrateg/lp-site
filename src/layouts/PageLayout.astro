@@ -15,6 +15,9 @@ const { title, description, canonicalPath, robots, ogImage } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description} canonicalPath={canonicalPath} robots={robots} ogImage={ogImage}>
+  <Fragment slot="head">
+    <slot name="head" />
+  </Fragment>
   <article class="page-prose">
     <slot />
   </article>

@@ -1,14 +1,7 @@
 ---
-// Pre-launch showcase for the two browser extensions in src/data/extensions.ts.
-// Both have storeUrl: null today — no store listing exists yet — so this page
-// deliberately does NOT render an install button or claim a launch date. It's
-// an honest "here's what these do and why they're not live yet" page that
-// becomes the CTA hub once a storeUrl is filled in (see extensions.ts): the
-// sleeping ExtensionCTA/ExtensionFooterLine/SiteVsExtensionTable components
-// elsewhere on the site wake up automatically, and the #site-to-canva /
-// #psd-export anchors here are ready for those links to target.
+// Hub for all LayerPorter browser extensions. Available products come first;
+// future products stay secondary and never borrow claims from a different job.
 import PageLayout from '../layouts/PageLayout.astro';
-import LayerScene from '../components/LayerScene.astro';
 import { extensions } from '../data/extensions';
 
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
@@ -30,7 +23,7 @@ const jsonLd = {
       '@type': 'WebPage',
       '@id': `${pageUrl}#webpage`,
       name: 'Browser extensions',
-      description: 'Two LayerPorter browser extensions for capturing live web pages as editable layers — in development, not yet published to a store.',
+      description: 'LayerPorter browser extensions for faster media and design workflows. Downloader is available now for Pinterest images, GIFs, videos, and board ZIP exports.',
       url: pageUrl,
       isPartOf: { '@id': `${site}/#website` },
       publisher: { '@id': `${site}/#org` },
@@ -40,34 +33,30 @@ const jsonLd = {
 ---
 
 <PageLayout
-  title="Browser Extensions — LayerPorter"
-  description="Two browser extensions for capturing live web pages as editable layers, built on the same local-first engine as this site. Not yet published to a store."
+  title="Browser Extensions for Files & Design — LayerPorter"
+  description="LayerPorter browser extensions for faster media and design workflows. Downloader saves Pinterest images, GIFs, videos, and complete board selections."
   canonicalPath="/extensions/"
   ogImage={`${site}/og/home.png`}
 >
   <Fragment slot="head">
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
   </Fragment>
 
-  <h1>Browser extensions</h1>
+  <h1>Browser extensions for faster file and design workflows</h1>
   <p class="answer-first">
-    Two extensions, built on the same principles as this site: <strong>activeTab-only</strong> access,
-    processing that happens locally with minimal network transit, and no accounts.
+    <strong>Downloader is available now</strong> for saving Pinterest images, GIFs, videos, and board selections in Chrome. More LayerPorter extensions are coming next for turning live websites into editable design layers.
   </p>
-
-  <!-- Animated layer-story: a live page peels into labeled layers, lands in
-       a Layers panel and a PSD — exactly what these extensions do. Same
-       LayerScene component as the home page's extensions band. -->
-  <div class="scene-band" aria-hidden="true">
-    <LayerScene />
-  </div>
 
   <div class="extension-showcase">
     {extensions.map((e) => (
-      <div class="extension-show-card" id={e.id}>
+      <div class="extension-show-card" id={e.id} class:list={[{ featured: e.storeUrl !== null }]}>
         <div class="extension-show-head">
           <h2>{e.name}</h2>
-          <span class="trust-badge extension-status-badge">Coming to Chrome Web Store</span>
+          {e.storeUrl ? (
+            <span class="trust-badge extension-status-badge extension-live-badge">Available now</span>
+          ) : (
+            <span class="trust-badge extension-status-badge">Coming to Chrome Web Store</span>
+          )}
         </div>
         <p>{e.whatItDoes}</p>
         <ul class="extension-show-bullets">
@@ -75,22 +64,25 @@ const jsonLd = {
             <li>{b}</li>
           ))}
         </ul>
+        {e.id === 'picture-converter' && (
+          <p><a class="text-link" href="/extensions/picture-converter/">See Downloader details →</a></p>
+        )}
         {e.storeUrl ? (
-          <a class="btn extension-install-btn" href={e.storeUrl} rel="noopener">Add to Chrome</a>
+          <a class="btn extension-install-btn btn-primary" href={e.storeUrl} rel="noopener">Add to Chrome — Free</a>
         ) : (
           <button class="btn extension-install-btn" disabled aria-disabled="true" title="Not in the Chrome Web Store yet — this button goes live with the listing">
             Add to Chrome — coming soon
           </button>
         )}
         <p class="extension-show-bridge">
-          Meanwhile, the same engine runs on this site → <a href={e.bridgeHref}>{e.bridgeLabel}</a>
+          Use a LayerPorter tool now → <a href={e.bridgeHref}>{e.bridgeLabel}</a>
         </p>
       </div>
     ))}
   </div>
 
   <p class="extension-why-not-yet">
-    <strong>Why not in the store yet?</strong> Both extensions are in final polish and Chrome Web
-    Store submission. This page will link straight to each listing as soon as it's live.
+    <strong>More extensions coming soon:</strong> Site to Canva and PSD Export are in final polish and Chrome Web
+    Store submission. This page will link to each listing as soon as it's live.
   </p>
 </PageLayout>
