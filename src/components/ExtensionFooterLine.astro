@@ -14,15 +14,16 @@
 // Do NOT mount on favicon-generator, webp-to-jpg, jpg-to-pdf, or
 // pdf-to-jpg — those jobs have nothing to do with capturing a live page,
 // so even this quiet line would be off-topic there.
-import { anyExtensionLive } from '../data/extensions';
+import { liveExtensionsForJob } from '../data/extensions';
 
 interface Props {
   surface: string; // page/location id, forwarded on extension_cta_click
 }
 const { surface } = Astro.props;
+const hasWebsiteCaptureLive = liveExtensionsForJob('website-capture').length > 0;
 ---
 
-{anyExtensionLive && (
+{hasWebsiteCaptureLive && (
   <p class="extension-footer-line">
     Work with live websites, not just files?
     {' '}

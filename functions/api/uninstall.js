@@ -11,7 +11,7 @@ import {
   sanitizeComment,
 } from '../_lib/analytics.js';
 
-const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds']);
+const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PHASES = new Set(['open', 'feedback', 'skip', 'partial']);
 

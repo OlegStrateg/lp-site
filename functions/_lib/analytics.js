@@ -4,6 +4,7 @@ const PRODUCT_NAMES = {
   pex: 'PSD Export',
   s2c: 'Screenshot to Code',
   ds: 'Document Summarizer',
+  pd: 'Pinterest Downloader',
 };
 
 const REASON_RU = {

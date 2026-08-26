@@ -17,14 +17,14 @@
 // Copy angle: capability, not price. No "free forever" — see the owner's
 // brief on being careful with that word. "Free" itself is fine when it's
 // describing the tool truthfully; a permanence promise is not.
-import { extensions } from '../data/extensions';
+import { liveExtensionsForJob } from '../data/extensions';
 
 interface Props {
   surface: string; // page/location id, forwarded on extension_cta_click
 }
 const { surface } = Astro.props;
 
-const live = extensions.filter((e) => e.storeUrl !== null);
+const live = liveExtensionsForJob('website-capture');
 ---
 
 {live.length > 0 && (

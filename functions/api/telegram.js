@@ -1,5 +1,15 @@
 import { statsForDays, formatStats, productName, sendTelegram, ownerTestInfo } from '../_lib/analytics.js';
 
+const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd']);
+
+function normalizeProduct(value) {
+  const token = String(value || '').trim().toLowerCase();
+  if (PRODUCTS.has(token)) return token;
+  if (token === 'pinterest' || token === 'pinterest-downloader' || token === 'pinterest_downloader') return 'pd';
+  if (token === 'image' || token === 'image-converter' || token === 'image_converter') return 'ic';
+  return '';
+}
+
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -27,8 +37,9 @@ export async function onRequestGet(context) {
 
   if (url.searchParams.has('stats')) {
     const days = Math.max(1, Math.min(90, Number(url.searchParams.get('stats') || 1)));
-    const stats = await statsForDays(env, 'ic', days);
-    return new Response(JSON.stringify({ ok: true, ...stats }), {
+    const product = normalizeProduct(url.searchParams.get('p')) || 'ic';
+    const stats = await statsForDays(env, product, days);
+    return new Response(JSON.stringify({ ok: true, product, ...stats }), {
       headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
     });
   }
@@ -37,10 +48,12 @@ export async function onRequestGet(context) {
 }
 
 // Telegram webhook только для владельца. Команды:
-// /stats      -> 7 дней
-// /stats 1    -> сегодня
-// /stats 30   -> 30 дней
-// /стат 7     -> то же по-русски
+// /stats          -> Image Converter, 7 дней (старое поведение сохранено)
+// /stats 1        -> Image Converter, сегодня
+// /stats pd       -> Pinterest Downloader, 7 дней
+// /stats pd 1     -> Pinterest Downloader, сегодня
+// /stats 30 pd    -> Pinterest Downloader, 30 дней
+// /стат pd 7      -> то же по-русски
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -58,13 +71,28 @@ export async function onRequestPost(context) {
   if (!chatId || chatId !== String(env.TG_CHAT_ID || '')) return new Response('ok');
 
   const text = String(message?.text || '').trim();
-  const match = text.match(/^\/(?:stats|stat|стат|статистика)(?:@\w+)?(?:\s+(\d{1,2}))?\s*$/i);
+  const match = text.match(/^\/(?:stats|stat|стат|статистика)(?:@\w+)?(?:\s+(.*))?$/i);
   if (!match) return new Response('ok');
 
-  const days = Math.max(1, Math.min(90, Number(match[1] || 7)));
-  const stats = await statsForDays(env, 'ic', days);
+  let product = 'ic';
+  let days = 7;
+  const args = String(match[1] || '').trim().split(/\s+/).filter(Boolean);
+  for (const arg of args.slice(0, 2)) {
+    const parsedProduct = normalizeProduct(arg);
+    if (parsedProduct) {
+      product = parsedProduct;
+      continue;
+    }
+    if (/^\d{1,2}$/.test(arg)) {
+      days = Math.max(1, Math.min(90, Number(arg)));
+      continue;
+    }
+    return new Response('ok');
+  }
+
+  const stats = await statsForDays(env, product, days);
   const title = days === 1 ? 'сегодня' : `${days} дней`;
-  const reply = [`📊 ${productName('ic')} — ${title}`, '', formatStats(stats)].join('\n');
+  const reply = [`📊 ${productName(product)} — ${title}`, '', formatStats(stats)].join('\n');
   await sendTelegram(env, reply).catch(() => {});
 
   return new Response('ok');

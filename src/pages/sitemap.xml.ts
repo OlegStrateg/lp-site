@@ -3,13 +3,11 @@ import { getCollection } from 'astro:content';
 
 // Deliberately hand-rolled instead of @astrojs/sitemap for explicit control of
 // what's listed. Final site: home + hub + every converter page (from the content
-// collection, so a new converter .md automatically adds its entry) + the three
-// static pages.
+// collection, so a new converter .md automatically adds its entry) + static hubs/pages.
 export const prerender = true;
 
-const buildDate = new Date().toISOString().slice(0, 10);
 
-const STATIC_PATHS = ['/', '/convert/', '/about/', '/extensions/', '/privacy/', '/terms/', '/formats/', '/guides/'];
+const STATIC_PATHS = ['/', '/convert/', '/about/', '/extensions/', '/extensions/picture-converter/', '/privacy/', '/terms/', '/formats/', '/guides/'];
 
 export const GET: APIRoute = async () => {
   const converters = await getCollection('converters');
@@ -22,7 +20,6 @@ export const GET: APIRoute = async () => {
   const urls = paths
     .map((p) => `  <url>
     <loc>https://layerporter.com${p}</loc>
-    <lastmod>${buildDate}</lastmod>
   </url>`)
     .join('\n');
 

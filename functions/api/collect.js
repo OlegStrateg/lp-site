@@ -10,7 +10,7 @@ import {
   rememberOwnerTestIid,
 } from '../_lib/analytics.js';
 
-const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds']);
+const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd']);
 const EVENTS = new Set([
   'install',
   'onboarding_viewed',
