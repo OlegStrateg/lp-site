@@ -7,6 +7,14 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
+# Технические домены Cloudflare Pages не должны конкурировать с layerporter.com в индексе.
+# Рекомендованный Cloudflare паттерн: production/preview *.pages.dev → noindex.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
+
 # Обе welcome-страницы используют Inter (Google Fonts) и Яндекс Метрику 111652196.
 # Исключения ограничены только welcome-путями; глобальный CSP остаётся строгим.
 # Yandex-источники сжаты wildcard-правилами, чтобы уложиться в лимит Cloudflare Pages 2000 символов на строку.
