@@ -15,6 +15,13 @@ https://:project.pages.dev/*
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
 
+
+# Pinterest Downloader landing: реальные демонстрационные фото.
+# Разрешение действует только на саму посадочную, welcome-правила ниже не меняются.
+/pinterest-downloader/
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://images.unsplash.com; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
 # Обе welcome-страницы используют Inter (Google Fonts) и Яндекс Метрику 111652196.
 # Исключения ограничены только welcome-путями; глобальный CSP остаётся строгим.
 # Yandex-источники сжаты wildcard-правилами, чтобы уложиться в лимит Cloudflare Pages 2000 символов на строку.
