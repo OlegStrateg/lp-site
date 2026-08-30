@@ -1,0 +1,555 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+const pageUrl = `${site}/pinterest-downloader/`;
+
+// IMPORTANT:
+// The current site data still contains a Chrome Web Store URL that belongs to Picture Converter.
+// Do not reuse it here. Keep this null until the exact Pinterest Downloader listing is verified.
+const storeUrl: string | null = null;
+
+const faqItems = [
+  {
+    question: 'What can Pinterest Downloader save?',
+    answer: 'Pinterest Downloader is built for Pinterest videos, images, photos and GIFs. You can save a single Pin or collect multiple items from a board and download the selection together.',
+  },
+  {
+    question: 'Can I download an entire Pinterest board?',
+    answer: 'You can collect available media from a board, select what you want, and export the batch together as a ZIP instead of downloading every Pin one by one.',
+  },
+  {
+    question: 'Do I need to copy Pinterest links into another website?',
+    answer: 'No. The downloader works from the page you are already browsing, so you can save supported media without repeatedly copying Pin URLs into a separate downloader site.',
+  },
+  {
+    question: 'Does it support Pinterest videos and GIFs?',
+    answer: 'Yes. The Pinterest workflow supports videos, images and GIFs when that media is available on the Pin or board you are viewing.',
+  },
+  {
+    question: 'Can it download images from other websites too?',
+    answer: 'Yes, image downloading also works on other supported web pages. Pinterest remains the main workflow, and this page does not claim that video downloading works on every website.',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      '@id': `${pageUrl}#webpage`,
+      name: 'Pinterest Downloader',
+      description: 'Pinterest Downloader for Chrome saves Pinterest videos, images and GIFs. Download one Pin or select multiple items from boards and save them together as ZIP.',
+      url: pageUrl,
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#software`,
+      name: 'Pinterest Downloader',
+      applicationCategory: 'BrowserApplication',
+      operatingSystem: 'Chrome',
+      description: 'Chrome extension for downloading Pinterest videos, images and GIFs, including single Pins and bulk board selections with ZIP export.',
+      url: pageUrl,
+      isAccessibleForFree: true,
+      featureList: [
+        'Download Pinterest videos',
+        'Download Pinterest images and photos',
+        'Download Pinterest GIFs',
+        'Select media from Pinterest boards',
+        'Bulk download selected files',
+        'Export multiple files as ZIP',
+        'Download images from other supported websites',
+      ],
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      mainEntity: faqItems.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    },
+  ],
+};
+---
+
+<PageLayout
+  title="Pinterest Downloader — Videos, Images & GIFs | LayerPorter"
+  description="Pinterest Downloader for Chrome saves videos, images and GIFs from Pins and boards. Download one item or select many and save the batch as ZIP."
+  canonicalPath="/pinterest-downloader/"
+  robots="noindex, follow"
+  ogImage={site + '/og/downloader.png'}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
+  </Fragment>
+
+  <div class="pd-page">
+    <section class="pd-hero">
+      <div class="pd-hero-copy">
+        <div class="pd-product-line">
+          <img src="/pinterest-downloader/icon-128.png" width="48" height="48" alt="Pinterest Downloader icon" />
+          <div>
+            <span>Pinterest Downloader</span>
+            <small>Chrome extension</small>
+          </div>
+        </div>
+
+        <h1>Download Pinterest videos, images and GIFs.</h1>
+
+        <p class="pd-lede">
+          Save one Pin in a click or collect media from a board, choose what you need,
+          and download the batch together as a ZIP. No copy-paste detour.
+        </p>
+
+        <div class="pd-actions">
+          {storeUrl ? (
+            <a class="pd-primary" href={storeUrl} rel="noopener">
+              <span>Add to Chrome</span>
+              <b aria-hidden="true">↗</b>
+            </a>
+          ) : (
+            <span class="pd-primary is-disabled" aria-disabled="true">
+              <span>Add to Chrome</span>
+              <b aria-hidden="true">↗</b>
+            </span>
+          )}
+          <p>Store link is being reconnected. The page itself is ready for review.</p>
+        </div>
+
+        <ul class="pd-proof" aria-label="Pinterest Downloader highlights">
+          <li>Videos</li>
+          <li>Images</li>
+          <li>GIFs</li>
+          <li>Boards</li>
+          <li>Bulk</li>
+          <li>ZIP</li>
+        </ul>
+      </div>
+
+      <div class="pd-product-demo" aria-label="Pinterest Downloader interface example">
+        <div class="pd-browser">
+          <div class="pd-browser-bar">
+            <div class="pd-dots"><i></i><i></i><i></i></div>
+            <div class="pd-address">pinterest.com / board / design-reference</div>
+            <div class="pd-browser-mark">↓</div>
+          </div>
+
+          <div class="pd-browser-body">
+            <div class="pd-pin-grid">
+              <article class="pd-pin pin-a"><span>Editorial</span><button type="button" tabindex="-1">↓</button></article>
+              <article class="pd-pin pin-b"><span>Motion</span><button type="button" tabindex="-1">↓</button><em>VIDEO</em></article>
+              <article class="pd-pin pin-c"><span>Objects</span><button type="button" tabindex="-1">↓</button></article>
+              <article class="pd-pin pin-d"><span>Type</span><button type="button" tabindex="-1">↓</button><em>GIF</em></article>
+              <article class="pd-pin pin-e"><span>Campaign</span><button type="button" tabindex="-1">↓</button></article>
+              <article class="pd-pin pin-f"><span>Archive</span><button type="button" tabindex="-1">↓</button></article>
+            </div>
+
+            <aside class="pd-panel">
+              <div class="pd-panel-head">
+                <div>
+                  <img src="/pinterest-downloader/icon-128.png" width="28" height="28" alt="" />
+                  <strong>Pinterest Downloader</strong>
+                </div>
+                <span>24 found</span>
+              </div>
+
+              <div class="pd-tabs">
+                <b>All</b><span>Images</span><span>Videos</span><span>GIFs</span>
+              </div>
+
+              <div class="pd-media-list">
+                <label><input type="checkbox" checked tabindex="-1" /><i class="thumb one"></i><span><b>campaign-04</b><small>JPG · 1600×2400</small></span></label>
+                <label><input type="checkbox" checked tabindex="-1" /><i class="thumb two"></i><span><b>motion-study</b><small>MP4 · video</small></span></label>
+                <label><input type="checkbox" checked tabindex="-1" /><i class="thumb three"></i><span><b>type-loop</b><small>GIF · animated</small></span></label>
+              </div>
+
+              <div class="pd-panel-summary"><span>3 selected</span><strong>Download ZIP</strong></div>
+            </aside>
+          </div>
+        </div>
+
+        <div class="pd-float">
+          <span class="pd-float-icon">↓</span>
+          <div><strong>Download on the Pin</strong><small>No copied links</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pd-intent-strip" aria-label="Main downloader use cases">
+      <span>Pinterest video downloader</span>
+      <i>•</i>
+      <span>Pinterest image downloader</span>
+      <i>•</i>
+      <span>Pinterest GIF downloader</span>
+      <i>•</i>
+      <span>Pinterest board downloader</span>
+    </section>
+
+    <section class="pd-section pd-direct">
+      <div class="pd-section-label">01 · Direct on Pinterest</div>
+      <div class="pd-section-head">
+        <h2>Browse normally.<br />Download where the media already is.</h2>
+        <p>
+          Pinterest Downloader keeps the download action close to the Pin.
+          Save supported media directly instead of opening a separate downloader,
+          copying a URL, pasting it, and waiting for another page.
+        </p>
+      </div>
+
+      <div class="pd-three">
+        <article>
+          <span>01</span>
+          <h3>Open a Pin</h3>
+          <p>Browse Pinterest the way you already do. The downloader adds the save workflow to the page.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Choose the media</h3>
+          <p>Download a single image, video or GIF, or open the extension to collect more from the page.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Save once</h3>
+          <p>For larger selections, choose the files you want and export them together as a ZIP.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="pd-dark">
+      <div class="pd-section-label">02 · One Pin or a whole board</div>
+      <div class="pd-dark-grid">
+        <div>
+          <h2>Stop downloading Pins one by one.</h2>
+          <p>
+            Collect available media from a Pinterest board, keep only what matters,
+            then download the selection together.
+          </p>
+        </div>
+
+        <div class="pd-bulk-card">
+          <div class="pd-bulk-top"><span>Board selection</span><b>38 items</b></div>
+          <div class="pd-bulk-row"><i class="bulk-one"></i><span><b>Images</b><small>24 selected</small></span><em>24</em></div>
+          <div class="pd-bulk-row"><i class="bulk-two"></i><span><b>Videos</b><small>8 selected</small></span><em>8</em></div>
+          <div class="pd-bulk-row"><i class="bulk-three"></i><span><b>GIFs</b><small>6 selected</small></span><em>6</em></div>
+          <div class="pd-bulk-action"><span>38 selected</span><strong>Download as ZIP ↓</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pd-section pd-difference">
+      <div class="pd-section-label">03 · Built for the actual task</div>
+      <div class="pd-difference-grid">
+        <div>
+          <h2>No extra downloader tab.</h2>
+          <p>
+            The strongest alternatives in the category also compete on one-click saving,
+            board downloads and original-quality media. The useful difference is not a long feature list:
+            it is removing steps between seeing a Pin and keeping the file.
+          </p>
+        </div>
+
+        <div class="pd-compare">
+          <div class="is-head"><span></span><b>Pinterest Downloader</b><em>Copy-paste downloader</em></div>
+          <div><span>Download from the page</span><b>Yes</b><em>No</em></div>
+          <div><span>Images + videos + GIFs</span><b>Yes</b><em>Depends</em></div>
+          <div><span>Bulk board workflow</span><b>Yes</b><em>Often one link at a time</em></div>
+          <div><span>ZIP for a selection</span><b>Yes</b><em>Usually no</em></div>
+          <div><span>Repeated link copying</span><b>No</b><em>Yes</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pd-secondary">
+      <div>
+        <p class="pd-mini-label">Beyond Pinterest</p>
+        <h2>Need an image from another website?</h2>
+      </div>
+      <p>
+        The extension can also download images from other supported web pages.
+        Pinterest remains the main workflow; video downloading is not presented here as universal across every site.
+      </p>
+    </section>
+
+    <section class="pd-faq" id="faq">
+      <div class="pd-section-label">04 · Questions</div>
+      <div class="pd-faq-grid">
+        <div>
+          <h2>Before you install.</h2>
+          <p>Short answers about the Pinterest downloader workflow.</p>
+        </div>
+        <div class="pd-faq-list">
+          {faqItems.map((item, index) => (
+            <details open={index === 0}>
+              <summary><span>{String(index + 1).padStart(2, '0')}</span>{item.question}<i aria-hidden="true">+</i></summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="pd-final">
+      <img src="/pinterest-downloader/icon-128.png" width="64" height="64" alt="Pinterest Downloader icon" />
+      <p>Pinterest Downloader for Chrome</p>
+      <h2>See it. Select it. Save it.</h2>
+      {storeUrl ? (
+        <a class="pd-primary pd-primary-light" href={storeUrl} rel="noopener">
+          <span>Add to Chrome</span><b aria-hidden="true">↗</b>
+        </a>
+      ) : (
+        <span class="pd-primary pd-primary-light is-disabled" aria-disabled="true">
+          <span>Add to Chrome</span><b aria-hidden="true">↗</b>
+        </span>
+      )}
+      <small>Videos · Images · GIFs · Boards · Bulk · ZIP</small>
+    </section>
+  </div>
+</PageLayout>
+
+<style>
+  :global(body) { background:#f7f6f8; color:#17161a; }
+  :global(body)::before { opacity:.025; }
+  :global(main.wrap) { max-width:1380px; }
+  :global(.page-prose) { max-width:none; width:100%; }
+  :global(.site-header) { background:rgba(247,246,248,.92); border-bottom-color:#e6e2e8; backdrop-filter:blur(18px); }
+  :global(.site-footer) { margin-top:0; }
+
+  .pd-page {
+    --red:#e60023;
+    --ink:#17161a;
+    --muted:#6e6873;
+    --line:#ded9e1;
+    --soft:#f0edf3;
+    --lilac:#eeeaf5;
+    --white:#fff;
+    color:var(--ink);
+  }
+
+  .pd-hero {
+    display:grid;
+    grid-template-columns:minmax(0,.9fr) minmax(600px,1.1fr);
+    gap:clamp(52px,6vw,96px);
+    align-items:center;
+    min-height:760px;
+    padding:72px 0 92px;
+  }
+
+  .pd-product-line { display:flex; align-items:center; gap:13px; margin-bottom:34px; }
+  .pd-product-line img { border-radius:12px; box-shadow:0 8px 24px rgba(33,28,36,.08); }
+  .pd-product-line div { display:flex; flex-direction:column; }
+  .pd-product-line span { font-size:14px; font-weight:800; }
+  .pd-product-line small { margin-top:2px; color:var(--muted); font-size:12px; }
+
+  .pd-hero h1 {
+    max-width:9.5ch;
+    margin:0;
+    font-size:clamp(58px,6.5vw,104px);
+    line-height:.91;
+    letter-spacing:-.07em;
+    text-wrap:balance;
+  }
+
+  .pd-lede {
+    max-width:630px;
+    margin:34px 0 0;
+    color:#4c4750;
+    font-size:clamp(18px,1.5vw,22px);
+    line-height:1.5;
+    letter-spacing:-.02em;
+  }
+
+  .pd-actions { display:flex; align-items:center; gap:18px; margin-top:34px; }
+  .pd-actions p { max-width:230px; margin:0; color:#7b747f; font-size:11px; line-height:1.45; }
+
+  .pd-primary {
+    display:inline-flex;
+    align-items:center;
+    justify-content:space-between;
+    min-width:206px;
+    min-height:58px;
+    padding:0 10px 0 20px;
+    border:1px solid var(--red);
+    border-radius:12px;
+    background:var(--red);
+    color:#fff;
+    font-size:15px;
+    font-weight:800;
+    text-decoration:none;
+    box-shadow:0 12px 30px rgba(230,0,35,.16);
+  }
+  .pd-primary b { display:grid; width:38px; height:38px; place-items:center; border-left:1px solid rgba(255,255,255,.25); font-size:17px; }
+  .pd-primary.is-disabled { cursor:not-allowed; opacity:.56; box-shadow:none; }
+
+  .pd-proof { display:flex; flex-wrap:wrap; gap:8px; margin:34px 0 0; padding:0; list-style:none; }
+  .pd-proof li { padding:8px 11px; border:1px solid var(--line); border-radius:999px; background:#fff; color:#57505b; font-size:11px; font-weight:750; }
+
+  .pd-product-demo { position:relative; }
+  .pd-browser {
+    overflow:hidden;
+    border:1px solid #d5cfd8;
+    border-radius:22px;
+    background:#fff;
+    box-shadow:0 32px 80px rgba(45,35,50,.14);
+  }
+
+  .pd-browser-bar { display:flex; height:52px; align-items:center; gap:12px; padding:0 13px; border-bottom:1px solid #e6e2e8; background:#fbfafc; }
+  .pd-dots { display:flex; gap:5px; }
+  .pd-dots i { width:7px; height:7px; border-radius:50%; background:#d2ccd5; }
+  .pd-address { flex:1; padding:8px 13px; border:1px solid #e7e3ea; border-radius:8px; background:#fff; color:#8a838e; font-size:10px; }
+  .pd-browser-mark { display:grid; width:30px; height:30px; place-items:center; border-radius:9px; background:var(--red); color:#fff; font-weight:900; }
+
+  .pd-browser-body { display:grid; grid-template-columns:1fr 232px; min-height:500px; }
+  .pd-pin-grid { display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:150px; gap:9px; padding:16px; background:#faf9fb; }
+  .pd-pin { position:relative; display:flex; align-items:flex-end; overflow:hidden; padding:12px; border-radius:14px; color:#fff; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .pd-pin::before { content:''; position:absolute; inset:22% 18%; border:1px solid currentColor; border-radius:48% 52% 45% 55%; opacity:.25; transform:rotate(-12deg); }
+  .pd-pin span,.pd-pin button,.pd-pin em { position:relative; z-index:1; }
+  .pd-pin button { position:absolute; top:10px; right:10px; display:grid; width:31px; height:31px; place-items:center; border:0; border-radius:50%; background:var(--red); color:#fff; font-weight:900; }
+  .pd-pin em { position:absolute; left:10px; top:10px; padding:5px 7px; border-radius:999px; background:rgba(0,0,0,.46); font-size:7px; font-style:normal; }
+  .pin-a { grid-row:span 2; background:#29272c; }
+  .pin-b { background:#8a6f78; }
+  .pin-c { background:#c49c78; }
+  .pin-d { background:#6c72a6; }
+  .pin-e { grid-column:span 2; background:#405d88; }
+  .pin-f { background:#a26d62; }
+
+  .pd-panel { display:flex; flex-direction:column; border-left:1px solid #e7e3ea; background:#fff; }
+  .pd-panel-head { display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid #eeeaf0; }
+  .pd-panel-head div { display:flex; align-items:center; gap:8px; min-width:0; }
+  .pd-panel-head img { border-radius:7px; }
+  .pd-panel-head strong { overflow:hidden; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+  .pd-panel-head>span { color:#8d8691; font-size:8px; }
+
+  .pd-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:9px 10px; border-bottom:1px solid #eeeaf0; }
+  .pd-tabs span,.pd-tabs b { padding:7px 3px; border-radius:7px; color:#8b8490; font-size:8px; text-align:center; }
+  .pd-tabs b { background:#f5eef1; color:var(--red); }
+
+  .pd-media-list { display:flex; flex-direction:column; gap:0; padding:8px 10px; }
+  .pd-media-list label { display:grid; grid-template-columns:16px 38px 1fr; gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid #f0edf2; }
+  .pd-media-list input { accent-color:var(--red); }
+  .pd-media-list .thumb { width:38px; height:38px; border-radius:8px; background:#dad5dc; }
+  .pd-media-list .one { background:#7d8db0; }
+  .pd-media-list .two { background:#96777d; }
+  .pd-media-list .three { background:#776f9e; }
+  .pd-media-list span { display:flex; min-width:0; flex-direction:column; }
+  .pd-media-list b { overflow:hidden; font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
+  .pd-media-list small { margin-top:3px; color:#9b949e; font-size:7px; }
+  .pd-panel-summary { margin-top:auto; padding:14px; border-top:1px solid #eeeaf0; }
+  .pd-panel-summary span { display:block; margin-bottom:8px; color:#8f8793; font-size:8px; }
+  .pd-panel-summary strong { display:block; padding:11px; border-radius:9px; background:var(--red); color:#fff; font-size:9px; text-align:center; }
+
+  .pd-float { position:absolute; right:-24px; bottom:36px; display:flex; gap:11px; align-items:center; width:210px; padding:12px; border:1px solid #d8d2dc; border-radius:14px; background:#fff; box-shadow:0 18px 38px rgba(32,26,36,.14); }
+  .pd-float-icon { display:grid; width:38px; height:38px; place-items:center; border-radius:10px; background:var(--red); color:#fff; font-weight:900; }
+  .pd-float div { display:flex; flex-direction:column; }
+  .pd-float strong { font-size:10px; }
+  .pd-float small { margin-top:2px; color:#8c8590; font-size:8px; }
+
+  .pd-intent-strip { display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center; padding:16px 24px; border-block:1px solid var(--line); color:#6a646d; font-size:11px; font-weight:750; }
+  .pd-intent-strip i { color:var(--red); font-style:normal; }
+
+  .pd-section { padding:110px 0; border-bottom:1px solid var(--line); }
+  .pd-section-label { margin-bottom:62px; color:#918a95; font-size:10px; font-weight:850; letter-spacing:.16em; text-transform:uppercase; }
+  .pd-section-head { display:grid; grid-template-columns:1.15fr .65fr; gap:80px; align-items:end; }
+  .pd-section h2,.pd-dark h2,.pd-faq h2,.pd-secondary h2 { margin:0; font-size:clamp(48px,6vw,88px); line-height:.94; letter-spacing:-.06em; }
+  .pd-section-head>p { margin:0; color:#625b66; font-size:18px; line-height:1.58; }
+
+  .pd-three { display:grid; grid-template-columns:repeat(3,1fr); margin-top:86px; border-top:1px solid var(--ink); }
+  .pd-three article { min-height:260px; padding:24px 30px 0 0; border-right:1px solid var(--line); }
+  .pd-three article+article { padding-left:30px; }
+  .pd-three article:last-child { border-right:0; }
+  .pd-three span { color:var(--red); font-size:10px; font-weight:900; }
+  .pd-three h3 { margin:62px 0 10px; font-size:25px; letter-spacing:-.035em; }
+  .pd-three p { margin:0; color:#6e6772; line-height:1.55; }
+
+  .pd-dark { width:calc(100% + 48px); margin-left:-24px; padding:100px 24px; background:#17161a; color:#fff; }
+  .pd-dark .pd-section-label { color:#827a86; }
+  .pd-dark-grid { display:grid; grid-template-columns:.92fr 1.08fr; gap:90px; align-items:center; }
+  .pd-dark-grid>div:first-child>p { max-width:560px; margin:30px 0 0; color:#b8b0bb; font-size:18px; line-height:1.58; }
+
+  .pd-bulk-card { overflow:hidden; border:1px solid #38343b; border-radius:18px; background:#211f24; }
+  .pd-bulk-top { display:flex; justify-content:space-between; padding:18px 20px; border-bottom:1px solid #37333a; }
+  .pd-bulk-top span { color:#aaa2ae; font-size:11px; }
+  .pd-bulk-top b { font-size:11px; }
+  .pd-bulk-row { display:grid; grid-template-columns:54px 1fr 34px; gap:12px; align-items:center; padding:14px 18px; border-bottom:1px solid #302d33; }
+  .pd-bulk-row i { width:54px; height:54px; border-radius:12px; background:#55505a; }
+  .pd-bulk-row .bulk-one { background:#687fa7; }
+  .pd-bulk-row .bulk-two { background:#8e6d75; }
+  .pd-bulk-row .bulk-three { background:#716e9b; }
+  .pd-bulk-row span { display:flex; flex-direction:column; }
+  .pd-bulk-row b { font-size:12px; }
+  .pd-bulk-row small { margin-top:3px; color:#908994; font-size:9px; }
+  .pd-bulk-row em { display:grid; width:30px; height:30px; place-items:center; border-radius:50%; background:#302d33; color:#bcb4c0; font-size:10px; font-style:normal; }
+  .pd-bulk-action { display:flex; justify-content:space-between; align-items:center; padding:18px; }
+  .pd-bulk-action span { color:#8e8791; font-size:10px; }
+  .pd-bulk-action strong { padding:12px 15px; border-radius:10px; background:var(--red); font-size:11px; }
+
+  .pd-difference-grid { display:grid; grid-template-columns:.7fr 1.3fr; gap:90px; }
+  .pd-difference-grid>div:first-child>p { margin:30px 0 0; color:#6e6772; line-height:1.58; }
+  .pd-compare { border-top:2px solid var(--ink); }
+  .pd-compare>div { display:grid; grid-template-columns:1.2fr .8fr .9fr; border-bottom:1px solid var(--line); }
+  .pd-compare span,.pd-compare b,.pd-compare em { padding:16px 12px; font-size:12px; }
+  .pd-compare b,.pd-compare em { border-left:1px solid var(--line); }
+  .pd-compare em { color:#7e7681; font-style:normal; }
+  .pd-compare .is-head span,.pd-compare .is-head b,.pd-compare .is-head em { font-size:9px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+  .pd-compare b { color:var(--red); }
+
+  .pd-secondary { display:grid; grid-template-columns:1fr .9fr; gap:80px; align-items:end; padding:86px 0; border-bottom:1px solid var(--line); }
+  .pd-mini-label { margin:0 0 18px; color:var(--red); font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
+  .pd-secondary h2 { max-width:12ch; font-size:clamp(42px,5vw,72px); }
+  .pd-secondary>p { margin:0; color:#625b66; font-size:17px; line-height:1.6; }
+
+  .pd-faq { padding:110px 0; }
+  .pd-faq-grid { display:grid; grid-template-columns:.7fr 1.3fr; gap:100px; }
+  .pd-faq-grid>div:first-child>p { max-width:330px; color:#716a75; }
+  .pd-faq-list { border-top:2px solid var(--ink); }
+  .pd-faq details { border-bottom:1px solid var(--line); }
+  .pd-faq summary { display:grid; grid-template-columns:36px 1fr 24px; gap:14px; align-items:center; padding:22px 0; cursor:pointer; list-style:none; font-size:17px; font-weight:750; }
+  .pd-faq summary::-webkit-details-marker { display:none; }
+  .pd-faq summary span { color:#9a929d; font-size:9px; }
+  .pd-faq summary i { font-style:normal; font-size:21px; transition:transform 160ms ease; }
+  .pd-faq details[open] summary i { transform:rotate(45deg); }
+  .pd-faq details p { max-width:720px; margin:0 0 22px 50px; color:#6d6671; line-height:1.62; }
+
+  .pd-final { width:calc(100% + 48px); margin-left:-24px; padding:92px 24px 100px; background:var(--red); color:#fff; text-align:center; }
+  .pd-final img { border-radius:16px; box-shadow:0 14px 38px rgba(61,0,10,.22); }
+  .pd-final>p { margin:18px 0 0; font-size:11px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+  .pd-final h2 { margin:24px auto 46px; font-size:clamp(64px,9vw,132px); line-height:.86; letter-spacing:-.075em; }
+  .pd-primary-light { border-color:#fff; background:#fff; color:var(--ink); box-shadow:none; }
+  .pd-primary-light b { border-left-color:#e9e3e8; }
+  .pd-final>small { display:block; margin-top:26px; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; opacity:.78; }
+
+  @media (max-width:1100px) {
+    .pd-hero { grid-template-columns:1fr; }
+    .pd-hero-copy { max-width:800px; }
+    .pd-product-demo { max-width:860px; }
+    .pd-section-head,.pd-dark-grid,.pd-difference-grid,.pd-faq-grid,.pd-secondary { grid-template-columns:1fr; gap:44px; }
+  }
+
+  @media (max-width:760px) {
+    .pd-hero { padding-top:46px; min-height:auto; }
+    .pd-hero h1 { font-size:clamp(52px,16vw,76px); }
+    .pd-actions { align-items:flex-start; flex-direction:column; }
+    .pd-browser-body { grid-template-columns:1fr; }
+    .pd-panel { display:none; }
+    .pd-pin-grid { grid-auto-rows:110px; }
+    .pd-float { right:-4px; bottom:-26px; }
+    .pd-intent-strip { justify-content:flex-start; }
+    .pd-section { padding:78px 0; }
+    .pd-section-label { margin-bottom:44px; }
+    .pd-three { grid-template-columns:1fr; margin-top:58px; }
+    .pd-three article,.pd-three article+article { min-height:auto; padding:24px 0 34px; border-right:0; border-bottom:1px solid var(--line); }
+    .pd-three h3 { margin-top:34px; }
+    .pd-dark,.pd-final { width:calc(100% + 32px); margin-left:-16px; padding-inline:16px; }
+    .pd-compare>div { grid-template-columns:1.1fr .8fr .9fr; }
+    .pd-compare span,.pd-compare b,.pd-compare em { padding:12px 7px; font-size:10px; }
+    .pd-faq { padding:78px 0; }
+  }
+
+  @media (prefers-reduced-motion:reduce) {
+    .pd-faq summary i { transition:none; }
+  }
+</style>
