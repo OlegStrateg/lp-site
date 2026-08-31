@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Pinterest Downloader for Chrome saves Pinterest videos, images and GIFs. Download one Pin in one click or select many files and save the batch as ZIP.">
 <link rel="canonical" href="https://layerporter.com/pinterest-downloader/">
+<link rel="alternate" hreflang="en" href="https://layerporter.com/pinterest-downloader/">
+<link rel="alternate" hreflang="es-ES" href="https://layerporter.com/es/pinterest-downloader/">
+<link rel="alternate" hreflang="x-default" href="https://layerporter.com/pinterest-downloader/">
 <title>Pinterest Downloader — Videos, Images & GIFs | LayerPorter</title>
 <meta name="robots" content="noindex,follow">
 <style is:global>
@@ -385,6 +388,11 @@ footer{padding:28px 0;border-top:1px solid var(--line);font-size:10px;color:#818
   #heroDemo .side{display:none}
   #heroDemo .float-proof{display:flex;left:12px;right:auto;bottom:12px;width:190px}
 }
+.lang-switch{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:10px;font-weight:900}
+.lang-switch a{min-width:30px;padding:7px 8px;border-radius:6px;text-align:center;color:#777771}
+.lang-switch a:hover{color:#111;background:#f1f1ee}
+.lang-switch a[aria-current="page"]{background:#111;color:#fff}
+@media(max-width:760px){.lang-switch{margin-left:auto}.nav{gap:10px}.brand{white-space:nowrap}}
 </style>
 </head>
 <body id="top">
@@ -397,7 +405,11 @@ footer{padding:28px 0;border-top:1px solid var(--line);font-size:10px;color:#818
       <a href="#bulk">Bulk boards</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <a class="install install-link" data-cta="header" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=header" target="_blank" rel="noopener noreferrer">Add to Chrome <span>↗</span></a>
+    <nav class="lang-switch" aria-label="Language">
+      <a href="/pinterest-downloader/" lang="en" aria-current="page">EN</a>
+      <a href="/es/pinterest-downloader/" lang="es">ES</a>
+    </nav>
+    <a class="install install-link" data-cta="header" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=header&utm_term=en" target="_blank" rel="noopener noreferrer">Add to Chrome <span>↗</span></a>
   </div>
 </header>
 <main>
@@ -407,7 +419,7 @@ footer{padding:28px 0;border-top:1px solid var(--line);font-size:10px;color:#818
       <h1>Download Pinterest videos, images & GIFs in one click.</h1>
       <p class="hero-copy">The download action appears right on Pinterest. Save one Pin instantly — or select many files and download the batch together as ZIP.</p>
       <div class="hero-actions">
-        <a class="install install-link" data-cta="hero" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=hero" target="_blank" rel="noopener noreferrer">Add to Chrome <span>↗</span></a>
+        <a class="install install-link" data-cta="hero" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=hero&utm_term=en" target="_blank" rel="noopener noreferrer">Add to Chrome <span>↗</span></a>
         <div class="micro">Works directly on Pinterest · No copied links · Bulk selection + ZIP</div>
       </div>
       <ul class="proofline"><li>Videos</li><li>Images</li><li>GIFs</li><li>Boards</li><li>Bulk</li><li>ZIP</li></ul>
@@ -502,11 +514,11 @@ footer{padding:28px 0;border-top:1px solid var(--line);font-size:10px;color:#818
   <section class="wrap section reveal"><div class="loop"><div><div class="section-number">03 · FRICTION</div><h2>Skip the copy-paste loop.</h2></div><div class="flow-compare"><div class="flow-row old"><b>Typical detour</b><div><span>Open downloader</span><i>→</i><span>Copy link</span><i>→</i><span>Paste link</span><i>→</i><span>Save</span><i>→</i><span>Repeat</span></div></div><div class="flow-row new"><b>With extension</b><div><span>See the Pin</span><i>→</i><span>Click Download</span><i>→</i><span>Done</span></div></div></div></div></section>
   <section class="wrap secondary reveal"><div><div class="section-number">04 · EXTRA VALUE</div><h2>Pinterest first. Images elsewhere too.</h2><p>Pinterest remains the primary workflow for videos, images and GIFs. On other supported pages, the extension can also collect and download images.</p></div><div class="site-grid"><div class="site"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=84&w=1200" alt=""><span>Collect images</span></div><div class="site"><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=84&w=1200" alt=""><span>Select several</span></div><div class="site"><img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=84&w=1200" alt=""><span>Save directly</span></div></div></section>
   <section class="wrap faq reveal" id="faq"><div class="faq-grid"><div><div class="section-number">05 · QUESTIONS</div><h2>Before you install.</h2></div><div><details open><summary><span>01</span>What can Pinterest Downloader save?<i>+</i></summary><p>Pinterest videos, images, photos and GIFs when that media is available on the Pin or page you are viewing.</p></details><details><summary><span>02</span>Can I download several Pins at once?<i>+</i></summary><p>Yes. Select multiple available files and download the chosen batch together, including as ZIP.</p></details><details><summary><span>03</span>Do I need to copy Pinterest links?<i>+</i></summary><p>No. The main workflow is designed to work from the Pinterest page you are already browsing.</p></details><details><summary><span>04</span>Does it work on other websites?<i>+</i></summary><p>For images, yes, on supported pages. Pinterest remains the primary workflow for videos, images and GIFs.</p></details></div></div></section>
-  <section class="final reveal"><div class="wrap"><div class="eyebrow"><span class="mark">↓</span> Pinterest Downloader</div><h2>Keep the Pin. Skip the detour.</h2><p>Download Pinterest images, videos and GIFs from the page — one item or a selected batch.</p><a class="install install-link" data-cta="final" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=final" target="_blank" rel="noopener noreferrer">Add to Chrome <span>↗</span></a><div class="final-meta">Videos · Images · GIFs · Boards · Bulk selection · ZIP</div></div></section>
+  <section class="final reveal"><div class="wrap"><div class="eyebrow"><span class="mark">↓</span> Pinterest Downloader</div><h2>Keep the Pin. Skip the detour.</h2><p>Download Pinterest images, videos and GIFs from the page — one item or a selected batch.</p><a class="install install-link" data-cta="final" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=final&utm_term=en" target="_blank" rel="noopener noreferrer">Add to Chrome <span>↗</span></a><div class="final-meta">Videos · Images · GIFs · Boards · Bulk selection · ZIP</div></div></section>
   <div class="wrap signal reveal" aria-label="Supported workflows"><span>One Pin</span><span>Videos</span><span>Images</span><span>GIFs</span><span>Bulk</span><span>ZIP</span></div>
 </main>
 <footer><div class="wrap footer-row"><span>LayerPorter</span><span>Pinterest Downloader · LayerPorter</span></div></footer>
-<a class="mobile-install install-link" data-cta="mobile_sticky" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=mobile_sticky" target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a>
+<a class="mobile-install install-link" data-cta="mobile_sticky" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=mobile_sticky&utm_term=en" target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a>
 <div class="toast" id="toast" role="status" aria-live="polite">Ready</div>
 <script is:inline>
 (() => {
