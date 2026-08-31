@@ -91,3 +91,17 @@ jobs:
 
           curl -fsSI --max-time 20 "$URL" -o /tmp/pinterest.headers
           grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
+
+          echo "=== VERIFY SPANISH PINTEREST LANDING ==="
+          ES_URL="https://layerporter.com/es/pinterest-downloader/"
+          curl -fsS --max-time 20 "$ES_URL" -o /tmp/pinterest-es.html
+          grep -F '<html lang="es">' /tmp/pinterest-es.html
+          grep -F "Descargar Pinterest" /tmp/pinterest-es.html
+          grep -F 'canonical" href="https://layerporter.com/es/pinterest-downloader/"' /tmp/pinterest-es.html
+          grep -F 'hreflang="en"' /tmp/pinterest-es.html
+          grep -F 'hreflang="es-ES"' /tmp/pinterest-es.html
+          grep -F 'hreflang="x-default"' /tmp/pinterest-es.html
+          grep -F "utm_term=es" /tmp/pinterest-es.html
+          grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest-es.html
+          curl -fsSI --max-time 20 "$ES_URL" -o /tmp/pinterest-es.headers
+          grep -i "content-security-policy:" /tmp/pinterest-es.headers | grep -F "https://images.unsplash.com"
