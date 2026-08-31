@@ -156,7 +156,7 @@ function patchBody(html, l) {
     `<div class="final-meta">${escapeHtml(l.videos)} · ${escapeHtml(l.images)} · GIF · ${escapeHtml(l.boards)} · ${escapeHtml(l.bulk)} · ZIP</div>`);
   html = html.replace(/<div class="wrap signal reveal" aria-label="[^"]*">[\s\S]*?<\/div>/,
     `<div class="wrap signal reveal" aria-label="Pinterest"><span>PIN</span><span>${escapeHtml(l.videos)}</span><span>${escapeHtml(l.images)}</span><span>GIF</span><span>${escapeHtml(l.bulk)}</span><span>ZIP</span></div>`);
-  html = html.replace(/<footer>[\s\S]*?<\/footer>/, `<footer><div class="wrap footer-row"><span>LayerPorter</span><span>${escapeHtml(l.root)}</span></div></footer>`);
+  html = html.replace(/<footer>[\s\S]*?<\/footer>/, `<footer><div class="wrap footer-row"><span>LayerPorter</span><span>${escapeHtml(l.root)}</span><a href="/privacy/#cookies">${escapeHtml((pinterestConsentCopy[l.code] || pinterestConsentCopy.en).privacy)}</a><a href="/terms/">Terms</a></div></footer>`);
 
   // Motion JS must update counters in the page language.
   html = html.replace("n + ' selected · Images · Videos · GIFs'", `n + ' ${String(l.selected).replaceAll("'","\\'")} · ${String(l.images).replaceAll("'","\\'")} · ${String(l.videos).replaceAll("'","\\'")} · GIF'`);
