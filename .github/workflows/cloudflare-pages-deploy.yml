@@ -56,12 +56,13 @@ jobs:
           set -euo pipefail
           URL="https://layerporter.com/pinterest-downloader/?verify=${{ github.sha }}"
 
-          for i in {1..12}; do
-            if curl -fsS --max-time 20 "$URL" -o /tmp/pinterest.html; then
+          for i in {1..18}; do
+            if curl -fsS --max-time 20 "$URL" -o /tmp/pinterest.html && grep -Fq "utm_term=en" /tmp/pinterest.html; then
+              echo "Current EN production content is live"
               break
             fi
-            if [ "$i" -eq 12 ]; then
-              echo "Production page did not become available"
+            if [ "$i" -eq 18 ]; then
+              echo "Current EN production content did not propagate"
               exit 1
             fi
             sleep 5
@@ -94,7 +95,17 @@ jobs:
 
           echo "=== VERIFY SPANISH PINTEREST LANDING ==="
           ES_URL="https://layerporter.com/es/pinterest-downloader/?verify=${{ github.sha }}"
-          curl -fsS --max-time 20 "$ES_URL" -o /tmp/pinterest-es.html
+          for i in {1..18}; do
+            if curl -fsS --max-time 20 "$ES_URL" -o /tmp/pinterest-es.html && grep -Fq "utm_term=es" /tmp/pinterest-es.html; then
+              echo "Current ES production content is live"
+              break
+            fi
+            if [ "$i" -eq 18 ]; then
+              echo "Current ES production content did not propagate"
+              exit 1
+            fi
+            sleep 5
+          done
           grep -F '<html lang="es">' /tmp/pinterest-es.html
           grep -F "Descargar Pinterest" /tmp/pinterest-es.html
           grep -F 'canonical" href="https://layerporter.com/es/pinterest-downloader/"' /tmp/pinterest-es.html
