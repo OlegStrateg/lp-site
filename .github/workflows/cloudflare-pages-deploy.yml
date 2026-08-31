@@ -77,22 +77,16 @@ jobs:
           grep -F "images.unsplash.com" /tmp/pinterest.html
           grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest.html
 
-          python3 - <<'PY'
-          import re, pathlib, urllib.request
-          html = pathlib.Path('/tmp/pinterest.html').read_text()
-          hrefs = re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', html)
-          if not hrefs:
-              raise SystemExit("No stylesheet links found")
-          css = []
-          for href in hrefs:
-              url = href if href.startswith('http') else 'https://layerporter.com' + href
-              with urllib.request.urlopen(url, timeout=20) as r:
-                  css.append(r.read().decode('utf-8'))
-          joined = '\n'.join(css)
-          if '@keyframes ctaSweep' not in joined:
-              raise SystemExit("Motion CSS not found in production stylesheets")
-          print("Production stylesheets OK:", ', '.join(hrefs))
-          PY
+          : > /tmp/pinterest.styles.css
+          grep -oE 'href="[^"]+\.css"' /tmp/pinterest.html | sed 's/^href="//;s/"$//' | sort -u | while read -r href; do
+            if [[ "$href" == http* ]]; then
+              css_url="$href"
+            else
+              css_url="https://layerporter.com$href"
+            fi
+            curl -fsS --max-time 20 -A "Mozilla/5.0" "$css_url" >> /tmp/pinterest.styles.css
+          done
+          grep -F "@keyframes ctaSweep" /tmp/pinterest.styles.css
           grep -F "runHeroDemo" /tmp/pinterest.html
 
           curl -fsSI --max-time 20 "$URL" -o /tmp/pinterest.headers
