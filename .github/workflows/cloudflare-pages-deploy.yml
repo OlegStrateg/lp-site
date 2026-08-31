@@ -101,10 +101,10 @@ jobs:
           if (JSON.stringify(hold) !== JSON.stringify(expectedHold)) {
             throw new Error('Unexpected HOLD set: ' + JSON.stringify(hold));
           }
-          console.log('Build manifest: 52/52; HOLD:', hold.join(', '));
+          console.log('Build manifest: 52/52; research HOLD but indexed:', hold.join(', '));
           NODE
 
-          # Every locale must be live, self-attributed and noindex during candidate QA.
+          # Every locale must be live, self-attributed and indexable.
           ok=0
           while IFS=$'\t' read -r code route status; do
             if [ "$code" = "en" ]; then
@@ -131,7 +131,7 @@ jobs:
               exit 1
             fi
 
-            grep -Fq 'meta name="robots" content="noindex,follow"' "$tmp"
+            grep -Fq 'meta name="robots" content="index,follow"' "$tmp"
             grep -Fq 'hreflang="x-default"' "$tmp"
             grep -Fq "nmpahchhmcdejmfcmkphnbhckmlhhnon" "$tmp"
             ok=$((ok+1))
@@ -149,5 +149,18 @@ jobs:
             grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
             grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "script-src 'self' 'unsafe-inline'"
           done
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/sitemap.xml?verify=${{ github.sha }}" -o /tmp/sitemap.xml
+          node - <<'NODE'
+          const fs = require('fs');
+          const xml = fs.readFileSync('/tmp/sitemap.xml','utf8');
+          const rows = JSON.parse(fs.readFileSync('dist/pinterest-locales.json','utf8'));
+          for (const row of rows) {
+            if (!xml.includes('<loc>' + row.url + '</loc>')) {
+              throw new Error('Missing sitemap URL: ' + row.url);
+            }
+          }
+          console.log('Sitemap PASS: 52/52 locale URLs');
+          NODE
 
           echo "LIVE VERIFY PASS: 52/52 Pinterest landing URLs"
