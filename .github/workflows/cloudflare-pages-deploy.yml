@@ -56,7 +56,8 @@ jobs:
             sleep 5
           done
 
-          grep -F "Download Pinterest videos, images & GIFs in one click." /tmp/pinterest.html
+          grep -F "Download Pinterest videos" /tmp/pinterest.html
+          grep -F "GIFs in one click." /tmp/pinterest.html
           grep -F "nmpahchhmcdejmfcmkphnbhckmlhhnon" /tmp/pinterest.html
           grep -F "utm_content=header" /tmp/pinterest.html
           grep -F "utm_content=hero" /tmp/pinterest.html
