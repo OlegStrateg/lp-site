@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Descargar Pinterest para Chrome: guarda vídeos, imágenes y GIF directamente desde la página. Descarga un Pin o selecciona varios archivos y bájalos juntos en ZIP.">
+<link rel="canonical" href="https://layerporter.com/es/pinterest-downloader/">
+<link rel="alternate" hreflang="en" href="https://layerporter.com/pinterest-downloader/">
+<link rel="alternate" hreflang="es-ES" href="https://layerporter.com/es/pinterest-downloader/">
+<link rel="alternate" hreflang="x-default" href="https://layerporter.com/pinterest-downloader/">
+<title>Descargar Pinterest: vídeos, imágenes y GIF | LayerPorter</title>
+<meta name="robots" content="noindex,follow">
+<style is:global>
+:root{
+  --bg:#f7f7f5;
+  --paper:#ffffff;
+  --ink:#111111;
+  --muted:#676762;
+  --line:#deded9;
+  --line2:#ecece8;
+  --red:#e60023;
+  --red-dark:#c9001f;
+  --black:#151515;
+  --shadow:0 28px 80px rgba(20,20,20,.12);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{text-decoration:none;color:inherit}
+button{font:inherit}
+img{display:block;width:100%;height:100%;object-fit:cover}
+.wrap{width:min(1280px,calc(100% - 48px));margin:0 auto}
+.progress{position:fixed;left:0;top:0;height:3px;width:0;background:var(--red);z-index:100}
+header{
+  position:sticky;top:0;z-index:80;
+  background:rgba(247,247,245,.92);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(222,222,217,.9)
+}
+.nav{height:70px;display:flex;align-items:center;justify-content:space-between;gap:28px}
+.brand{font-size:19px;font-weight:900;letter-spacing:-.035em}
+.nav-center{display:flex;gap:25px;color:#5f5f5a;font-size:13px}
+.nav-center a:hover{color:#111}
+.install{
+  min-height:50px;padding:0 20px;border:0;border-radius:10px;
+  background:var(--red);color:#fff;display:inline-flex;align-items:center;gap:11px;
+  font-weight:850;font-size:14px;cursor:pointer;
+  box-shadow:0 10px 24px rgba(230,0,35,.13);
+  transition:transform .16s ease,background .16s ease
+}
+.install:hover{background:var(--red-dark);transform:translateY(-1px)}
+.install:focus-visible,.ghost:focus-visible,.filter:focus-visible,.dl:focus-visible,.bulk-card:focus-visible{
+  outline:3px solid rgba(230,0,35,.22);outline-offset:3px
+}
+.hero{
+  display:grid;grid-template-columns:.78fr 1.22fr;gap:68px;align-items:center;
+  min-height:760px;padding:74px 0 54px
+}
+.eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:24px;color:#575752;font-size:12px;font-weight:800}
+.mark{width:32px;height:32px;border-radius:9px;background:var(--red);color:#fff;display:grid;place-items:center;font-weight:950;font-size:17px}
+h1{margin:0;max-width:650px;font-size:clamp(58px,6vw,92px);line-height:.91;letter-spacing:-.07em;text-wrap:balance}
+.hero-copy{max-width:620px;margin:28px 0 0;color:#53534f;font-size:20px;line-height:1.52;letter-spacing:-.018em}
+.hero-actions{display:flex;align-items:center;gap:16px;margin-top:32px}
+.hero-actions .install{min-height:60px;padding:0 24px;font-size:15px}
+.micro{color:#8a8a84;font-size:11px;line-height:1.45;max-width:230px}
+.proofline{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;padding:0;list-style:none}
+.proofline li{padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#5d5d58;font-size:10px;font-weight:800}
+.promise{margin-top:28px;padding-top:20px;border-top:1px solid var(--line);font-size:14px;font-weight:800;letter-spacing:-.01em}
+.promise span{color:var(--red)}
+.product-proof{position:relative}
+.browser{overflow:hidden;border:1px solid #d5d5d0;border-radius:22px;background:#fff;box-shadow:var(--shadow)}
+.browser-top{height:52px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#f7f7f5;border-bottom:1px solid #e2e2de}
+.dots{display:flex;gap:5px}.dots i{width:7px;height:7px;border-radius:50%;background:#c9c9c4}
+.address{flex:1;height:30px;border:1px solid #deded9;border-radius:8px;background:#fff;display:flex;align-items:center;padding:0 12px;color:#8c8c86;font-size:10px}
+.ext{width:30px;height:30px;border-radius:9px;background:var(--red);color:#fff;display:grid;place-items:center;font-weight:900}
+.browser-body{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:555px}
+.feed{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:#f2f2ef;align-items:start}
+.pin{position:relative;overflow:hidden;border-radius:13px;background:#ddd;min-height:160px;cursor:pointer}
+.pin.tall{min-height:285px}.pin.mid{min-height:220px}
+.pin::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 52%,rgba(0,0,0,.25))}
+.pin img{transition:transform .24s ease}
+.pin:hover img{transform:scale(1.025)}
+.media{position:absolute;left:9px;top:9px;z-index:3;padding:5px 7px;border-radius:999px;background:rgba(17,17,17,.78);color:#fff;font-size:7px;font-weight:900;letter-spacing:.08em}
+.dl{position:absolute;right:9px;top:9px;z-index:3;width:36px;height:36px;border:0;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-weight:950;cursor:pointer;box-shadow:0 5px 16px rgba(0,0,0,.16);transition:transform .16s ease,background .16s ease}
+.pin:hover .dl{transform:translateY(-2px)}
+.dl:hover{background:var(--red);color:#fff}
+.label{position:absolute;left:10px;bottom:10px;z-index:3;color:#fff;font-size:8px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.side{display:flex;flex-direction:column;border-left:1px solid #e4e4df;background:#fff}
+.side-head{padding:17px 15px 13px;border-bottom:1px solid var(--line2)}
+.side-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.side-row strong{font-size:12px}.side-row span{font-size:9px;color:#888883}
+.side-sub{margin-top:4px;color:#999993;font-size:8px}
+.filters{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:9px;border-bottom:1px solid var(--line2)}
+.filter{border:0;background:transparent;padding:7px 3px;border-radius:7px;color:#777771;font-size:8px;cursor:pointer}
+.filter.active{background:#f7ecef;color:var(--red);font-weight:900}
+.file-list{padding:4px 11px}
+.file{display:grid;grid-template-columns:17px 44px 1fr;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f0f0ec}
+.check{width:15px;height:15px;border-radius:4px;background:var(--red);color:#fff;display:grid;place-items:center;font-size:9px;font-weight:950}
+.file-thumb{width:44px;height:44px;border-radius:7px;overflow:hidden}
+.file-copy{min-width:0}.file-copy b{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-copy small{display:block;margin-top:3px;color:#9b9b95;font-size:7px}
+.side-bottom{margin-top:auto;padding:13px;border-top:1px solid var(--line2)}
+.selection{display:flex;justify-content:space-between;margin-bottom:8px;color:#777771;font-size:8px}
+.zip{width:100%;height:40px;border:0;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:900;cursor:pointer}
+.float-proof{position:absolute;left:-26px;bottom:34px;display:flex;align-items:center;gap:11px;width:215px;padding:12px;border:1px solid #dadad5;border-radius:13px;background:#fff;box-shadow:0 18px 42px rgba(20,20,20,.12)}
+.float-proof i{width:38px;height:38px;border-radius:10px;background:var(--red);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:950}
+.float-proof div{display:flex;flex-direction:column}.float-proof strong{font-size:10px}.float-proof small{margin-top:2px;color:#8c8c86;font-size:8px}
+.task-strip{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;margin-bottom:18px}
+.task-strip div{padding:18px;border-right:1px solid var(--line)}
+.task-strip div:last-child{border-right:0}
+.task-strip b{display:block;font-size:12px}
+.task-strip small{display:block;margin-top:4px;color:#85857f;font-size:9px}
+.section{padding:104px 0;border-top:1px solid var(--line)}
+.section-label{margin-bottom:30px;color:#8a8a84;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.section-head{display:grid;grid-template-columns:1fr .68fr;gap:76px;align-items:end}
+h2{margin:0;font-size:clamp(48px,5.6vw,78px);line-height:.95;letter-spacing:-.057em;text-wrap:balance}
+.section-head p{margin:0;color:#62625d;font-size:17px;line-height:1.6}
+.single{margin-top:56px;display:grid;grid-template-columns:1.05fr .95fr;min-height:590px;border:1px solid #dadad5;border-radius:18px;overflow:hidden;background:#fff}
+.single-photo{position:relative;min-height:590px}
+.single-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.18))}
+.live-control{position:absolute;right:24px;top:24px;z-index:4;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid #e4e4df;border-radius:10px;background:#fff;box-shadow:0 14px 36px rgba(0,0,0,.16);font-size:12px;font-weight:900;cursor:pointer}
+.live-control i{width:28px;height:28px;border-radius:8px;background:var(--red);color:#fff;display:grid;place-items:center;font-style:normal}
+.single-copy{padding:52px;display:flex;flex-direction:column;justify-content:center}
+.single-copy .num{font-size:9px;color:#999993;font-weight:900;letter-spacing:.12em}
+.single-copy h3{margin:18px 0 14px;font-size:42px;line-height:1;letter-spacing:-.05em}
+.single-copy p{margin:0;color:#696963;font-size:16px;line-height:1.62}
+.single-copy ul{list-style:none;margin:28px 0 0;padding:0}
+.single-copy li{display:flex;justify-content:space-between;gap:18px;padding:11px 0;border-top:1px solid #e9e9e4;font-size:12px;font-weight:750}
+.single-copy li span{color:#8b8b85;font-weight:650}
+.dark{background:#171717;color:#fff}
+.dark .section{border-top:0}
+.dark .section-label{color:#777}
+.dark .section-head p{color:#b6b6b0}
+.bulk-shell{margin-top:56px;display:grid;grid-template-columns:.74fr 1.26fr;gap:18px}
+.bulk-copy{padding:46px;border:1px solid #333;border-radius:18px;background:#202020;display:flex;flex-direction:column;justify-content:flex-end}
+.bulk-copy span{font-size:9px;color:#777;font-weight:900;letter-spacing:.12em}
+.bulk-copy h3{margin:20px 0 14px;font-size:45px;line-height:.98;letter-spacing:-.055em}
+.bulk-copy p{margin:0;color:#b7b7b1;line-height:1.62}
+.bulk-ui{padding:22px;border:1px solid #333;border-radius:18px;background:#fff;color:#111}
+.bulk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.bulk-top strong{font-size:13px}.bulk-top span{font-size:9px;color:#85857f}
+.bulk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.bulk-card{position:relative;overflow:hidden;border:2px solid transparent;border-radius:11px;aspect-ratio:1/1.08;background:#ddd;cursor:pointer}
+.bulk-card.seleccionados{border-color:var(--red)}
+.bulk-card .sel{position:absolute;right:8px;top:8px;width:25px;height:25px;border-radius:7px;background:#fff;color:#777;display:grid;place-items:center;font-size:10px;font-weight:950;border:2px solid #fff}
+.bulk-card.seleccionados .sel{background:var(--red);color:#fff}
+.bulk-footer{display:flex;align-items:center;justify-content:space-between;margin-top:17px;padding-top:17px;border-top:1px solid #ecece8}
+.bulk-footer span{font-size:10px;color:#777771}
+.bulk-footer button{border:0;padding:12px 16px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:900;cursor:pointer}
+.loop{display:grid;grid-template-columns:.66fr 1.34fr;gap:80px;align-items:start}
+.loop h2{font-size:clamp(46px,5vw,70px)}
+.flow-compare{border-top:2px solid var(--ink)}
+.flow-row{display:grid;grid-template-columns:140px 1fr;gap:20px;padding:19px 0;border-bottom:1px solid var(--line)}
+.flow-row b{font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.flow-row.old b{color:#969690}.flow-row.new b{color:var(--red)}
+.flow-row div{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.flow-row span{padding:8px 10px;border-radius:8px;background:#fff;border:1px solid var(--line);font-size:11px;font-weight:700}
+.flow-row i{font-style:normal;color:#aaa;font-size:11px}
+.secondary{display:grid;grid-template-columns:.8fr 1.2fr;gap:80px;align-items:center;padding:88px 0;border-top:1px solid var(--line)}
+.secondary h2{font-size:clamp(44px,4.8vw,68px)}
+.secondary p{margin:22px 0 0;color:#686862;font-size:16px;line-height:1.62}
+.site-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.site{position:relative;overflow:hidden;border-radius:13px;aspect-ratio:1/1.08;background:#ddd;border:1px solid #ddd}
+.site span{position:absolute;left:9px;bottom:9px;padding:7px 9px;border-radius:8px;background:rgba(255,255,255,.94);font-size:9px;font-weight:850}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+.reveal.visible{opacity:1;transform:none}
+.section-number{display:inline-flex;align-items:center;gap:9px;margin-bottom:13px;color:#999993;font-size:9px;font-weight:900;letter-spacing:.12em}
+.section-number:before{content:"";width:22px;height:1px;background:var(--red)}
+.signal{display:grid;grid-template-columns:repeat(6,1fr);border-block:1px solid var(--line);margin-top:34px}
+.signal span{padding:13px 8px;text-align:center;border-right:1px solid var(--line);font-size:10px;font-weight:850;color:#5d5d58}
+.signal span:last-child{border-right:0}
+.faq{padding:96px 0;border-top:1px solid var(--line)}
+.faq-grid{display:grid;grid-template-columns:.68fr 1.32fr;gap:86px}
+.faq h2{font-size:56px}
+details{border-top:1px solid #dcdcd7}
+details:last-child{border-bottom:1px solid #dcdcd7}
+summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:32px 1fr 22px;gap:12px;align-items:center;padding:19px 0;font-size:15px;font-weight:780}
+summary::-webkit-details-marker{display:none}
+summary span{font-size:9px;color:#999993}
+summary i{font-style:normal;font-size:20px;transition:transform .16s ease}
+details[open] summary i{transform:rotate(45deg)}
+details p{margin:0 0 20px 44px;max-width:700px;color:#6a6a64;font-size:14px;line-height:1.62}
+.final{position:relative;overflow:hidden;background:var(--red);color:#fff;text-align:center;padding:98px 0 104px}
+.final:before{content:"";position:absolute;width:460px;height:460px;border-radius:50%;border:1px solid rgba(255,255,255,.16);left:50%;top:50%;transform:translate(-50%,-50%)}
+.final>*{position:relative}
+.final .eyebrow{justify-content:center;color:#fff;opacity:.9}
+.final .mark{background:#fff;color:var(--red)}
+.final h2{max-width:940px;margin:0 auto;font-size:clamp(60px,7vw,100px);line-height:.88;letter-spacing:-.073em}
+.final p{max-width:700px;margin:24px auto 0;font-size:17px;line-height:1.55;opacity:.88}
+.final .install{margin-top:30px;background:#fff;color:#111;box-shadow:none}
+.final .install:hover{color:var(--red);background:#fff}
+.final-meta{margin-top:21px;font-size:10px;font-weight:800;letter-spacing:.08em;opacity:.75}
+footer{padding:28px 0;border-top:1px solid var(--line);font-size:10px;color:#81817b}
+.footer-row{display:flex;justify-content:space-between;gap:20px}
+.toast{position:fixed;right:22px;bottom:22px;z-index:120;padding:13px 16px;border-radius:10px;background:#111;color:#fff;font-size:11px;font-weight:800;box-shadow:0 16px 38px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s ease}
+.toast.show{opacity:1;transform:none}
+.mobile-install{display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:110;min-height:54px;border-radius:11px;background:var(--red);color:#fff;align-items:center;justify-content:center;font-weight:900;font-size:14px;box-shadow:0 16px 38px rgba(0,0,0,.2)}
+@media(max-width:1060px){
+  .hero{grid-template-columns:1fr;min-height:auto;padding-top:62px}
+  .hero-left{max-width:820px}
+  .product-proof{max-width:920px}
+  .section-head,.single,.bulk-shell,.loop,.secondary,.faq-grid{grid-template-columns:1fr}
+  .single-photo{min-height:520px}.single{min-height:auto}
+  .loop{gap:42px}
+}
+@media(max-width:760px){
+  .wrap{width:min(100% - 28px,1280px)}
+  .nav-center{display:none}
+  header .install{display:none}
+  .hero{padding:50px 0 36px}
+  h1{font-size:clamp(50px,15vw,74px)}
+  .hero-copy{font-size:17px}
+  .hero-actions{align-items:flex-start;flex-direction:column}
+  .hero-actions .install{width:100%}
+  .micro{max-width:none}
+  .float-proof{display:none}
+  .browser-body{grid-template-columns:1fr}
+  .side{display:none}
+  .feed{grid-template-columns:repeat(2,1fr)}
+  .task-strip{grid-template-columns:1fr}
+  .task-strip div{border-right:0;border-bottom:1px solid var(--line)}
+  .task-strip div:last-child{border-bottom:0}
+  .section{padding:76px 0}
+  .section-head{gap:22px}
+  .single-copy,.bulk-copy{padding:30px}
+  .single-photo{min-height:420px}
+  .bulk-grid{grid-template-columns:repeat(2,1fr)}
+  .flow-row{grid-template-columns:1fr;gap:9px}
+  .site-grid{grid-template-columns:1fr 1fr}
+  .faq{padding:72px 0}.faq-grid{gap:32px}.faq h2{font-size:46px}
+  .signal{grid-template-columns:repeat(2,1fr)}
+  .signal span{border-bottom:1px solid var(--line)}
+  .signal span:nth-child(2n){border-right:0}
+  .final{padding:78px 0 90px}
+  .footer-row{flex-direction:column}
+  .mobile-install{display:flex}
+  body{padding-bottom:74px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+  .reveal{opacity:1;transform:none}
+}
+
+/* ─────────────────────────────────────────────
+   MOTION PASS — conversion-led, not decorative
+   ───────────────────────────────────────────── */
+.install{
+  position:relative;overflow:hidden;transform:translateZ(0);
+  transition:transform .18s cubic-bezier(.2,.75,.25,1),background .18s ease,box-shadow .18s ease;
+}
+.install span{display:inline-block;transition:transform .18s cubic-bezier(.2,.75,.25,1)}
+.install:hover{transform:translateY(-2px);box-shadow:0 15px 30px rgba(230,0,35,.18)}
+.install:hover span{transform:translateX(4px)}
+.install:active{transform:translateY(0) scale(.975);box-shadow:0 7px 18px rgba(230,0,35,.14)}
+.install.is-opening{pointer-events:none}
+.install.is-opening:after{
+  content:"";position:absolute;left:-35%;top:0;width:30%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);
+  transform:skewX(-18deg);animation:ctaSweep .72s ease forwards
+}
+@keyframes ctaSweep{to{left:115%}}
+.pin .dl{
+  opacity:0;transform:translateY(-4px) scale(.86);
+  transition:opacity .16s ease,transform .22s cubic-bezier(.2,.8,.2,1),background .16s ease,color .16s ease,box-shadow .16s ease
+}
+.pin:hover .dl,.pin.auto-target .dl,.pin.keyboard-target .dl{opacity:1;transform:translateY(0) scale(1)}
+.pin.auto-target{box-shadow:0 0 0 3px rgba(230,0,35,.18)}
+.pin.auto-target img{transform:scale(1.018)}
+.dl.auto-click{animation:downloadPress .36s cubic-bezier(.2,.8,.2,1);background:var(--red);color:#fff}
+@keyframes downloadPress{0%{transform:scale(1)}45%{transform:scale(.82)}100%{transform:scale(1)}}
+.product-proof{isolation:isolate}
+.demo-cursor{
+  position:absolute;left:0;top:0;z-index:40;width:26px;height:34px;pointer-events:none;opacity:0;
+  transform:translate3d(30px,30px,0);
+  transition:transform .66s cubic-bezier(.22,.72,.18,1),opacity .18s ease;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.24))
+}
+.demo-cursor:before{
+  content:"";display:block;width:18px;height:24px;background:#111;
+  clip-path:polygon(0 0,0 100%,28% 72%,43% 100%,58% 92%,43% 65%,78% 65%)
+}
+.demo-cursor.show{opacity:1}
+.demo-cursor.press:before{transform:scale(.86);transform-origin:6px 7px}
+.demo-badge{
+  position:absolute;right:18px;top:-16px;z-index:42;display:flex;align-items:center;gap:7px;
+  padding:8px 10px;border:1px solid #deded9;border-radius:999px;background:rgba(255,255,255,.94);
+  box-shadow:0 10px 24px rgba(20,20,20,.08);color:#666660;font-size:9px;font-weight:850;
+  letter-spacing:.04em;text-transform:uppercase
+}
+.demo-badge i{
+  width:7px;height:7px;border-radius:50%;background:var(--red);
+  box-shadow:0 0 0 0 rgba(230,0,35,.25);animation:liveDot 1.9s ease-out infinite
+}
+@keyframes liveDot{0%{box-shadow:0 0 0 0 rgba(230,0,35,.28)}70%{box-shadow:0 0 0 7px rgba(230,0,35,0)}100%{box-shadow:0 0 0 0 rgba(230,0,35,0)}}
+.file{transition:opacity .2s ease,transform .28s cubic-bezier(.2,.8,.2,1),background .2s ease}
+.file.demo-dim{opacity:.43}
+.file.arrived{opacity:1;background:#fff7f8;transform:translateX(4px)}
+.file .check{transition:transform .24s cubic-bezier(.2,.85,.2,1),background .18s ease,color .18s ease}
+.file.demo-dim .check{transform:scale(.72);background:#e2e2dd;color:transparent}
+.file.arrived .check{animation:checkPop .34s cubic-bezier(.2,.9,.2,1)}
+@keyframes checkPop{0%{transform:scale(.55)}65%{transform:scale(1.18)}100%{transform:scale(1)}}
+.fly-thumb{
+  position:fixed;z-index:999;pointer-events:none;object-fit:cover;border-radius:10px;
+  box-shadow:0 14px 36px rgba(0,0,0,.22);
+  transition:left .68s cubic-bezier(.22,.72,.18,1),top .68s cubic-bezier(.22,.72,.18,1),width .68s cubic-bezier(.22,.72,.18,1),height .68s cubic-bezier(.22,.72,.18,1),opacity .18s ease .54s,transform .68s cubic-bezier(.22,.72,.18,1)
+}
+.selection .count-live{display:inline-block;min-width:62px;font-variant-numeric:tabular-nums}
+.count-flip{animation:countFlip .3s cubic-bezier(.2,.85,.2,1)}
+@keyframes countFlip{0%{transform:translateY(6px);opacity:.2}100%{transform:translateY(0);opacity:1}}
+.zip{transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.zip.demo-ready{animation:zipListo .48s cubic-bezier(.2,.8,.2,1);box-shadow:0 9px 24px rgba(230,0,35,.2)}
+@keyframes zipListo{0%{transform:scale(.97)}55%{transform:scale(1.025)}100%{transform:scale(1)}}
+.bulk-card{transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .18s ease,opacity .18s ease,box-shadow .18s ease}
+.bulk-card:hover{transform:translateY(-3px)}
+.bulk-card:active{transform:translateY(-1px) scale(.98)}
+.bulk-card:not(.seleccionados){opacity:.62}
+.bulk-card.seleccionados{opacity:1;box-shadow:0 7px 18px rgba(230,0,35,.08)}
+.bulk-card .sel{transition:transform .22s cubic-bezier(.2,.9,.2,1),background .18s ease,color .18s ease}
+.bulk-card.seleccionados .sel{animation:checkPop .3s cubic-bezier(.2,.9,.2,1)}
+.bulk-footer button{transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease}
+.bulk-footer button.ready{box-shadow:0 10px 24px rgba(230,0,35,.18)}
+.bulk-footer button:active{transform:scale(.975)}
+.reveal{opacity:1;transform:none}
+.reveal .section-number,.reveal .section-label,.reveal .eyebrow{
+  opacity:0;transform:translateY(8px);transition:opacity .38s ease,transform .38s ease
+}
+.reveal h2,.reveal .section-head h2{
+  opacity:0;transform:translateY(15px);
+  transition:opacity .48s ease .04s,transform .48s cubic-bezier(.2,.75,.2,1) .04s
+}
+.reveal .section-head p,.reveal > p,.reveal .secondary p{
+  opacity:0;transform:translateY(10px);transition:opacity .42s ease .12s,transform .42s ease .12s
+}
+.reveal .single,.reveal .bulk-shell,.reveal .flow-compare,.reveal .site-grid,.reveal .faq-grid,.reveal .signal{
+  opacity:0;transform:translateY(18px) scale(.992);
+  transition:opacity .56s ease .15s,transform .62s cubic-bezier(.2,.75,.2,1) .15s
+}
+.reveal.visible .section-number,.reveal.visible .section-label,.reveal.visible .eyebrow,.reveal.visible h2,.reveal.visible .section-head h2,.reveal.visible .section-head p,.reveal.visible > p,.reveal.visible .secondary p,.reveal.visible .single,.reveal.visible .bulk-shell,.reveal.visible .flow-compare,.reveal.visible .site-grid,.reveal.visible .faq-grid,.reveal.visible .signal{opacity:1;transform:none}
+.single-photo img,.site img{transition:transform .48s cubic-bezier(.2,.75,.2,1)}
+.single:hover .single-photo img{transform:scale(1.014)}
+.site:hover img{transform:scale(1.025)}
+.live-control{transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+.live-control:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(0,0,0,.18)}
+.live-control:active{transform:scale(.975)}
+@media(prefers-reduced-motion:reduce){
+  .demo-cursor,.fly-thumb{display:none!important}
+  .demo-badge i{animation:none!important}
+  .pin .dl{opacity:1;transform:none}
+  .reveal *{opacity:1!important;transform:none!important}
+}
+#heroDemo .browser{overflow:visible;background:#fff}
+#heroDemo .browser-top{border-radius:22px 22px 0 0}
+#heroDemo .browser-body{position:relative;display:block;min-height:590px;overflow:hidden;border-radius:0 0 22px 22px}
+#heroDemo .feed{
+  min-height:590px;grid-template-columns:repeat(3,1fr);grid-auto-flow:dense;gap:11px;
+  padding:14px;padding-right:14px;background:#efefec
+}
+#heroDemo .pin{min-height:185px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+#heroDemo .pin.tall{min-height:360px}
+#heroDemo .pin.mid{min-height:270px}
+#heroDemo .pin img{filter:saturate(1.03) contrast(1.015)}
+#heroDemo .pin::after{background:linear-gradient(180deg,rgba(0,0,0,0) 58%,rgba(0,0,0,.30))}
+#heroDemo .side{
+  position:absolute;right:14px;top:14px;bottom:14px;z-index:20;width:238px;
+  border:1px solid rgba(215,215,210,.95);border-radius:15px;overflow:hidden;
+  background:rgba(255,255,255,.965);backdrop-filter:blur(12px);
+  box-shadow:0 24px 60px rgba(20,20,20,.18)
+}
+#heroDemo .side-head{background:rgba(255,255,255,.94)}
+#heroDemo .side-bottom{background:rgba(255,255,255,.96)}
+#heroDemo .float-proof{left:22px;bottom:22px;z-index:24}
+#heroDemo .demo-badge{right:12px;top:-18px}
+#heroDemo .dl{width:38px;height:38px;background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+#heroDemo .pin:hover .dl,#heroDemo .pin.auto-target .dl{box-shadow:0 8px 22px rgba(0,0,0,.20)}
+.single-photo{overflow:hidden}
+.single-photo img{filter:saturate(1.025) contrast(1.01)}
+.site{min-height:250px}
+.site img{filter:saturate(1.025) contrast(1.01)}
+@media(max-width:1180px){#heroDemo .side{width:218px}}
+@media(max-width:760px){
+  #heroDemo .browser-body{min-height:auto}
+  #heroDemo .feed{min-height:520px;grid-template-columns:repeat(2,1fr)}
+  #heroDemo .side{display:none}
+  #heroDemo .float-proof{display:flex;left:12px;right:auto;bottom:12px;width:190px}
+}
+.lang-switch{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:10px;font-weight:900}
+.lang-switch a{min-width:30px;padding:7px 8px;border-radius:6px;text-align:center;color:#777771}
+.lang-switch a:hover{color:#111;background:#f1f1ee}
+.lang-switch a[aria-current="page"]{background:#111;color:#fff}
+@media(max-width:760px){.lang-switch{margin-left:auto}.nav{gap:10px}.brand{white-space:nowrap}}
+</style>
+</head>
+<body id="top">
+<div class="progress" id="progress"></div>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">LayerPorter</a>
+    <nav class="nav-center">
+      <a href="#single">Un Pin</a>
+      <a href="#bulk">Masivo boards</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <nav class="lang-switch" aria-label="Language">
+      <a href="/pinterest-downloader/" lang="en">EN</a>
+      <a href="/es/pinterest-downloader/" lang="es" aria-current="page">ES</a>
+    </nav>
+    <a class="install install-link" data-cta="header" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=header&utm_term=es" target="_blank" rel="noopener noreferrer">Añadir a Chrome <span>↗</span></a>
+  </div>
+</header>
+<main>
+  <section class="wrap hero">
+    <div class="hero-left">
+      <div class="eyebrow"><span class="mark">↓</span> Pinterest Descargarer · Extensión de Chrome</div>
+      <h1>Descargar Pinterest: vídeos, imágenes y GIF en un clic.</h1>
+      <p class="hero-copy">El botón de descarga aparece directamente en Pinterest. Guarda un Pin al instante o selecciona varios archivos y descarga todo el lote junto en ZIP.</p>
+      <div class="hero-actions">
+        <a class="install install-link" data-cta="hero" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=hero&utm_term=es" target="_blank" rel="noopener noreferrer">Añadir a Chrome <span>↗</span></a>
+        <div class="micro">Funciona directamente en Pinterest · Sin copiar enlaces · Selección múltiple + ZIP</div>
+      </div>
+      <ul class="proofline"><li>Vídeos</li><li>Imágenes</li><li>GIFs</li><li>Tableros</li><li>Masivo</li><li>ZIP</li></ul>
+      <div class="promise"><span>Menos pasos:</span> ves el Pin → pulsas Descargar → guardas el archivo.</div>
+    </div>
+    <div class="product-proof" id="heroDemo">
+      <div class="demo-badge"><i></i><span>Live product demo</span></div>
+      <div class="demo-cursor" id="demoCursor" aria-hidden="true"></div>
+      <div class="browser">
+        <div class="browser-top">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="address">pinterest.com / ideas / visual-reference</div>
+          <div class="ext">↓</div>
+        </div>
+        <div class="browser-body">
+          <div class="feed">
+            <article class="pin tall" data-type="image">
+              <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=84&w=1200" alt="Moda reference">
+              <span class="media">IMAGEN</span><button class="dl" type="button" aria-label="Descargar image">↓</button><span class="label">Moda</span>
+            </article>
+            <article class="pin" data-type="video">
+              <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=84&w=1200" alt="Viajes reference">
+              <span class="media">VIDEO</span><button class="dl" type="button" aria-label="Descargar video">↓</button><span class="label">Viajes</span>
+            </article>
+            <article class="pin mid" data-type="image">
+              <img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=84&w=1200" alt="Referencia de interior">
+              <span class="media">IMAGEN</span><button class="dl" type="button" aria-label="Descargar image">↓</button><span class="label">Interior</span>
+            </article>
+            <article class="pin tall" data-type="gif">
+              <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=84&w=1200" alt="Referencia editorial">
+              <span class="media">GIF</span><button class="dl" type="button" aria-label="Descargar GIF">↓</button><span class="label">Editorial</span>
+            </article>
+            <article class="pin mid" data-type="image">
+              <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=84&w=1200" alt="Espacio de trabajo reference">
+              <button class="dl" type="button" aria-label="Descargar image">↓</button><span class="label">Espacio de trabajo</span>
+            </article>
+            <article class="pin" data-type="image">
+              <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=84&w=1200" alt="Referencia de color">
+              <button class="dl" type="button" aria-label="Descargar image">↓</button><span class="label">Color</span>
+            </article>
+          </div>
+          <aside class="side">
+            <div class="side-head">
+              <div class="side-row"><strong>Pinterest Descargarer</strong><span id="foundCount">24 encontrados</span></div>
+              <div class="side-sub">Selecciona contenido de esta página</div>
+            </div>
+            <div class="filters">
+              <button class="filter active" data-filter="all" type="button">Todo</button>
+              <button class="filter" data-filter="image" type="button">Imágenes</button>
+              <button class="filter" data-filter="video" type="button">Vídeos</button>
+              <button class="filter" data-filter="gif" type="button">GIFs</button>
+            </div>
+            <div class="file-list" id="fileList">
+              <div class="file" data-file-type="image"><span class="check">✓</span><span class="file-thumb"><img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=84&w=1200" alt=""></span><div class="file-copy"><b>fashion-reference.jpg</b><small>JPG · calidad original</small></div></div>
+              <div class="file" data-file-type="video"><span class="check">✓</span><span class="file-thumb"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=84&w=1200" alt=""></span><div class="file-copy"><b>travel-motion.mp4</b><small>MP4 · video</small></div></div>
+              <div class="file" data-file-type="gif"><span class="check">✓</span><span class="file-thumb"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=84&w=1200" alt=""></span><div class="file-copy"><b>editorial-loop.gif</b><small>GIF · animated</small></div></div>
+            </div>
+            <div class="side-bottom"><div class="selection"><span class="count-live" id="heroSelected">3 seleccionados</span><span>Listo</span></div><button class="zip demo-action" type="button">Descargar selección en ZIP</button></div>
+          </aside>
+        </div>
+      </div>
+      <div class="float-proof"><i>↓</i><div><strong>Descargar en el Pin</strong><small>Sin copiar y pegar enlaces</small></div></div>
+    </div>
+  </section>
+  <section class="wrap"><div class="task-strip reveal"><div><b>Un Pin</b><small>Pulsa Descargar directamente sobre el contenido</small></div><div><b>Varios archivos</b><small>Selecciona exactamente lo que necesitas</small></div><div><b>Selección completa</b><small>Descarga toda la selección junta en ZIP</small></div></div></section>
+  <section class="wrap section reveal" id="single">
+    <div class="section-number">01 · UN PIN</div>
+    <div class="section-head"><h2>El botón ya está donde lo necesitas.</h2><p>Abre Pinterest, encuentra la imagen, el vídeo o el GIF y usa la descarga directamente en la página. Sin abrir otra pestaña de descarga.</p></div>
+    <div class="single"><div class="single-photo"><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=84&w=1200" alt="Ejemplo de contenido de Pinterest"><button class="live-control demo-action" type="button"><i>↓</i> Descargar</button></div><div class="single-copy"><span class="num">UN PIN · UNA ACCIÓN</span><h3>Lo ves. Pulsas. Lo guardas.</h3><p>Para un solo Pin, la forma más rápida es descargarlo sin salir de la página que ya estás usando.</p><ul><li>Imágenes <span>guardado directo</span></li><li>Vídeos <span>desde Pinterest</span></li><li>GIFs <span>contenido animado</span></li></ul></div></div>
+  </section>
+  <section class="dark" id="bulk">
+    <div class="wrap section reveal">
+      <div class="section-number">02 · MASIVO</div>
+      <div class="section-head"><h2>¿Un tablero entero? Selecciona primero. Descarga una vez.</h2><p>Deja de abrir los Pins uno por uno. Reúne el contenido disponible, selecciona solo lo que necesitas y descarga todo junto.</p></div>
+      <div class="bulk-shell">
+        <div class="bulk-copy"><span>DESCARGA DE TABLEROS</span><h3>Descarga masiva sin complicaciones.</h3><p>Una sola selección visual en lugar de repetir abrir → copiar → pegar → guardar.</p></div>
+        <div class="bulk-ui">
+          <div class="bulk-top"><strong>Selección del tablero</strong><span id="bulkTopCount">6 seleccionados</span></div>
+          <div class="bulk-grid">
+            <button class="bulk-card seleccionados" type="button"><img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=84&w=1200" alt=""><span class="sel">✓</span></button>
+            <button class="bulk-card seleccionados" type="button"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=84&w=1200" alt=""><span class="sel">✓</span></button>
+            <button class="bulk-card seleccionados" type="button"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=84&w=1200" alt=""><span class="sel">✓</span></button>
+            <button class="bulk-card seleccionados" type="button"><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=84&w=1200" alt=""><span class="sel">✓</span></button>
+            <button class="bulk-card seleccionados" type="button"><img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=84&w=1200" alt=""><span class="sel">✓</span></button>
+            <button class="bulk-card seleccionados" type="button"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=84&w=1200" alt=""><span class="sel">✓</span></button>
+          </div>
+          <div class="bulk-footer"><span id="bulkCount">6 seleccionados · Imágenes · Vídeos · GIFs</span><button class="demo-action" type="button">Descargar ZIP ↓</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="wrap section reveal"><div class="loop"><div><div class="section-number">03 · MENOS PASOS</div><h2>Olvida el ciclo de copiar y pegar.</h2></div><div class="flow-compare"><div class="flow-row old"><b>Método habitual</b><div><span>Abrir descargador</span><i>→</i><span>Copiar enlace</span><i>→</i><span>Pegar enlace</span><i>→</i><span>Guardar</span><i>→</i><span>Repetir</span></div></div><div class="flow-row new"><b>Con la extensión</b><div><span>Ver el Pin</span><i>→</i><span>Pulsar Descargar</span><i>→</i><span>Listo</span></div></div></div></div></section>
+  <section class="wrap secondary reveal"><div><div class="section-number">04 · VALOR EXTRA</div><h2>Pinterest primero. Imágenes de otras webs también.</h2><p>Pinterest sigue siendo el uso principal para vídeos, imágenes y GIF. En otras páginas compatibles, la extensión también puede recopilar y descargar imágenes.</p></div><div class="site-grid"><div class="site"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=84&w=1200" alt=""><span>Recopilar imágenes</span></div><div class="site"><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=84&w=1200" alt=""><span>Seleccionar varias</span></div><div class="site"><img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=84&w=1200" alt=""><span>Guardar directamente</span></div></div></section>
+  <section class="wrap faq reveal" id="faq"><div class="faq-grid"><div><div class="section-number">05 · PREGUNTAS</div><h2>Antes de instalar.</h2></div><div><details open><summary><span>01</span>¿Qué puede descargar Pinterest Descargarer?<i>+</i></summary><p>Vídeos, imágenes, fotos y GIF de Pinterest cuando ese contenido está disponible en el Pin o en la página que estás viendo.</p></details><details><summary><span>02</span>¿Puedo descargar varios Pins a la vez?<i>+</i></summary><p>Sí. Selecciona varios archivos disponibles y descarga la selección junta, también en formato ZIP.</p></details><details><summary><span>03</span>¿Tengo que copiar enlaces de Pinterest?<i>+</i></summary><p>No. La función principal trabaja directamente desde la página de Pinterest que ya estás viendo.</p></details><details><summary><span>04</span>¿Funciona también en otras páginas web?<i>+</i></summary><p>Para imágenes, sí, en páginas compatibles. Pinterest sigue siendo el uso principal para vídeos, imágenes y GIF.</p></details></div></div></section>
+  <section class="final reveal"><div class="wrap"><div class="eyebrow"><span class="mark">↓</span> Pinterest Descargarer</div><h2>Guarda el Pin. Evita pasos extra.</h2><p>Descarga imágenes, vídeos y GIF de Pinterest desde la propia página: un archivo o una selección completa.</p><a class="install install-link" data-cta="final" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=final&utm_term=es" target="_blank" rel="noopener noreferrer">Añadir a Chrome <span>↗</span></a><div class="final-meta">Vídeos · Imágenes · GIFs · Tableros · Selección múltiple · ZIP</div></div></section>
+  <div class="wrap signal reveal" aria-label="Supported workflows"><span>Un Pin</span><span>Vídeos</span><span>Imágenes</span><span>GIFs</span><span>Masivo</span><span>ZIP</span></div>
+</main>
+<footer><div class="wrap footer-row"><span>LayerPorter</span><span>Pinterest Descargarer · LayerPorter</span></div></footer>
+<a class="mobile-install install-link" data-cta="mobile_sticky" href="https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=landing&utm_campaign=pinterest_downloader&utm_content=mobile_sticky&utm_term=es" target="_blank" rel="noopener noreferrer">Añadir a Chrome ↗</a>
+<div class="toast" id="toast" role="status" aria-live="polite">Listo</div>
+<script is:inline>
+(() => {
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const toast = document.getElementById('toast');
+  let toastTimer;
+
+  const showToast = (message) => {
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  };
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  document.querySelectorTodo('.install-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.add('is-opening');
+      setTimeout(() => btn.classList.remove('is-opening'), 900);
+    });
+  });
+
+  document.querySelectorTodo('.demo-action,.dl').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (btn.classList.contains('dl')) {
+        btn.classList.remove('auto-click');
+        void btn.offsetWidth;
+        btn.classList.add('auto-click');
+      }
+      showToast('Instala Pinterest Descargarer para usar esta función de descarga.');
+    });
+  });
+
+  const filters = [...document.querySelectorTodo('.filter')];
+  const files = [...document.querySelectorTodo('.file')];
+  filters.forEach(btn => btn.addEventListener('click', () => {
+    filters.forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    const type = btn.dataset.filter;
+    files.forEach(file => {
+      file.style.display = type === 'all' || file.dataset.fileType === type ? 'grid' : 'none';
+    });
+  }));
+
+  const bulkCards = [...document.querySelectorTodo('.bulk-card')];
+  const bulkCount = document.getElementById('bulkCount');
+  const bulkTopCount = document.getElementById('bulkTopCount');
+  const bulkButton = document.querySelector('.bulk-footer button');
+
+  const flipText = (node, text) => {
+    node.textContent = text;
+    node.classList.remove('count-flip');
+    void node.offsetWidth;
+    node.classList.add('count-flip');
+  };
+
+  const updateMasivo = () => {
+    const n = bulkCards.filter(x => x.classList.contains('seleccionados')).length;
+    flipText(bulkCount, n + ' seleccionados · Imágenes · Vídeos · GIFs');
+    flipText(bulkTopCount, n + ' seleccionados');
+    bulkButton.classList.toggle('ready', n > 0);
+  };
+
+  bulkCards.forEach(card => {
+    card.addEventListener('click', () => {
+      card.classList.toggle('seleccionados');
+      card.querySelector('.sel').textContent = card.classList.contains('seleccionados') ? '✓' : '';
+      updateMasivo();
+    });
+  });
+
+  const hero = document.getElementById('heroDemo');
+  const cursor = document.getElementById('demoCursor');
+  const heroFiles = [...document.querySelectorTodo('#heroDemo .file')];
+  const heroSelected = document.getElementById('heroSelected');
+  const zipButton = document.querySelector('#heroDemo .zip');
+  const heroTargets = [
+    document.querySelector('#heroDemo .pin[data-type="image"]'),
+    document.querySelector('#heroDemo .pin[data-type="video"]'),
+    document.querySelector('#heroDemo .pin[data-type="gif"]')
+  ].filter(Boolean);
+
+  let demoStopped = false;
+  let demoRunning = false;
+
+  const heroRelativePoint = el => {
+    const host = hero.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left - host.left + r.width * .54,
+      y: r.top - host.top + r.height * .48
+    };
+  };
+
+  const moveCursorTo = async el => {
+    const p = heroRelativePoint(el);
+    cursor.classList.add('show');
+    cursor.style.transform = `translate3d(${p.x}px,${p.y}px,0)`;
+    await sleep(700);
+  };
+
+  const flyToFile = async (pin, file) => {
+    const img = pin.querySelector('img');
+    const target = file.querySelector('.file-thumb');
+    const a = img.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    const clone = document.createElement('img');
+    clone.src = img.src;
+    clone.className = 'fly-thumb';
+    clone.style.left = a.left + 'px';
+    clone.style.top = a.top + 'px';
+    clone.style.width = Math.min(a.width, 120) + 'px';
+    clone.style.height = Math.min(a.height, 120) + 'px';
+    clone.style.transform = 'scale(.92)';
+    document.body.appendChild(clone);
+    await sleep(30);
+    clone.style.left = b.left + 'px';
+    clone.style.top = b.top + 'px';
+    clone.style.width = b.width + 'px';
+    clone.style.height = b.height + 'px';
+    clone.style.transform = 'scale(1)';
+    await sleep(720);
+    clone.remove();
+  };
+
+  const resetHeroDemo = () => {
+    heroTargets.forEach(pin => {
+      pin.classList.remove('auto-target');
+      const b = pin.querySelector('.dl');
+      if (b) b.classList.remove('auto-click');
+    });
+    heroFiles.forEach(f => {
+      f.classList.add('demo-dim');
+      f.classList.remove('arrived');
+    });
+    if (heroSelected) heroSelected.textContent = '0 seleccionados';
+    zipButton?.classList.remove('demo-ready');
+  };
+
+  const runHeroDemo = async () => {
+    if (reduceMotion || demoStopped || demoRunning || !heroTargets.length) return;
+    demoRunning = true;
+    resetHeroDemo();
+    await sleep(350);
+
+    for (let i = 0; i < Math.min(3, heroTargets.length); i++) {
+      if (demoStopped) break;
+      const pin = heroTargets[i];
+      const button = pin.querySelector('.dl');
+      const file = heroFiles[i];
+
+      pin.classList.add('auto-target');
+      await moveCursorTo(button);
+
+      cursor.classList.add('press');
+      button.classList.add('auto-click');
+      await sleep(170);
+      cursor.classList.remove('press');
+
+      await flyToFile(pin, file);
+
+      file.classList.remove('demo-dim');
+      file.classList.add('arrived');
+      flipText(heroSelected, (i + 1) + ' seleccionados');
+      pin.classList.remove('auto-target');
+      button.classList.remove('auto-click');
+      await sleep(320);
+    }
+
+    if (!demoStopped) {
+      const p = heroRelativePoint(zipButton);
+      cursor.style.transform = `translate3d(${p.x}px,${p.y}px,0)`;
+      zipButton.classList.add('demo-ready');
+      await sleep(950);
+      cursor.classList.remove('show');
+      await sleep(250);
+    }
+
+    demoRunning = false;
+  };
+
+  if (!reduceMotion && hero) {
+    const heroObserver = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting && e.intersectionRatio > .35)) {
+        heroObserver.disconnect();
+        setTimeout(runHeroDemo, 650);
+        setTimeout(() => {
+          if (!demoStopped) runHeroDemo();
+        }, 11500);
+      }
+    }, {threshold:[.35]});
+    heroObserver.observe(hero);
+
+    ['pointerdown','mouseenter','focusin'].forEach(evt => {
+      hero.addEventListener(evt, () => {
+        demoStopped = true;
+        cursor.classList.remove('show');
+        heroTargets.forEach(x => x.classList.remove('auto-target'));
+      }, {once:true});
+    });
+  }
+
+  const reveal = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        reveal.unobserve(entry.target);
+      }
+    });
+  }, {threshold:.09});
+  document.querySelectorTodo('.reveal').forEach(el => reveal.observe(el));
+
+  const progress = document.getElementById('progress');
+  const updateProgress = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    progress.style.width = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
+  };
+  addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+})();
+</script>
+</body>
+</html>
