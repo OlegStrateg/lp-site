@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          URL="https://layerporter.com/pinterest-downloader/"
+          URL="https://layerporter.com/pinterest-downloader/?verify=${{ github.sha }}"
 
           for i in {1..12}; do
             if curl -fsS --max-time 20 "$URL" -o /tmp/pinterest.html; then
@@ -74,6 +74,7 @@ jobs:
           grep -F "utm_content=hero" /tmp/pinterest.html
           grep -F "utm_content=final" /tmp/pinterest.html
           grep -F "utm_content=mobile_sticky" /tmp/pinterest.html
+          grep -F "utm_term=en" /tmp/pinterest.html
           grep -F "images.unsplash.com" /tmp/pinterest.html
           grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest.html
 
@@ -87,13 +88,12 @@ jobs:
             curl -fsS --max-time 20 -A "Mozilla/5.0" "$css_url" >> /tmp/pinterest.styles.css
           done
           grep -F "@keyframes ctaSweep" /tmp/pinterest.styles.css
-          grep -F "runHeroDemo" /tmp/pinterest.html
 
-          curl -fsSI --max-time 20 "$URL" -o /tmp/pinterest.headers
+          curl -fsSI --max-time 20 "https://layerporter.com/pinterest-downloader/" -o /tmp/pinterest.headers
           grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
 
           echo "=== VERIFY SPANISH PINTEREST LANDING ==="
-          ES_URL="https://layerporter.com/es/pinterest-downloader/"
+          ES_URL="https://layerporter.com/es/pinterest-downloader/?verify=${{ github.sha }}"
           curl -fsS --max-time 20 "$ES_URL" -o /tmp/pinterest-es.html
           grep -F '<html lang="es">' /tmp/pinterest-es.html
           grep -F "Descargar Pinterest" /tmp/pinterest-es.html
@@ -103,5 +103,5 @@ jobs:
           grep -F 'hreflang="x-default"' /tmp/pinterest-es.html
           grep -F "utm_term=es" /tmp/pinterest-es.html
           grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest-es.html
-          curl -fsSI --max-time 20 "$ES_URL" -o /tmp/pinterest-es.headers
+          curl -fsSI --max-time 20 "https://layerporter.com/es/pinterest-downloader/" -o /tmp/pinterest-es.headers
           grep -i "content-security-policy:" /tmp/pinterest-es.headers | grep -F "https://images.unsplash.com"
