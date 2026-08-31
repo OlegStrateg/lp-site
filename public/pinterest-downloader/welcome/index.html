@@ -408,13 +408,13 @@
   script.onload = function(){
     window.ym(111652196, 'init', {
       ssr:true,
-      webvisor:true,
-      clickmap:true,
+      webvisor:false,
+      clickmap:false,
       ecommerce:'dataLayer',
       referrer:document.referrer,
       url:location.href,
       accurateTrackBounce:true,
-      trackLinks:true
+      trackLinks:false
     });
   };
   document.head.appendChild(script);
