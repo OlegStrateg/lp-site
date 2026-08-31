@@ -221,6 +221,7 @@ function makePage(locale) {
 const manifest = [];
 
 for (const locale of pinterestLocales) {
+  const consent = pinterestConsentCopy[locale.code] || pinterestConsentCopy.en;
   const html = makePage(locale);
   const file = fileFor(locale);
   mkdirSync(path.dirname(file), { recursive: true });
