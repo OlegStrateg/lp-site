@@ -389,17 +389,37 @@
         }
 
     </style>
-<!-- Yandex.Metrika counter -->
+<!-- Yandex.Metrika counter: loaded only after prior analytics consent -->
 <script type="text/javascript">
-    (function(m,e,t,r,i,k,a){
-        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111652196', 'ym');
-    ym(111652196, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+(function(){
+  const readCookie = (name) => {
+    const prefix = name + '=';
+    const part = document.cookie.split('; ').find(x => x.startsWith(prefix));
+    return part ? decodeURIComponent(part.slice(prefix.length)) : '';
+  };
+  const gpc = navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1';
+  if (gpc || readCookie('lp_privacy') !== 'analytics:1') return;
+
+  window.ym = window.ym || function(){ (window.ym.a = window.ym.a || []).push(arguments); };
+  window.ym.l = 1 * new Date();
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://mc.yandex.ru/metrika/tag.js?id=111652196';
+  script.onload = function(){
+    window.ym(111652196, 'init', {
+      ssr:true,
+      webvisor:true,
+      clickmap:true,
+      ecommerce:'dataLayer',
+      referrer:document.referrer,
+      url:location.href,
+      accurateTrackBounce:true,
+      trackLinks:true
+    });
+  };
+  document.head.appendChild(script);
+})();
 </script>
-<noscript><div><img src="https://mc.yandex.ru/watch/111652196" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 </head>
 <body class="bg-[#f3f0f5] min-h-screen flex flex-col items-center p-6 mesh-gradient overflow-hidden">
