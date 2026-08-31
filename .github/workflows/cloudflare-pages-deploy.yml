@@ -77,9 +77,8 @@ jobs:
           grep -F "images.unsplash.com" /tmp/pinterest.html
           grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest.html
 
-          curl -fsS --max-time 20 "https://layerporter.com/pinterest-downloader/landing.css" -o /dev/null
-          curl -fsS --max-time 20 "https://layerporter.com/pinterest-downloader/landing-motion.css" -o /dev/null
-          curl -fsS --max-time 20 "https://layerporter.com/pinterest-downloader/landing.js" -o /dev/null
+          grep -F "@keyframes ctaSweep" /tmp/pinterest.html
+          grep -F "runHeroDemo" /tmp/pinterest.html
 
           curl -fsSI --max-time 20 "$URL" -o /tmp/pinterest.headers
           grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
