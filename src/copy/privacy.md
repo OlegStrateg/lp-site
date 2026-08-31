@@ -12,6 +12,17 @@ File conversion tools on LayerPorter process files locally in your browser unles
 
 LayerPorter does not require an account for the website converters or Pinterest Downloader. We do not require your name or email address to attribute an installation.
 
+## Controller and legal bases
+
+LayerPorter is the controller for the first-party website and extension telemetry described in this policy. Privacy enquiries can be sent to [hello@layerporter.com](mailto:hello@layerporter.com).
+
+Where applicable privacy law requires a legal basis:
+- optional landing attribution and optional analytics are based on your consent;
+- limited operational telemetry is used to operate, secure, debug, and measure the reliability of the product, based on our legitimate interests where that basis is available;
+- feedback is processed because you choose to submit it and so we can respond to or act on your request.
+
+If applicable law requires consent for a particular processing activity, consent takes priority over legitimate interests.
+
 ## Cookies and privacy choices {#cookies}
 
 LayerPorter uses a small number of first-party cookies for privacy preferences and, only if you allow analytics, optional installation attribution.
@@ -80,6 +91,12 @@ Their own privacy and security terms apply to their processing. We do not sell p
 You may decline optional analytics and still use the service. You may withdraw a previous analytics choice by using the privacy reset control on this page or by clearing LayerPorter site data in your browser.
 
 Because we intentionally avoid accounts and direct identifiers for installation attribution, we may not be able to locate a specific anonymous telemetry record from a name or email address alone.
+
+## Your privacy rights
+
+Depending on where you live, you may have rights to request access, correction, deletion, restriction, portability, or objection to processing, and to withdraw consent at any time. You may also have the right to complain to your local data-protection authority.
+
+Because installation attribution is intentionally pseudonymous and does not use an account, name, or email address, we may not be able to identify a particular anonymous record from your identity alone. We will not collect additional identifying data solely to identify an otherwise anonymous record.
 
 ## Security
 
