@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { pinterestLocales } from "./pinterest-locales-data.mjs";
+import { pinterestConsentCopy } from "./pinterest-consent-copy.mjs";
 
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, "dist");
@@ -199,6 +200,16 @@ function makePage(locale) {
   html = html.replace(/<nav class="lang-switch"[\s\S]*?<\/nav>/, localeMenu(locale));
 
   html = patchBody(html, locale);
+  const consent = pinterestConsentCopy[locale.code] || pinterestConsentCopy.en;
+  html = html.replace(/(<strong id="privacyConsentTitle">)[\s\S]*?(<\/strong>)/, `$1${escapeHtml(consent.title)}$2`);
+  html = html.replace(/(<p id="privacyConsentText">)[\s\S]*?(<a href="\/privacy\/#cookies">)[\s\S]*?(<\/a><\/p>)/,
+    `$1${escapeHtml(consent.text)} $2${escapeHtml(consent.privacy)}$3`);
+  html = html.replace(/(<button type="button" data-consent="reject" id="privacyReject">)[\s\S]*?(<\/button>)/,
+    `$1${escapeHtml(consent.reject)}$2`);
+  html = html.replace(/(<button type="button" data-consent="accept" id="privacyAccept">)[\s\S]*?(<\/button>)/,
+    `$1${escapeHtml(consent.accept)}$2`);
+  html = html.replace('aria-label="Privacy choices"', `aria-label="${escapeAttr(consent.title)}"`);
+
 
   // Ensure every Store URL is the correct product and locale-attributed.
   if (!html.includes(STORE_ID)) throw new Error(`Missing Store ID for ${locale.code}`);
@@ -226,6 +237,9 @@ for (const locale of pinterestLocales) {
     root: html.includes(escapeHtml(locale.root)),
     hreflang: hreflangCount === 53,
     store: html.includes(STORE_ID),
+    consent: html.includes('id="privacyConsent"') && html.includes(escapeHtml(consent.accept)) && html.includes(escapeHtml(consent.reject)),
+    privacyLink: html.includes('href="/privacy/#cookies"'),
+    attribution: html.includes("lp_pd_attr") && html.includes("globalPrivacyControl"),
   };
   const failed = Object.entries(checks).filter(([,ok]) => !ok).map(([k]) => k);
   if (failed.length) {
