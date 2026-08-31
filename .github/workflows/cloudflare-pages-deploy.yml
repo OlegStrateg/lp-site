@@ -50,69 +50,104 @@ jobs:
           command: pages deploy dist --project-name=layerporter --branch=main --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify live Pinterest landing
+      - name: Verify all 52 Pinterest landings
         shell: bash
         run: |
           set -euo pipefail
-          URL="https://layerporter.com/pinterest-downloader/?verify=${{ github.sha }}"
 
-          for i in {1..18}; do
-            if curl -fsS --max-time 20 "$URL" -o /tmp/pinterest.html && grep -Fq "utm_term=en" /tmp/pinterest.html; then
-              echo "Current EN production content is live"
+          BASE="https://layerporter.com"
+          EN_URL="$BASE/pinterest-downloader/?verify=${{ github.sha }}"
+
+          # Wait until the just-deployed revision reaches production.
+          for i in {1..24}; do
+            if curl -fsS --max-time 20 -A "Mozilla/5.0" "$EN_URL" -o /tmp/pinterest-en.html \
+              && grep -Fq 'name="lp-locale" content="en"' /tmp/pinterest-en.html; then
+              echo "Current Pinterest locale build is live"
               break
             fi
-            if [ "$i" -eq 18 ]; then
-              echo "Current EN production content did not propagate"
+            if [ "$i" -eq 24 ]; then
+              echo "Current locale build did not propagate"
               exit 1
             fi
             sleep 5
           done
 
-          grep -F "Download Pinterest videos" /tmp/pinterest.html
-          grep -F "GIFs in one click." /tmp/pinterest.html
-          grep -F "nmpahchhmcdejmfcmkphnbhckmlhhnon" /tmp/pinterest.html
-          grep -F "utm_content=header" /tmp/pinterest.html
-          grep -F "utm_content=hero" /tmp/pinterest.html
-          grep -F "utm_content=final" /tmp/pinterest.html
-          grep -F "utm_content=mobile_sticky" /tmp/pinterest.html
-          grep -F "utm_term=en" /tmp/pinterest.html
-          grep -F "images.unsplash.com" /tmp/pinterest.html
-          grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest.html
+          # Base visual/motion assets and Store attribution.
+          grep -F "nmpahchhmcdejmfcmkphnbhckmlhhnon" /tmp/pinterest-en.html
+          grep -F "utm_content=header" /tmp/pinterest-en.html
+          grep -F "utm_content=hero" /tmp/pinterest-en.html
+          grep -F "utm_content=final" /tmp/pinterest-en.html
+          grep -F "utm_content=mobile_sticky" /tmp/pinterest-en.html
+          grep -F "images.unsplash.com" /tmp/pinterest-en.html
 
           : > /tmp/pinterest.styles.css
-          grep -oE 'href="[^"]+\.css"' /tmp/pinterest.html | sed 's/^href="//;s/"$//' | sort -u | while read -r href; do
+          grep -oE 'href="[^"]+\.css"' /tmp/pinterest-en.html | sed 's/^href="//;s/"$//' | sort -u | while read -r href; do
             if [[ "$href" == http* ]]; then
               css_url="$href"
             else
-              css_url="https://layerporter.com$href"
+              css_url="$BASE$href"
             fi
             curl -fsS --max-time 20 -A "Mozilla/5.0" "$css_url" >> /tmp/pinterest.styles.css
           done
           grep -F "@keyframes ctaSweep" /tmp/pinterest.styles.css
 
-          curl -fsSI --max-time 20 "https://layerporter.com/pinterest-downloader/" -o /tmp/pinterest.headers
-          grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
+          # Static manifest created by the same build must contain 52 locales.
+          node - <<'NODE'
+          const fs = require('fs');
+          const rows = JSON.parse(fs.readFileSync('dist/pinterest-locales.json', 'utf8'));
+          if (rows.length !== 52) throw new Error('Expected 52 locales, got ' + rows.length);
+          const hold = rows.filter(x => x.hold).map(x => x.code);
+          const expectedHold = ['am','fil','ml','sl','sw','ta','te'];
+          if (JSON.stringify(hold) !== JSON.stringify(expectedHold)) {
+            throw new Error('Unexpected HOLD set: ' + JSON.stringify(hold));
+          }
+          console.log('Build manifest: 52/52; HOLD:', hold.join(', '));
+          NODE
 
-          echo "=== VERIFY SPANISH PINTEREST LANDING ==="
-          ES_URL="https://layerporter.com/es/pinterest-downloader/?verify=${{ github.sha }}"
-          for i in {1..18}; do
-            if curl -fsS --max-time 20 "$ES_URL" -o /tmp/pinterest-es.html && grep -Fq "utm_term=es" /tmp/pinterest-es.html; then
-              echo "Current ES production content is live"
-              break
+          # Every locale must be live, self-attributed and noindex during candidate QA.
+          ok=0
+          while IFS=$'\t' read -r code route status; do
+            if [ "$code" = "en" ]; then
+              path="/pinterest-downloader/"
+            else
+              path="/$route/pinterest-downloader/"
             fi
-            if [ "$i" -eq 18 ]; then
-              echo "Current ES production content did not propagate"
+            url="$BASE$path?verify=${{ github.sha }}"
+            tmp="/tmp/pinterest-$code.html"
+
+            passed=0
+            for attempt in {1..6}; do
+              if curl -fsS --max-time 20 -A "Mozilla/5.0" "$url" -o "$tmp" \
+                && grep -Fq "name=\"lp-locale\" content=\"$code\"" "$tmp" \
+                && grep -Fq "utm_term=$code" "$tmp"; then
+                passed=1
+                break
+              fi
+              sleep 3
+            done
+
+            if [ "$passed" -ne 1 ]; then
+              echo "FAILED locale: $code -> $path"
               exit 1
             fi
-            sleep 5
+
+            grep -Fq 'meta name="robots" content="noindex,follow"' "$tmp"
+            grep -Fq 'hreflang="x-default"' "$tmp"
+            grep -Fq "nmpahchhmcdejmfcmkphnbhckmlhhnon" "$tmp"
+            ok=$((ok+1))
+            echo "OK $code $status $path"
+          done < dist/pinterest-locales.tsv
+
+          if [ "$ok" -ne 52 ]; then
+            echo "Expected 52 live locales, got $ok"
+            exit 1
+          fi
+
+          # Scoped CSP must work on EN and representative localized paths.
+          for path in "/pinterest-downloader/" "/es/pinterest-downloader/" "/ar/pinterest-downloader/" "/zh-cn/pinterest-downloader/"; do
+            curl -fsSI --max-time 20 -A "Mozilla/5.0" "$BASE$path" -o /tmp/pinterest.headers
+            grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
+            grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "script-src 'self' 'unsafe-inline'"
           done
-          grep -F '<html lang="es">' /tmp/pinterest-es.html
-          grep -F "Descargar Pinterest" /tmp/pinterest-es.html
-          grep -F 'canonical" href="https://layerporter.com/es/pinterest-downloader/"' /tmp/pinterest-es.html
-          grep -F 'hreflang="en"' /tmp/pinterest-es.html
-          grep -F 'hreflang="es-ES"' /tmp/pinterest-es.html
-          grep -F 'hreflang="x-default"' /tmp/pinterest-es.html
-          grep -F "utm_term=es" /tmp/pinterest-es.html
-          grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest-es.html
-          curl -fsSI --max-time 20 "https://layerporter.com/es/pinterest-downloader/" -o /tmp/pinterest-es.headers
-          grep -i "content-security-policy:" /tmp/pinterest-es.headers | grep -F "https://images.unsplash.com"
+
+          echo "LIVE VERIFY PASS: 52/52 Pinterest landing URLs"
