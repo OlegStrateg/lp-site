@@ -38,3 +38,36 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=layerporter --branch=master --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify live Pinterest landing
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://layerporter.com/pinterest-downloader/"
+
+          for i in {1..12}; do
+            if curl -fsS --max-time 20 "$URL" -o /tmp/pinterest.html; then
+              break
+            fi
+            if [ "$i" -eq 12 ]; then
+              echo "Production page did not become available"
+              exit 1
+            fi
+            sleep 5
+          done
+
+          grep -F "Download Pinterest videos, images & GIFs in one click." /tmp/pinterest.html
+          grep -F "nmpahchhmcdejmfcmkphnbhckmlhhnon" /tmp/pinterest.html
+          grep -F "utm_content=header" /tmp/pinterest.html
+          grep -F "utm_content=hero" /tmp/pinterest.html
+          grep -F "utm_content=final" /tmp/pinterest.html
+          grep -F "utm_content=mobile_sticky" /tmp/pinterest.html
+          grep -F "images.unsplash.com" /tmp/pinterest.html
+          grep -F 'meta name="robots" content="noindex,follow"' /tmp/pinterest.html
+
+          curl -fsS --max-time 20 "https://layerporter.com/pinterest-downloader/landing.css" -o /dev/null
+          curl -fsS --max-time 20 "https://layerporter.com/pinterest-downloader/landing-motion.css" -o /dev/null
+          curl -fsS --max-time 20 "https://layerporter.com/pinterest-downloader/landing.js" -o /dev/null
+
+          curl -fsSI --max-time 20 "$URL" -o /tmp/pinterest.headers
+          grep -i "content-security-policy:" /tmp/pinterest.headers | grep -F "https://images.unsplash.com"
