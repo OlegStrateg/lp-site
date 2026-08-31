@@ -1,0 +1,142 @@
+/* ─────────────────────────────────────────────
+   MOTION PASS — conversion-led, not decorative
+   ───────────────────────────────────────────── */
+.install{
+  position:relative;overflow:hidden;transform:translateZ(0);
+  transition:transform .18s cubic-bezier(.2,.75,.25,1),background .18s ease,box-shadow .18s ease;
+}
+.install span{display:inline-block;transition:transform .18s cubic-bezier(.2,.75,.25,1)}
+.install:hover{transform:translateY(-2px);box-shadow:0 15px 30px rgba(230,0,35,.18)}
+.install:hover span{transform:translateX(4px)}
+.install:active{transform:translateY(0) scale(.975);box-shadow:0 7px 18px rgba(230,0,35,.14)}
+.install.is-opening{pointer-events:none}
+.install.is-opening:after{
+  content:"";position:absolute;left:-35%;top:0;width:30%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);
+  transform:skewX(-18deg);animation:ctaSweep .72s ease forwards
+}
+@keyframes ctaSweep{to{left:115%}}
+.pin .dl{
+  opacity:0;transform:translateY(-4px) scale(.86);
+  transition:opacity .16s ease,transform .22s cubic-bezier(.2,.8,.2,1),background .16s ease,color .16s ease,box-shadow .16s ease
+}
+.pin:hover .dl,.pin.auto-target .dl,.pin.keyboard-target .dl{opacity:1;transform:translateY(0) scale(1)}
+.pin.auto-target{box-shadow:0 0 0 3px rgba(230,0,35,.18)}
+.pin.auto-target img{transform:scale(1.018)}
+.dl.auto-click{animation:downloadPress .36s cubic-bezier(.2,.8,.2,1);background:var(--red);color:#fff}
+@keyframes downloadPress{0%{transform:scale(1)}45%{transform:scale(.82)}100%{transform:scale(1)}}
+.product-proof{isolation:isolate}
+.demo-cursor{
+  position:absolute;left:0;top:0;z-index:40;width:26px;height:34px;pointer-events:none;opacity:0;
+  transform:translate3d(30px,30px,0);
+  transition:transform .66s cubic-bezier(.22,.72,.18,1),opacity .18s ease;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.24))
+}
+.demo-cursor:before{
+  content:"";display:block;width:18px;height:24px;background:#111;
+  clip-path:polygon(0 0,0 100%,28% 72%,43% 100%,58% 92%,43% 65%,78% 65%)
+}
+.demo-cursor.show{opacity:1}
+.demo-cursor.press:before{transform:scale(.86);transform-origin:6px 7px}
+.demo-badge{
+  position:absolute;right:18px;top:-16px;z-index:42;display:flex;align-items:center;gap:7px;
+  padding:8px 10px;border:1px solid #deded9;border-radius:999px;background:rgba(255,255,255,.94);
+  box-shadow:0 10px 24px rgba(20,20,20,.08);color:#666660;font-size:9px;font-weight:850;
+  letter-spacing:.04em;text-transform:uppercase
+}
+.demo-badge i{
+  width:7px;height:7px;border-radius:50%;background:var(--red);
+  box-shadow:0 0 0 0 rgba(230,0,35,.25);animation:liveDot 1.9s ease-out infinite
+}
+@keyframes liveDot{0%{box-shadow:0 0 0 0 rgba(230,0,35,.28)}70%{box-shadow:0 0 0 7px rgba(230,0,35,0)}100%{box-shadow:0 0 0 0 rgba(230,0,35,0)}}
+.file{transition:opacity .2s ease,transform .28s cubic-bezier(.2,.8,.2,1),background .2s ease}
+.file.demo-dim{opacity:.43}
+.file.arrived{opacity:1;background:#fff7f8;transform:translateX(4px)}
+.file .check{transition:transform .24s cubic-bezier(.2,.85,.2,1),background .18s ease,color .18s ease}
+.file.demo-dim .check{transform:scale(.72);background:#e2e2dd;color:transparent}
+.file.arrived .check{animation:checkPop .34s cubic-bezier(.2,.9,.2,1)}
+@keyframes checkPop{0%{transform:scale(.55)}65%{transform:scale(1.18)}100%{transform:scale(1)}}
+.fly-thumb{
+  position:fixed;z-index:999;pointer-events:none;object-fit:cover;border-radius:10px;
+  box-shadow:0 14px 36px rgba(0,0,0,.22);
+  transition:left .68s cubic-bezier(.22,.72,.18,1),top .68s cubic-bezier(.22,.72,.18,1),width .68s cubic-bezier(.22,.72,.18,1),height .68s cubic-bezier(.22,.72,.18,1),opacity .18s ease .54s,transform .68s cubic-bezier(.22,.72,.18,1)
+}
+.selection .count-live{display:inline-block;min-width:62px;font-variant-numeric:tabular-nums}
+.count-flip{animation:countFlip .3s cubic-bezier(.2,.85,.2,1)}
+@keyframes countFlip{0%{transform:translateY(6px);opacity:.2}100%{transform:translateY(0);opacity:1}}
+.zip{transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.zip.demo-ready{animation:zipReady .48s cubic-bezier(.2,.8,.2,1);box-shadow:0 9px 24px rgba(230,0,35,.2)}
+@keyframes zipReady{0%{transform:scale(.97)}55%{transform:scale(1.025)}100%{transform:scale(1)}}
+.bulk-card{transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .18s ease,opacity .18s ease,box-shadow .18s ease}
+.bulk-card:hover{transform:translateY(-3px)}
+.bulk-card:active{transform:translateY(-1px) scale(.98)}
+.bulk-card:not(.selected){opacity:.62}
+.bulk-card.selected{opacity:1;box-shadow:0 7px 18px rgba(230,0,35,.08)}
+.bulk-card .sel{transition:transform .22s cubic-bezier(.2,.9,.2,1),background .18s ease,color .18s ease}
+.bulk-card.selected .sel{animation:checkPop .3s cubic-bezier(.2,.9,.2,1)}
+.bulk-footer button{transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease}
+.bulk-footer button.ready{box-shadow:0 10px 24px rgba(230,0,35,.18)}
+.bulk-footer button:active{transform:scale(.975)}
+.reveal{opacity:1;transform:none}
+.reveal .section-number,.reveal .section-label,.reveal .eyebrow{
+  opacity:0;transform:translateY(8px);transition:opacity .38s ease,transform .38s ease
+}
+.reveal h2,.reveal .section-head h2{
+  opacity:0;transform:translateY(15px);
+  transition:opacity .48s ease .04s,transform .48s cubic-bezier(.2,.75,.2,1) .04s
+}
+.reveal .section-head p,.reveal > p,.reveal .secondary p{
+  opacity:0;transform:translateY(10px);transition:opacity .42s ease .12s,transform .42s ease .12s
+}
+.reveal .single,.reveal .bulk-shell,.reveal .flow-compare,.reveal .site-grid,.reveal .faq-grid,.reveal .signal{
+  opacity:0;transform:translateY(18px) scale(.992);
+  transition:opacity .56s ease .15s,transform .62s cubic-bezier(.2,.75,.2,1) .15s
+}
+.reveal.visible .section-number,.reveal.visible .section-label,.reveal.visible .eyebrow,.reveal.visible h2,.reveal.visible .section-head h2,.reveal.visible .section-head p,.reveal.visible > p,.reveal.visible .secondary p,.reveal.visible .single,.reveal.visible .bulk-shell,.reveal.visible .flow-compare,.reveal.visible .site-grid,.reveal.visible .faq-grid,.reveal.visible .signal{opacity:1;transform:none}
+.single-photo img,.site img{transition:transform .48s cubic-bezier(.2,.75,.2,1)}
+.single:hover .single-photo img{transform:scale(1.014)}
+.site:hover img{transform:scale(1.025)}
+.live-control{transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+.live-control:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(0,0,0,.18)}
+.live-control:active{transform:scale(.975)}
+@media(prefers-reduced-motion:reduce){
+  .demo-cursor,.fly-thumb{display:none!important}
+  .demo-badge i{animation:none!important}
+  .pin .dl{opacity:1;transform:none}
+  .reveal *{opacity:1!important;transform:none!important}
+}
+#heroDemo .browser{overflow:visible;background:#fff}
+#heroDemo .browser-top{border-radius:22px 22px 0 0}
+#heroDemo .browser-body{position:relative;display:block;min-height:590px;overflow:hidden;border-radius:0 0 22px 22px}
+#heroDemo .feed{
+  min-height:590px;grid-template-columns:repeat(3,1fr);grid-auto-flow:dense;gap:11px;
+  padding:14px;padding-right:14px;background:#efefec
+}
+#heroDemo .pin{min-height:185px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+#heroDemo .pin.tall{min-height:360px}
+#heroDemo .pin.mid{min-height:270px}
+#heroDemo .pin img{filter:saturate(1.03) contrast(1.015)}
+#heroDemo .pin::after{background:linear-gradient(180deg,rgba(0,0,0,0) 58%,rgba(0,0,0,.30))}
+#heroDemo .side{
+  position:absolute;right:14px;top:14px;bottom:14px;z-index:20;width:238px;
+  border:1px solid rgba(215,215,210,.95);border-radius:15px;overflow:hidden;
+  background:rgba(255,255,255,.965);backdrop-filter:blur(12px);
+  box-shadow:0 24px 60px rgba(20,20,20,.18)
+}
+#heroDemo .side-head{background:rgba(255,255,255,.94)}
+#heroDemo .side-bottom{background:rgba(255,255,255,.96)}
+#heroDemo .float-proof{left:22px;bottom:22px;z-index:24}
+#heroDemo .demo-badge{right:12px;top:-18px}
+#heroDemo .dl{width:38px;height:38px;background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+#heroDemo .pin:hover .dl,#heroDemo .pin.auto-target .dl{box-shadow:0 8px 22px rgba(0,0,0,.20)}
+.single-photo{overflow:hidden}
+.single-photo img{filter:saturate(1.025) contrast(1.01)}
+.site{min-height:250px}
+.site img{filter:saturate(1.025) contrast(1.01)}
+@media(max-width:1180px){#heroDemo .side{width:218px}}
+@media(max-width:760px){
+  #heroDemo .browser-body{min-height:auto}
+  #heroDemo .feed{min-height:520px;grid-template-columns:repeat(2,1fr)}
+  #heroDemo .side{display:none}
+  #heroDemo .float-proof{display:flex;left:12px;right:auto;bottom:12px;width:190px}
+}
