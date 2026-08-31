@@ -191,7 +191,7 @@ function makePage(locale) {
   html = html.replace(/\s*<link rel="alternate" hreflang="[^"]+" href="[^"]+">/g, "");
   html = html.replace(`<link rel="canonical" href="${canonical}">`, `<link rel="canonical" href="${canonical}">\n${alternates}`);
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(seoTitle(locale))}</title>`);
-  html = html.replace(/<meta name="robots" content="[^"]*">/, '<meta name="robots" content="noindex,follow">');
+  html = html.replace(/<meta name="robots" content="[^"]*">/, '<meta name="robots" content="index,follow">');
   html = html.replace("</head>", `<meta name="lp-locale" content="${escapeAttr(locale.code)}">\n<meta name="lp-index-status" content="${locale.hold ? "hold" : "candidate"}">\n${localeMenuCss}\n</head>`);
 
   // Header navigation is language-neutral; menu contains all 52 crawlable links.
@@ -221,7 +221,7 @@ for (const locale of pinterestLocales) {
     localeMeta: html.includes(`name="lp-locale" content="${locale.code}"`),
     lang: html.includes(`<html lang="${locale.lang}"`),
     canonical: html.includes(`rel="canonical" href="${expectedCanonical}"`),
-    robots: html.includes('meta name="robots" content="noindex,follow"'),
+    robots: html.includes('meta name="robots" content="index,follow"'),
     utm: html.includes(`utm_term=${encodeURIComponent(locale.code)}`),
     root: html.includes(escapeHtml(locale.root)),
     hreflang: hreflangCount === 53,
@@ -245,11 +245,11 @@ for (const locale of pinterestLocales) {
 writeFileSync(path.join(DIST, "pinterest-locales.json"), JSON.stringify(manifest, null, 2) + "\n");
 writeFileSync(
   path.join(DIST, "pinterest-locales.tsv"),
-  manifest.map(x => [x.code, x.route || "en", x.hold ? "hold" : "candidate"].join("\t")).join("\n") + "\n"
+  manifest.map(x => [x.code, x.route || "en", x.hold ? "research-hold" : "candidate"].join("\t")).join("\n") + "\n"
 );
 
 const hold = manifest.filter(x => x.hold).map(x => x.code);
 console.log(`Pinterest locale generator: PASS — ${manifest.length}/52 pages`);
 console.log(`  candidate: ${manifest.length - hold.length}`);
-console.log(`  hold/noindex: ${hold.length} [${hold.join(", ")}]`);
-console.log("  all pages: self-canonical + 53 alternate tags + locale UTM + noindex");
+console.log(`  research-hold/indexed: ${hold.length} [${hold.join(", ")}]`);
+console.log("  all pages: self-canonical + 53 alternate tags + locale UTM + index,follow");
