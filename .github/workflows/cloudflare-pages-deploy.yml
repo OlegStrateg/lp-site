@@ -31,6 +31,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Inspect Cloudflare Pages project
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx wrangler@3.90.0 pages project list --json > /tmp/pages-projects.json
+          node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/pages-projects.json','utf8'));const a=Array.isArray(x)?x:(x.result||[]);const p=a.find(v=>v.name==='layerporter');if(!p){console.error('layerporter project not found');process.exit(1)};console.log(JSON.stringify({name:p.name,subdomain:p.subdomain,production_branch:p.production_branch,domains:p.domains},null,2));"
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
