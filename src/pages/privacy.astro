@@ -5,8 +5,24 @@ import * as privacy from '../copy/privacy.md';
 
 <PageLayout
   title="Privacy Policy — LayerPorter"
-  description="LayerPorter's privacy policy: files are converted in your browser and never uploaded or stored. No accounts, no cookies for tracking."
+  description="LayerPorter's privacy policy for local processing, browser extensions, consent-based analytics, installation attribution, cookies, and data retention."
   canonicalPath="/privacy/"
 >
   <privacy.Content />
+  <section aria-labelledby="privacy-controls-heading" style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #ddd">
+    <h2 id="privacy-controls-heading">Privacy choices</h2>
+    <p>You can clear LayerPorter's saved analytics choice and any pending Pinterest Downloader landing attribution on this browser.</p>
+    <button id="privacy-reset" type="button">Reset privacy choices</button>
+    <p id="privacy-reset-status" role="status" aria-live="polite"></p>
+  </section>
+  <script>
+    const button = document.getElementById('privacy-reset');
+    const status = document.getElementById('privacy-reset-status');
+    button?.addEventListener('click', () => {
+      for (const name of ['lp_privacy', 'lp_pd_attr']) {
+        document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax; Secure`;
+      }
+      if (status) status.textContent = 'Privacy choices cleared. Optional analytics will stay off until you choose again.';
+    });
+  </script>
 </PageLayout>

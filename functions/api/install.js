@@ -13,6 +13,8 @@ import {
 const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PHASES = new Set(['open', 'pinned', 'panel_opened', 'abandoned']);
+const ATTR_SOURCES = new Set(['google_organic','yandex_organic','bing_organic','duckduckgo_organic','yahoo_organic','search_organic','paid','referral','direct','unknown']);
+const ATTR_CTAS = new Set(['header','hero','final','mobile_sticky','']);
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -46,6 +48,23 @@ export async function onRequestPost(context) {
   const phase  = typeof body.phase  === 'string' ? body.phase.trim()         : '';
   const v      = typeof body.v      === 'string' ? body.v.trim().slice(0, 40): '';
   const locale = typeof body.locale === 'string' ? body.locale.trim().slice(0, 20) : '';
+  let attribution = null;
+  if (p === 'pd' && phase === 'open' && body.attribution && typeof body.attribution === 'object' && !Array.isArray(body.attribution)) {
+    const source = typeof body.attribution.source === 'string' ? body.attribution.source.trim().slice(0, 32) : '';
+    const landingLocale = typeof body.attribution.landing_locale === 'string' ? body.attribution.landing_locale.trim().slice(0, 20) : '';
+    const cta = typeof body.attribution.cta === 'string' ? body.attribution.cta.trim().slice(0, 24) : '';
+    const ageDaysRaw = Number(body.attribution.age_days);
+    if (ATTR_SOURCES.has(source) && ATTR_CTAS.has(cta)) {
+      attribution = {
+        source,
+        landing_locale: landingLocale,
+        cta,
+        age_days: Number.isFinite(ageDaysRaw) ? Math.max(0, Math.min(14, Math.floor(ageDaysRaw))) : null,
+        organic: source.endsWith('_organic'),
+      };
+    }
+  }
+
 
   if (!PRODUCTS.has(p))   return json({ ok: false, error: 'unknown_product' }, 400);
   if (!UUID_RE.test(sid)) return json({ ok: false, error: 'bad_sid' }, 400);
@@ -59,6 +78,7 @@ export async function onRequestPost(context) {
     const { isTest, country } = ownerTestInfo(request, env);
     const record = {
       p, sid, v, locale, country,
+      attribution,
       is_test: isTest,
       created_at: new Date().toISOString(),
       pinned: false,
@@ -69,6 +89,12 @@ export async function onRequestPost(context) {
 
     if (!isTest) {
       await saveStatEvent(env, { p, event: 'install', id: sid, ts: Date.now() });
+      if (attribution) {
+        await saveStatEvent(env, { p, event: 'install_landing', id: sid, ts: Date.now(), value: attribution.source });
+        if (attribution.organic) {
+          await saveStatEvent(env, { p, event: 'install_organic', id: sid, ts: Date.now(), value: attribution.source });
+        }
+      }
     }
 
     await putInstallSession(env, sid, record);

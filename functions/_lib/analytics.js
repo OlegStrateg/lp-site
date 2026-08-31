@@ -136,6 +136,8 @@ export async function statsForDays(env, p, days = 7) {
   const bounded = Math.max(1, Math.min(90, Number(days) || 7));
   const counts = {
     install: 0,
+    install_landing: 0,
+    install_organic: 0,
     uninstall: 0,
     uninstall_feedback: 0,
     welcome_view: 0,
@@ -158,6 +160,8 @@ export async function statsForDays(env, p, days = 7) {
 export async function statsTotal(env, p) {
   const counts = {
     install: 0,
+    install_landing: 0,
+    install_organic: 0,
     uninstall: 0,
   };
 
@@ -170,6 +174,8 @@ export async function statsTotal(env, p) {
       const parts = name.split(':');
       const event = parts[3] || '';
       if (event === 'install') counts.install += 1;
+      else if (event === 'install_landing') counts.install_landing += 1;
+      else if (event === 'install_organic') counts.install_organic += 1;
       else if (event === 'uninstall') counts.uninstall += 1;
     }
     cursor = page.list_complete ? undefined : page.cursor;
@@ -191,6 +197,8 @@ export function formatStats(stats) {
     : 0;
   return [
     `Установки: ${stats.install}`,
+    `Из лендинга: ${stats.install_landing || 0}`,
+    `Из органики: ${stats.install_organic || 0}`,
     `Удаления: ${stats.uninstall}`,
     `С обратной связью: ${stats.uninstall_feedback} (${feedbackRate}%)`,
     '',
@@ -327,6 +335,22 @@ export async function putInstallSession(env, sid, record) {
   await env.FEEDBACK_KV.put(`install:${sid}`, JSON.stringify(record), { expirationTtl: SESSION_TTL });
 }
 
+function attributionSourceName(source) {
+  const names = {
+    google_organic: 'Google organic',
+    yandex_organic: 'Yandex organic',
+    bing_organic: 'Bing organic',
+    duckduckgo_organic: 'DuckDuckGo organic',
+    yahoo_organic: 'Yahoo organic',
+    search_organic: 'Search organic',
+    paid: 'Paid',
+    referral: 'Referral',
+    direct: 'Direct',
+    unknown: 'Unknown',
+  };
+  return names[source] || source || '';
+}
+
 export function installSessionMessage({ record, today, total }) {
   const prefix = record.is_test ? '🧪 МОЙ ТЕСТ — УСТАНОВКА' : '🟢 УСТАНОВКА';
   const statusLines = [];
@@ -339,6 +363,10 @@ export function installSessionMessage({ record, today, total }) {
     record.v      ? `Версия: ${record.v}`     : null,
     record.locale ? `Язык: ${record.locale}`  : null,
     record.country? `Страна: ${countryName(record.country)}`: null,
+    record.attribution?.source ? `Источник: ${attributionSourceName(record.attribution.source)}` : null,
+    record.attribution?.landing_locale ? `Лендинг: ${record.attribution.landing_locale}` : null,
+    record.attribution?.cta ? `CTA: ${record.attribution.cta}` : null,
+    Number.isFinite(record.attribution?.age_days) ? `До установки: ${record.attribution.age_days} дн.` : null,
     record.is_test ? 'В статистику: НЕ включено' : null,
     ...statusLines,
     '',

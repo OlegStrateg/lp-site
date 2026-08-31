@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { pinterestLocales } from "./pinterest-locales-data.mjs";
+import { pinterestConsentCopy } from "./pinterest-consent-copy.mjs";
 
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, "dist");
@@ -155,7 +156,7 @@ function patchBody(html, l) {
     `<div class="final-meta">${escapeHtml(l.videos)} · ${escapeHtml(l.images)} · GIF · ${escapeHtml(l.boards)} · ${escapeHtml(l.bulk)} · ZIP</div>`);
   html = html.replace(/<div class="wrap signal reveal" aria-label="[^"]*">[\s\S]*?<\/div>/,
     `<div class="wrap signal reveal" aria-label="Pinterest"><span>PIN</span><span>${escapeHtml(l.videos)}</span><span>${escapeHtml(l.images)}</span><span>GIF</span><span>${escapeHtml(l.bulk)}</span><span>ZIP</span></div>`);
-  html = html.replace(/<footer>[\s\S]*?<\/footer>/, `<footer><div class="wrap footer-row"><span>LayerPorter</span><span>${escapeHtml(l.root)}</span></div></footer>`);
+  html = html.replace(/<footer>[\s\S]*?<\/footer>/, `<footer><div class="wrap footer-row"><span>LayerPorter</span><span>${escapeHtml(l.root)}</span><a href="/privacy/#cookies">${escapeHtml((pinterestConsentCopy[l.code] || pinterestConsentCopy.en).privacy)}</a><a href="/terms/">Terms</a></div></footer>`);
 
   // Motion JS must update counters in the page language.
   html = html.replace("n + ' selected · Images · Videos · GIFs'", `n + ' ${String(l.selected).replaceAll("'","\\'")} · ${String(l.images).replaceAll("'","\\'")} · ${String(l.videos).replaceAll("'","\\'")} · GIF'`);
@@ -199,6 +200,16 @@ function makePage(locale) {
   html = html.replace(/<nav class="lang-switch"[\s\S]*?<\/nav>/, localeMenu(locale));
 
   html = patchBody(html, locale);
+  const consent = pinterestConsentCopy[locale.code] || pinterestConsentCopy.en;
+  html = html.replace(/(<strong id="privacyConsentTitle">)[\s\S]*?(<\/strong>)/, `$1${escapeHtml(consent.title)}$2`);
+  html = html.replace(/(<p id="privacyConsentText">)[\s\S]*?(<a href="\/privacy\/#cookies">)[\s\S]*?(<\/a><\/p>)/,
+    `$1${escapeHtml(consent.text)} $2${escapeHtml(consent.privacy)}$3`);
+  html = html.replace(/(<button type="button" data-consent="reject" id="privacyReject">)[\s\S]*?(<\/button>)/,
+    `$1${escapeHtml(consent.reject)}$2`);
+  html = html.replace(/(<button type="button" data-consent="accept" id="privacyAccept">)[\s\S]*?(<\/button>)/,
+    `$1${escapeHtml(consent.accept)}$2`);
+  html = html.replace('aria-label="Privacy choices"', `aria-label="${escapeAttr(consent.title)}"`);
+
 
   // Ensure every Store URL is the correct product and locale-attributed.
   if (!html.includes(STORE_ID)) throw new Error(`Missing Store ID for ${locale.code}`);
@@ -210,6 +221,7 @@ function makePage(locale) {
 const manifest = [];
 
 for (const locale of pinterestLocales) {
+  const consent = pinterestConsentCopy[locale.code] || pinterestConsentCopy.en;
   const html = makePage(locale);
   const file = fileFor(locale);
   mkdirSync(path.dirname(file), { recursive: true });
@@ -226,6 +238,9 @@ for (const locale of pinterestLocales) {
     root: html.includes(escapeHtml(locale.root)),
     hreflang: hreflangCount === 53,
     store: html.includes(STORE_ID),
+    consent: html.includes('id="privacyConsent"') && html.includes(escapeHtml(consent.accept)) && html.includes(escapeHtml(consent.reject)),
+    privacyLink: html.includes('href="/privacy/#cookies"'),
+    attribution: html.includes("lp_pd_attr") && html.includes("globalPrivacyControl"),
   };
   const failed = Object.entries(checks).filter(([,ok]) => !ok).map(([k]) => k);
   if (failed.length) {
