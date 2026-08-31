@@ -61,8 +61,10 @@ jobs:
           # Wait until the just-deployed revision reaches production.
           for i in {1..24}; do
             if curl -fsS --max-time 20 -A "Mozilla/5.0" "$EN_URL" -o /tmp/pinterest-en.html \
-              && grep -Fq 'name="lp-locale" content="en"' /tmp/pinterest-en.html; then
-              echo "Current Pinterest locale build is live"
+              && grep -Fq 'name="lp-locale" content="en"' /tmp/pinterest-en.html \
+              && grep -Fq 'id="privacyConsent"' /tmp/pinterest-en.html \
+              && grep -Fq 'lp_pd_attr' /tmp/pinterest-en.html; then
+              echo "Current Pinterest attribution build is live"
               break
             fi
             if [ "$i" -eq 24 ]; then
