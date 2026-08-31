@@ -163,4 +163,23 @@ jobs:
           console.log('Sitemap PASS: 52/52 locale URLs');
           NODE
 
+          echo "=== VERIFY ATTRIBUTION + PRIVACY ==="
+          grep -F 'id="privacyConsent"' /tmp/pinterest-en.html
+          grep -F "lp_pd_attr" /tmp/pinterest-en.html
+          grep -F "lp_privacy" /tmp/pinterest-en.html
+          grep -F "globalPrivacyControl" /tmp/pinterest-en.html
+          grep -F 'href="/privacy/#cookies"' /tmp/pinterest-en.html
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/pinterest-downloader/welcome/?verify=${{ github.sha }}" -o /tmp/pinterest-welcome.html
+          grep -F "const ATTR_COOKIE = 'lp_pd_attr'" /tmp/pinterest-welcome.html
+          grep -F "body.attribution = landingAttribution" /tmp/pinterest-welcome.html
+          grep -F "readCookie('lp_privacy') !== 'analytics:1'" /tmp/pinterest-welcome.html
+          grep -F "webvisor:false" /tmp/pinterest-welcome.html
+          grep -F "clickmap:false" /tmp/pinterest-welcome.html
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/privacy/?verify=${{ github.sha }}" -o /tmp/privacy.html
+          grep -F "lp_pd_attr" /tmp/privacy.html
+          grep -F "Chrome Web Store Limited Use" /tmp/privacy.html
+          grep -F "Reset privacy choices" /tmp/privacy.html
+
           echo "LIVE VERIFY PASS: 52/52 Pinterest landing URLs"
