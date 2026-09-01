@@ -79,6 +79,7 @@ let adminAuthenticated=false;
 let accounts=[];
 let boards=[];
 let activeAccountId='';
+let boardsLoadFailed=false;
 
 const adminLoginModal=document.getElementById('adminLoginModal');
 const connectAccountModal=document.getElementById('connectAccountModal');
@@ -270,10 +271,12 @@ document.getElementById('submitConnectAccount').onclick=async()=>{
 };
 
 async function loadBoards(accountId){
+  boardsLoadFailed=false;
   if(!accountId){boards=[];return false;}
   const {response,data}=await fetchJson('api/boards?account_id='+encodeURIComponent(accountId));
   if(!response.ok||!data?.ok){
     boards=[];
+    boardsLoadFailed=true;
     toast('Не удалось получить доски');
     return false;
   }
@@ -287,6 +290,35 @@ async function loadBoards(accountId){
     select.appendChild(option);
   }
   return boards.length>0;
+}
+
+async function createSandboxTestBoard(accountId){
+  const {response,data}=await fetchJson('api/boards',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({
+      confirm:'CREATE_SANDBOX_BOARD',
+      account_id:accountId,
+      name:'LayerPorter Sandbox Test',
+      description:'Technical board created by LayerPorter Pinterest Automation for Sandbox testing.'
+    })
+  });
+
+  if(!response.ok||!data?.ok){
+    toast('Pinterest: '+(data?.message||data?.error||response.status));
+    return false;
+  }
+
+  await loadAccounts();
+  activeAccountId=accountId;
+  const loaded=await loadBoards(accountId);
+  if(!loaded){
+    toast('Доска создана, но список ещё не обновился');
+    return false;
+  }
+
+  toast('Тестовая Sandbox-доска создана');
+  return true;
 }
 
 function fillAccountSelect(){
@@ -306,7 +338,19 @@ document.getElementById('sandboxTestPinBtn').onclick=async()=>{
   if(!accounts.length){toast('Сначала подключи аккаунт');return;}
   fillAccountSelect();
   activeAccountId=document.getElementById('sandboxAccount').value;
-  if(!(await loadBoards(activeAccountId))){toast('У аккаунта нет доступных Sandbox-досок');return;}
+
+  const hasBoards=await loadBoards(activeAccountId);
+  if(!hasBoards){
+    if(boardsLoadFailed)return;
+
+    const createBoard=confirm('В этом Sandbox-аккаунте пока нет досок. Создать тестовую доску «LayerPorter Sandbox Test» и продолжить?');
+    if(!createBoard)return;
+
+    if(!(await createSandboxTestBoard(activeAccountId)))return;
+    fillAccountSelect();
+    document.getElementById('sandboxAccount').value=activeAccountId;
+  }
+
   sandboxPinModal.classList.add('show');
 };
 
