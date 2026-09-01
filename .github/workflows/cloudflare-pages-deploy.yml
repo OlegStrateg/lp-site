@@ -348,6 +348,60 @@ jobs:
 
           echo "LayerPorter Home V3 ES PASS"
 
+          FR_URL="https://layerporter.com/fr/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$FR_URL" -o /tmp/layerporter-home-v3-fr.html
+          grep -F '<html lang="fr">' /tmp/layerporter-home-v3-fr.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/fr/"' /tmp/layerporter-home-v3-fr.html
+          grep -F 'hreflang="fr" href="https://layerporter.com/fr/"' /tmp/layerporter-home-v3-fr.html
+          grep -F 'Français <b>(FR)</b>' /tmp/layerporter-home-v3-fr.html
+          grep -F 'href="/fr/pinterest-downloader/"' /tmp/layerporter-home-v3-fr.html
+          grep -F '<loc>https://layerporter.com/fr/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+          echo "LayerPorter Home V3 FR PASS"
+
+          PT_URL="https://layerporter.com/pt-br/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$PT_URL" -o /tmp/layerporter-home-v3-pt.html
+          grep -F '<html lang="pt-BR">' /tmp/layerporter-home-v3-pt.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/pt-br/"' /tmp/layerporter-home-v3-pt.html
+          grep -F 'hreflang="pt-BR" href="https://layerporter.com/pt-br/"' /tmp/layerporter-home-v3-pt.html
+          grep -F 'Português <b>(PT)</b>' /tmp/layerporter-home-v3-pt.html
+          grep -F 'href="/pt-br/pinterest-downloader/"' /tmp/layerporter-home-v3-pt.html
+          grep -F '<loc>https://layerporter.com/pt-br/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+          echo "LayerPorter Home V3 PT-BR PASS"
+
+          JA_URL="https://layerporter.com/ja/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$JA_URL" -o /tmp/layerporter-home-v3-ja.html
+          grep -F '<html lang="ja">' /tmp/layerporter-home-v3-ja.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/ja/"' /tmp/layerporter-home-v3-ja.html
+          grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' /tmp/layerporter-home-v3-ja.html
+          grep -F '日本語 <b>(JA)</b>' /tmp/layerporter-home-v3-ja.html
+          grep -F 'href="/ja/pinterest-downloader/"' /tmp/layerporter-home-v3-ja.html
+          grep -F '<loc>https://layerporter.com/ja/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+          echo "LayerPorter Home V3 JA PASS"
+
+          ZH_URL="https://layerporter.com/zh-cn/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$ZH_URL" -o /tmp/layerporter-home-v3-zh.html
+          grep -F '<html lang="zh-CN">' /tmp/layerporter-home-v3-zh.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/zh-cn/"' /tmp/layerporter-home-v3-zh.html
+          grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' /tmp/layerporter-home-v3-zh.html
+          grep -F '简体中文 <b>(ZH)</b>' /tmp/layerporter-home-v3-zh.html
+          grep -F 'href="/zh-cn/pinterest-downloader/"' /tmp/layerporter-home-v3-zh.html
+          grep -F '<loc>https://layerporter.com/zh-cn/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+          echo "LayerPorter Home V3 ZH-CN PASS"
+
+          for html in /tmp/layerporter-home-v3.html /tmp/layerporter-home-v3-ru.html /tmp/layerporter-home-v3-de.html /tmp/layerporter-home-v3-es.html /tmp/layerporter-home-v3-fr.html /tmp/layerporter-home-v3-pt.html /tmp/layerporter-home-v3-ja.html /tmp/layerporter-home-v3-zh.html; do
+            grep -F 'hreflang="en" href="https://layerporter.com/"' "$html"
+            grep -F 'hreflang="ru" href="https://layerporter.com/ru/"' "$html"
+            grep -F 'hreflang="de" href="https://layerporter.com/de/"' "$html"
+            grep -F 'hreflang="es" href="https://layerporter.com/es/"' "$html"
+            grep -F 'hreflang="fr" href="https://layerporter.com/fr/"' "$html"
+            grep -F 'hreflang="pt-BR" href="https://layerporter.com/pt-br/"' "$html"
+            grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' "$html"
+            grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' "$html"
+            grep -F 'hreflang="x-default" href="https://layerporter.com/"' "$html"
+          done
+
+          echo "LayerPorter Home V3 ALL 8 LOCALES PASS"
+
       - name: Verify Pinterest domain ownership meta
         shell: bash
         run: |
