@@ -62,7 +62,7 @@ const PINTEREST_LOCALE_PATHS = [
   "/zh-tw/pinterest-downloader/"
 ];
 
-const STATIC_PATHS = ['/', '/convert/', '/about/', '/extensions/', '/extensions/picture-converter/', '/privacy/', '/terms/', '/formats/', '/guides/'];
+const STATIC_PATHS = ['/', '/ru/', '/convert/', '/about/', '/extensions/', '/extensions/picture-converter/', '/privacy/', '/terms/', '/formats/', '/guides/'];
 
 export const GET: APIRoute = async () => {
   const converters = await getCollection('converters');
