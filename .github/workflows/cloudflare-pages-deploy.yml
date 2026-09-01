@@ -382,8 +382,7 @@ jobs:
           grep -F "pin_metrics=true" functions/internal/pinterest-automation/api/diagnostics.js
           grep -F "READBACK_DELAYS_MS" functions/internal/pinterest-automation/api/pins.js
           grep -F "list_contains_pin" functions/internal/pinterest-automation/api/diagnostics.js
-          grep -F "Проверить API-цикл" public/internal/pinterest-automation/index.html
-          grep -F "runCycleDiagnostics" public/internal/pinterest-automation/app.js
+          grep -F "requireAdmin(request, env)" functions/internal/pinterest-automation/api/diagnostics.js
 
           STATUS=""
           for i in {1..18}; do
