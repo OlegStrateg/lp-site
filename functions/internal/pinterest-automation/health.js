@@ -1,21 +1,20 @@
-export function onRequestGet({ env }) {
-  const pinterestConfigured = Boolean(env.PINTEREST_APP_ID && env.PINTEREST_APP_SECRET);
+import { isAuthorized, json } from '../../_lib/pinterest-automation-auth.js';
 
-  return new Response(JSON.stringify({
+export async function onRequestGet({ request, env }) {
+  const previewAuthConfigured = Boolean(env.PINTEREST_PREVIEW_PASSWORD);
+  const sandboxConfigured = Boolean(env.PINTEREST_SANDBOX_TOKEN);
+
+  return json({
     ok: true,
     service: 'pinterest-automation-preview',
-    version: '0.0.1',
-    mode: 'preview',
+    version: '0.1.0-sandbox',
+    mode: 'sandbox',
     livePublishing: false,
-    pinterestConfigured,
+    productionPinterestConfigured: Boolean(env.PINTEREST_APP_ID && env.PINTEREST_APP_SECRET),
+    sandboxConfigured,
+    previewAuthConfigured,
+    previewAuthenticated: previewAuthConfigured ? await isAuthorized(request, env) : false,
     database: 'not_connected',
     worker: 'not_connected',
-  }), {
-    status: 200,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      'x-robots-tag': 'noindex, nofollow, noarchive, nosnippet',
-    },
   });
 }
