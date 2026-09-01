@@ -7,6 +7,12 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
+
+# Home V3: внешние фото разрешены только на корневой странице.
+/
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://images.unsplash.com; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
 # Технические домены Cloudflare Pages не должны конкурировать с layerporter.com в индексе.
 # Рекомендованный Cloudflare паттерн: production/preview *.pages.dev → noindex.
 https://:project.pages.dev/*
