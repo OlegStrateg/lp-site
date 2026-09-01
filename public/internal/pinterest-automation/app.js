@@ -520,7 +520,6 @@ document.getElementById('createSandboxPin').onclick=async()=>{
 
   activeAccountId=accountId;
   await loadAccounts();
-  await runCycleDiagnostics(false);
 };
 
 document.getElementById('testBtn').onclick=async()=>{
