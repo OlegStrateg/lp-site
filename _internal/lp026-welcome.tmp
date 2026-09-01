@@ -702,4 +702,67 @@ h1{
     finalBtn.setAttribute('aria-busy', 'true');
     btnText.textContent = copy.opening;
     if (btnArrow) btnArrow.textContent = '…';
-    showOpenStatus('', '')
+    showOpenStatus('', '');
+
+    const targetOrigin =
+      window.location.origin === 'null'
+        ? '*'
+        : window.location.origin;
+
+    window.postMessage(
+      {
+        source: PAGE_MESSAGE_SOURCE,
+        type: OPEN_PANEL_REQUEST,
+        requestId: pendingOpenRequestId,
+        locale: currentLocale
+      },
+      targetOrigin
+    );
+
+    openTimeoutId = window.setTimeout(() => {
+      failOpenPanel('extension_bridge_timeout');
+    }, OPEN_TIMEOUT_MS);
+  });
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    if (window.location.origin !== 'null' && event.origin !== window.location.origin) return;
+
+    const data = event.data;
+    if (
+      data?.source !== EXTENSION_MESSAGE_SOURCE ||
+      data?.type !== OPEN_PANEL_RESULT ||
+      data?.requestId !== pendingOpenRequestId
+    ) return;
+
+    if (openTimeoutId) {
+      clearTimeout(openTimeoutId);
+      openTimeoutId = null;
+    }
+
+    if (data.ok !== true) {
+      failOpenPanel(
+        typeof data.error === 'string'
+          ? data.error.slice(0, 64)
+          : 'side_panel_open_failed'
+      );
+      return;
+    }
+
+    trackWelcomeEvent('welcome_open_success');
+    installPanelOpened = true;
+    postInstall('panel_opened');
+
+    pendingOpenRequestId = null;
+    delete finalBtn.dataset.openRequestId;
+    finalBtn.disabled = true;
+    finalBtn.removeAttribute('aria-busy');
+    btnText.textContent = copy.readyMessage;
+    if (btnArrow) btnArrow.textContent = '✓';
+    showOpenStatus('', 'success');
+  });
+})();
+</script>
+
+</body>
+</html>
