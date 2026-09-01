@@ -491,9 +491,16 @@ h1{
     const forcedLocale = normalizeLocale(forced);
     if (forcedLocale) return forcedLocale;
 
-    // Welcome без явного ?lang= всегда открывается на английском.
-    // navigator.language / navigator.languages намеренно не используются:
-    // язык браузера не должен самопроизвольно менять install Welcome.
+    const browserLanguages =
+      Array.isArray(navigator.languages) && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language || "en"];
+
+    for (const lang of browserLanguages) {
+      const locale = normalizeLocale(lang);
+      if (locale) return locale;
+    }
+
     return "en";
   }
 
