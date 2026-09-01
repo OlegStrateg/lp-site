@@ -27,7 +27,9 @@ export async function onRequestPost({ request, env }) {
 
   const environment = body?.environment === 'sandbox' ? 'sandbox' : null;
   const token = typeof body?.token === 'string' ? body.token.trim() : '';
-  const label = typeof body?.label === 'string' ? body.label.trim().slice(0, 100) : '';
+  const label = typeof body?.label === 'string'
+    ? body.label.replace(/[<>\u0000-\u001F\u007F]/g, '').trim().slice(0, 100)
+    : '';
 
   if (!environment) return json({ ok: false, error: 'only_sandbox_manual_token_supported' }, 400);
   if (!token || token.length < 30) return json({ ok: false, error: 'token_required' }, 400);
