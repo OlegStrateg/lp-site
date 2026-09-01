@@ -5,6 +5,11 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
+  const origin = request.headers.get('origin');
+  if (!origin || origin !== new URL(request.url).origin) {
+    return json({ ok: false, error: 'origin_forbidden' }, 403);
+  }
+
   let body;
   try { body = await request.json(); }
   catch { return json({ ok: false, error: 'bad_json' }, 400); }
