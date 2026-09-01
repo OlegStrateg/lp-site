@@ -2,7 +2,10 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />\n<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />\n<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />\n<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+<meta name="referrer" content="no-referrer" />
 <title>Pinterest Automation — интерфейс прототип</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -108,7 +111,7 @@
 </div>
 
 <div class="modal" id="previewLoginModal"><div class="modalbox"><h2>Внутренний доступ</h2><div class="field"><label>Пароль preview</label><input id="previewPassword" type="password" autocomplete="current-password" placeholder="Пароль внутренней консоли"></div><div class="modalactions"><button class="btn" id="cancelPreviewLogin">Отмена</button><button class="btn primary" id="submitPreviewLogin">Войти</button></div></div></div>
-<div class="modal" id="sandboxPinModal"><div class="modalbox"><h2>Тестовый Pin в Sandbox</h2><div class="notice">Это живой запрос в Pinterest Sandbox. Pin не попадёт в публичную выдачу Pinterest.</div><div class="field"><label>Доска</label><select id="sandboxBoard"></select></div><div class="field"><label>Заголовок</label><input id="sandboxTitle" value="Pinterest Automation Test"></div><div class="field"><label>Описание</label><input id="sandboxDescription" value="Technical sandbox test pin"></div><div class="field"><label>Image URL</label><input id="sandboxImageUrl" value="https://layerporter.com/internal/pinterest-automation/test-pin.png"></div><div class="field"><label>Ссылка</label><input id="sandboxLink" value="https://layerporter.com/"></div><div class="modalactions"><button class="btn" id="cancelSandboxPin">Отмена</button><button class="btn red" id="createSandboxPin">Создать в Sandbox</button></div></div></div>
+<div class="modal" id="sandboxPinModal"><div class="modalbox"><h2>Тестовый Pin в Sandbox</h2><div class="notice">Это живой запрос в Pinterest Sandbox. Pin не попадёт в публичную выдачу Pinterest.</div><div class="field"><label>Доска</label><select id="sandboxBoard"></select></div><div class="field"><label>Заголовок</label><input id="sandboxTitle" value="Pinterest Automation Test"></div><div class="field"><label>Описание</label><input id="sandboxDescription" value="Technical sandbox test pin"></div><div class="field"><label>Image URL</label><input id="sandboxImageUrl" value="https://placehold.co/1000x1500/E60023/FFFFFF.png?text=Sandbox+Test"></div><div class="field"><label>Ссылка</label><input id="sandboxLink" value="https://layerporter.com/"></div><div class="modalactions"><button class="btn" id="cancelSandboxPin">Отмена</button><button class="btn red" id="createSandboxPin">Создать в Sandbox</button></div></div></div>
 <div class="modal" id="draftModal"><div class="modalbox"><h2>Новый черновик</h2><div class="field"><label>Тема</label><input id="draftTopic" value="Современная прихожая"></div><div class="field"><label>Доска</label><select id="draftBoard"><option>Interior Ideas</option><option>Small Spaces</option><option>Workspace Ideas</option></select></div><div class="field"><label>Целевая ссылка</label><input value="https://example.com/article"></div><div class="modalactions"><button class="btn" id="cancelModal">Отмена</button><button class="btn primary" id="createDraft">Создать черновик</button></div></div></div>
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
