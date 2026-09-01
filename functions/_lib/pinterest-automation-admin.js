@@ -82,6 +82,13 @@ export async function isAdmin(request, env) {
 
 export async function requireAdmin(request, env) {
   if (!store(env)) return json({ ok: false, error: 'storage_not_configured' }, 503);
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    const expected = new URL(request.url).origin;
+    if (!origin || origin !== expected) return json({ ok: false, error: 'origin_forbidden' }, 403);
+  }
+
   if (!(await isAdmin(request, env))) return json({ ok: false, error: 'unauthorized' }, 401);
   return null;
 }
