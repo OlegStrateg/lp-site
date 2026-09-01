@@ -346,10 +346,27 @@ jobs:
           grep -F "Проверить API-цикл" public/internal/pinterest-automation/index.html
           grep -F "runCycleDiagnostics" public/internal/pinterest-automation/app.js
 
-          STATUS="$(curl -sS -o /tmp/pa-diag.json -w "%{http_code}" --max-time 20             -A "Mozilla/5.0"             "$BASE/api/diagnostics?account_id=acct_test")"
+          STATUS=""
+          for i in {1..18}; do
+            STATUS="$(curl -sS -o /tmp/pa-diag.json -w "%{http_code}" --max-time 20               -A "Mozilla/5.0"               "$BASE/api/diagnostics?account_id=acct_test&verify=${{ github.sha }}")"
+
+            if [ "$STATUS" = "401" ]; then
+              break
+            fi
+
+            if [ "$STATUS" = "404" ]; then
+              echo "Diagnostics route not propagated yet (attempt $i/18)"
+              sleep 5
+              continue
+            fi
+
+            echo "Diagnostics endpoint returned unexpected HTTP $STATUS"
+            cat /tmp/pa-diag.json
+            exit 1
+          done
 
           if [ "$STATUS" != "401" ]; then
-            echo "Diagnostics endpoint must be locked without admin session, got HTTP $STATUS"
+            echo "Diagnostics endpoint did not propagate as locked route, final HTTP $STATUS"
             cat /tmp/pa-diag.json
             exit 1
           fi
