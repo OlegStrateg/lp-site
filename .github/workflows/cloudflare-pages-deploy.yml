@@ -306,3 +306,29 @@ jobs:
 
           echo "Pinterest account admin PASS: locked, multi-account aware, no token in source"
 
+      - name: Verify Pinterest empty-board recovery path
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com/internal/pinterest-automation"
+
+          grep -F "CREATE_SANDBOX_BOARD" functions/internal/pinterest-automation/api/boards.js
+          grep -F "LayerPorter Sandbox Test" public/internal/pinterest-automation/app.js
+          grep -F "createSandboxTestBoard" public/internal/pinterest-automation/app.js
+
+          STATUS="$(curl -sS -o /tmp/pa-create-board.json -w "%{http_code}" --max-time 20             -A "Mozilla/5.0"             -H "Content-Type: application/json"             -X POST             --data '{"confirm":"CREATE_SANDBOX_BOARD","account_id":"acct_test","name":"LayerPorter Sandbox Test"}'             "$BASE/api/boards")"
+
+          if [ "$STATUS" != "401" ] && [ "$STATUS" != "403" ]; then
+            echo "Unauthenticated Sandbox board creation must remain blocked, got HTTP $STATUS"
+            cat /tmp/pa-create-board.json
+            exit 1
+          fi
+
+          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions --exclude-dir=node_modules; then
+            echo "Pinterest access token pattern found in source"
+            exit 1
+          fi
+
+          echo "Pinterest empty-board recovery PASS: create path present and locked"
+
