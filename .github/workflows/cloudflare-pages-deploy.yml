@@ -329,6 +329,25 @@ jobs:
 
           echo "LayerPorter Home V3 DE PASS"
 
+          ES_URL="https://layerporter.com/es/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$ES_URL" -o /tmp/layerporter-home-v3-es.html
+          grep -F '<html lang="es">' /tmp/layerporter-home-v3-es.html
+          grep -F '<title>LayerPorter — Extensiones de navegador y herramientas online</title>' /tmp/layerporter-home-v3-es.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/es/"' /tmp/layerporter-home-v3-es.html
+          grep -F 'hreflang="en" href="https://layerporter.com/"' /tmp/layerporter-home-v3-es.html
+          grep -F 'hreflang="ru" href="https://layerporter.com/ru/"' /tmp/layerporter-home-v3-es.html
+          grep -F 'hreflang="de" href="https://layerporter.com/de/"' /tmp/layerporter-home-v3-es.html
+          grep -F 'hreflang="es" href="https://layerporter.com/es/"' /tmp/layerporter-home-v3-es.html
+          grep -F 'Español <b>(ES)</b>' /tmp/layerporter-home-v3-es.html
+          grep -F 'href="/es/pinterest-downloader/"' /tmp/layerporter-home-v3-es.html
+          grep -F '<loc>https://layerporter.com/es/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+          if grep -Fq '\n        <a href="/de/"' /tmp/layerporter-home-v3-es.html; then
+            echo "Literal backslash-n found in locale menu"
+            exit 1
+          fi
+
+          echo "LayerPorter Home V3 ES PASS"
+
       - name: Verify Pinterest domain ownership meta
         shell: bash
         run: |
