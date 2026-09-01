@@ -36,3 +36,10 @@ https://:version.:project.pages.dev/*
 /:locale/pinterest-downloader/*
   ! Content-Security-Policy
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.unsplash.com; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+
+# Internal Pinterest Automation operator console.
+# Public by direct URL only; explicitly excluded from search indexing.
+/internal/pinterest-automation/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex
+  Cache-Control: private, no-store, max-age=0

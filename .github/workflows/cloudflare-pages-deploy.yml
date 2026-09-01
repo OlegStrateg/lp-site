@@ -185,3 +185,33 @@ jobs:
           grep -F "Reset privacy choices" /tmp/privacy.html
 
           echo "LIVE VERIFY PASS: 52/52 Pinterest landing URLs"
+
+      - name: Verify Pinterest Automation preview noindex
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com"
+          URL="$BASE/internal/pinterest-automation/?verify=${{ github.sha }}"
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" -D /tmp/pa.headers "$URL" -o /tmp/pa.html
+          grep -F 'meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"' /tmp/pa.html
+          grep -i '^x-robots-tag:' /tmp/pa.headers | grep -Ei 'noindex'
+          grep -i '^cache-control:' /tmp/pa.headers | grep -Ei 'no-store'
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/internal/pinterest-automation/styles.css?verify=${{ github.sha }}" -o /tmp/pa.css
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/internal/pinterest-automation/app.js?verify=${{ github.sha }}" -o /tmp/pa.js
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/internal/pinterest-automation/health?verify=${{ github.sha }}" -o /tmp/pa-health.json
+          grep -F 'Pinterest Automation' /tmp/pa.html
+          grep -F 'newDraftBtn' /tmp/pa.js
+          grep -F '"ok":true' /tmp/pa-health.json
+          grep -F '"livePublishing":false' /tmp/pa-health.json
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/sitemap.xml?verify=${{ github.sha }}" -o /tmp/pa-sitemap.xml
+          if grep -Fq '/internal/pinterest-automation/' /tmp/pa-sitemap.xml; then
+            echo "Internal Pinterest Automation route must not be in sitemap"
+            exit 1
+          fi
+
+          echo "Pinterest Automation preview PASS: live, assets OK, noindex, absent from sitemap"
+
