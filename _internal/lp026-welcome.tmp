@@ -511,4 +511,195 @@ h1{
   document.title = copy.pageTitle;
 
   const bindings = {
-    "i18n-heading": "h
+    "i18n-heading": "heading",
+    "i18n-lead": "lead",
+    "btn-text": "openButton",
+    "i18n-micro": "micro",
+    "i18n-pin-title": "pinTitle",
+    "i18n-extensions-title": "extensionsTitle",
+    "i18n-no-access": "noAccess",
+    "i18n-no-access-desc": "noAccessDesc",
+    "i18n-manage": "manage"
+  };
+
+  for (const [id, key] of Object.entries(bindings)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.textContent = copy[key];
+    el.lang = currentLocale;
+  }
+
+  window.__pdWelcomeLocale = currentLocale;
+  window.__pdWelcomeSupportedLocales = Array.from(supported);
+
+  const finalBtn = document.getElementById("final-btn");
+  const btnText = document.getElementById("btn-text");
+  const btnArrow = finalBtn?.querySelector(".arr");
+  const openPanelStatus = document.getElementById("open-panel-status");
+
+  const welcomeSource =
+    new URLSearchParams(window.location.search).get("source") === "install"
+      ? "install"
+      : "direct";
+
+  const welcomeEvents = [];
+  window.__pinterestDownloaderWelcomeEvents = welcomeEvents;
+  window.dataLayer = window.dataLayer || [];
+
+  function trackWelcomeEvent(eventName, properties = {}) {
+    const event = {
+      event: eventName,
+      product: "Pinterest Downloader",
+      product_code: "pd",
+      source: welcomeSource,
+      locale: currentLocale,
+      ...properties,
+      timestamp: Date.now()
+    };
+
+    welcomeEvents.push(event);
+    window.dataLayer.push(event);
+    window.dispatchEvent(
+      new CustomEvent("pinterest-downloader:analytics", { detail: event })
+    );
+  }
+
+  trackWelcomeEvent("welcome_view");
+
+  // --- consented landing attribution ---
+  const ATTR_COOKIE = 'lp_pd_attr';
+
+  function readCookie(name) {
+    const prefix = name + '=';
+    const part = document.cookie.split('; ').find(x => x.startsWith(prefix));
+    return part ? decodeURIComponent(part.slice(prefix.length)) : '';
+  }
+
+  function deleteCookie(name) {
+    document.cookie = name + '=; Path=/; Max-Age=0; SameSite=Lax; Secure';
+  }
+
+  function readLandingAttribution() {
+    try {
+      const raw = readCookie(ATTR_COOKIE);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const ageDays = parsed?.ts
+        ? Math.max(0, Math.min(14, Math.floor((Date.now() - Number(parsed.ts)) / 86400000)))
+        : null;
+      return {
+        source: typeof parsed?.source === 'string' ? parsed.source.slice(0, 32) : '',
+        landing_locale: typeof parsed?.locale === 'string' ? parsed.locale.slice(0, 20) : '',
+        cta: typeof parsed?.cta === 'string' ? parsed.cta.slice(0, 24) : '',
+        age_days: Number.isFinite(ageDays) ? ageDays : null,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  const landingAttribution = readLandingAttribution();
+  // --- end consented landing attribution ---
+
+  // --- install analytics / Telegram chain ---
+  // ВАЖНО: payload и фазы сохранены совместимыми с действующим /api/install.
+  const installSid = crypto.randomUUID();
+  const installVersion = new URLSearchParams(window.location.search).get("v") || "";
+  let installPanelOpened = false;
+
+  function postInstall(phase) {
+    const body = {
+      p: 'pd',
+      sid: installSid,
+      phase,
+      v: installVersion,
+      locale: currentLocale,
+    };
+    if (phase === 'open' && landingAttribution?.source) {
+      body.attribution = landingAttribution;
+    }
+    const payload = JSON.stringify(body);
+
+    if (phase === 'open' && landingAttribution?.source) {
+      fetch('/api/install', {
+        method: 'POST',
+        body: payload,
+        headers: { 'content-type': 'application/json' },
+        keepalive: true
+      }).then((response) => {
+        if (response.ok) deleteCookie(ATTR_COOKIE);
+      }).catch(() => {});
+      return;
+    }
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/install', new Blob([payload], { type: 'application/json' }));
+    } else {
+      fetch('/api/install', {
+        method: 'POST',
+        body: payload,
+        headers: { 'content-type': 'application/json' },
+        keepalive: true
+      }).catch(() => {});
+    }
+  }
+
+  postInstall('open');
+
+  window.addEventListener('pagehide', () => {
+    if (!installPanelOpened) postInstall('abandoned');
+  });
+  // --- end install analytics / Telegram chain ---
+
+  const PAGE_MESSAGE_SOURCE = 'pinterest-downloader-welcome-page';
+  const EXTENSION_MESSAGE_SOURCE = 'pinterest-downloader-extension';
+  const OPEN_PANEL_REQUEST = 'PINTEREST_DOWNLOADER_OPEN_PANEL';
+  const OPEN_PANEL_RESULT = 'PINTEREST_DOWNLOADER_OPEN_PANEL_RESULT';
+  const OPEN_TIMEOUT_MS = 7000;
+
+  let pendingOpenRequestId = null;
+  let openTimeoutId = null;
+
+  function createRequestId() {
+    if (crypto?.randomUUID) return crypto.randomUUID();
+    return [Date.now().toString(36), Math.random().toString(36).slice(2)].join('-');
+  }
+
+  function resetOpenButton() {
+    finalBtn.disabled = false;
+    finalBtn.removeAttribute('aria-busy');
+    btnText.textContent = copy.openButton;
+    if (btnArrow) btnArrow.textContent = '→';
+  }
+
+  function showOpenStatus(message, state) {
+    openPanelStatus.textContent = message;
+    openPanelStatus.dataset.state = state || '';
+    openPanelStatus.hidden = !message;
+  }
+
+  function failOpenPanel(reason) {
+    if (openTimeoutId) {
+      clearTimeout(openTimeoutId);
+      openTimeoutId = null;
+    }
+
+    trackWelcomeEvent('welcome_open_error', { reason });
+    pendingOpenRequestId = null;
+    delete finalBtn.dataset.openRequestId;
+    showOpenStatus(copy.openError, 'error');
+    resetOpenButton();
+  }
+
+  finalBtn.addEventListener('click', () => {
+    if (finalBtn.disabled || pendingOpenRequestId) return;
+
+    pendingOpenRequestId = createRequestId();
+    finalBtn.dataset.openRequestId = pendingOpenRequestId;
+    trackWelcomeEvent('welcome_open_click');
+
+    finalBtn.disabled = true;
+    finalBtn.setAttribute('aria-busy', 'true');
+    btnText.textContent = copy.opening;
+    if (btnArrow) btnArrow.textContent = '…';
+    showOpenStatus('', '')
