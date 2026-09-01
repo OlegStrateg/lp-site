@@ -43,8 +43,9 @@
           <div class="qitem"><div class="time">19:00</div><div class="thumb t4"></div><div><div class="qtitle">Уютный балкон: 7 простых решений</div><div class="qmeta">Small Spaces · #balcony</div></div><span class="status scheduled">Запланирован</span></div>
         </div></div></div>
         <div class="card"><div class="cardhead"><h3>Контроль системы</h3><span class="pill">Прототип</span></div><div class="cardbody">
-          <div class="row" style="padding:7px 0"><span class="muted">Pinterest API</span><b style="font-size:12px">Не подключён</b></div>
-          <div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Mock</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Preview API</span><b id="previewApiStatus" style="font-size:12px">Проверка…</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Pinterest API</span><b id="pinterestApiStatus" style="font-size:12px">Не подключён</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Не подключён</b></div>
           <div class="row" style="padding:7px 0"><span class="muted">Последняя публикация</span><b style="font-size:12px">14:01</b></div>
           <div class="row" style="padding:7px 0"><span class="muted">Ошибки сегодня</span><b style="font-size:12px;color:#b5001c">1</b></div>
           <div class="notice" style="margin-top:12px">Live-режим намеренно выключен. Пока мы проверяем UX, интерфейс ничего не публикует в Pinterest.</div>
@@ -103,7 +104,7 @@
         <div class="setting"><div class="row"><h3>Pinterest</h3><span class="pill off">Не подключён</span></div><div class="muted">Подключение через официальный OAuth. Токены в интерфейсе не показываются.</div><button class="btn red" style="margin-top:14px" id="connectBtn">Подключить Pinterest</button></div>
         <div class="setting"><h3>Безопасность публикации</h3><div class="row"><div><b style="font-size:12px">Live-публикация</b><div class="muted">По умолчанию выключена</div></div><div class="toggle" id="liveToggle"></div></div><div class="field"><label>Дневной лимит публикаций</label><input value="5"></div><div class="notice" style="margin-top:12px">В прототипе переключатель Live не активирует реальные публикации. Это только демонстрация UX.</div></div>
         <div class="setting"><h3>Контент</h3><div class="field"><label>Режим одобрения</label><select><option>Всегда вручную</option><option>Только новые темы</option><option>Автоматически после проверки</option></select></div><div class="field"><label>Основной формат</label><select><option>Вертикальный Pin</option><option>Видео Pin</option></select></div></div>
-        <div class="setting"><h3>Система</h3><div class="row" style="padding:7px 0"><span class="muted">API</span><b style="font-size:12px">Mock</b></div><div class="row" style="padding:7px 0"><span class="muted">База</span><b style="font-size:12px">Mock</b></div><div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Mock</b></div><button class="btn" style="margin-top:10px" id="testBtn">Запустить тест интерфейса</button></div>
+        <div class="setting"><h3>Система</h3><div class="row" style="padding:7px 0"><span class="muted">Preview API</span><b id="settingsApiStatus" style="font-size:12px">Проверка…</b></div><div class="row" style="padding:7px 0"><span class="muted">База</span><b style="font-size:12px">Не подключена</b></div><div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Не подключён</b></div><button class="btn" style="margin-top:10px" id="testBtn">Запустить тест интерфейса</button></div>
       </div>
     </section>
   </main>
