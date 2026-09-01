@@ -125,6 +125,7 @@ function renderAuthState(){
   const loginButton=document.getElementById('adminLoginBtn');
   const addButton=document.getElementById('addAccountBtn');
   const testButton=document.getElementById('sandboxTestPinBtn');
+  const cycleButton=document.getElementById('cycleVerifyBtn');
   const pill=document.getElementById('accountsStatusPill');
 
   authStatus.textContent=adminAuthenticated?'Вход выполнен':'Нужен вход';
@@ -132,6 +133,7 @@ function renderAuthState(){
   loginButton.textContent=adminAuthenticated?'Выйти':'Войти в админку';
   addButton.disabled=!adminAuthenticated;
   testButton.disabled=!adminAuthenticated||accounts.length===0;
+  cycleButton.disabled=!adminAuthenticated||accounts.length===0;
   pill.textContent=adminAuthenticated?(accounts.length?`${accounts.length} подключено`:'Нет аккаунтов'):'Нужен вход';
   pill.className=adminAuthenticated&&accounts.length?'pill ok':'pill off';
 }
@@ -153,6 +155,7 @@ async function loadAccounts(){
   if(!accounts.some(a=>a.id===activeAccountId)) activeAccountId=accounts[0]?.id||'';
   renderAuthState();
   renderAccounts();
+  if(activeAccountId) await runCycleDiagnostics(false);
 }
 
 function renderAccounts(){
@@ -186,9 +189,11 @@ function renderAccounts(){
         <button class="btn small selectAccountBtn">Выбрать</button>
         <button class="btn small disconnectAccountBtn">Отключить</button>
       </div>`;
-    row.querySelector('.selectAccountBtn').onclick=()=>{
+    row.querySelector('.selectAccountBtn').onclick=async()=>{
       activeAccountId=account.id;
       renderAccounts();
+      resetCycleDiagnostics();
+      await runCycleDiagnostics(false);
       toast('Аккаунт выбран');
     };
     row.querySelector('.disconnectAccountBtn').onclick=async()=>{
@@ -269,6 +274,118 @@ document.getElementById('submitConnectAccount').onclick=async()=>{
   await loadAccounts();
   toast('Pinterest-аккаунт подключён');
 };
+
+function cycleStateLabel(value){
+  if(value===true)return {text:'PASS',color:'#19764d'};
+  if(value===false)return {text:'FAIL',color:'#b5001c'};
+  return {text:'—',color:''};
+}
+
+function setCycleCell(id,value,customText=''){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const state=cycleStateLabel(value);
+  el.textContent=customText||state.text;
+  el.style.color=customText
+    ? (value===true?'#19764d':value===false?'#b5001c':'#a86a00')
+    : state.color;
+}
+
+function resetCycleDiagnostics(){
+  const status=document.getElementById('cycleDiagStatus');
+  if(status){status.textContent='Не проверено';status.className='pill off';}
+  for(const id of ['diagListPins','diagGetPin','diagIdMatch','diagBoard','diagMetrics']){
+    const el=document.getElementById(id);
+    if(el){el.textContent='—';el.style.color='';}
+  }
+  const pin=document.getElementById('diagPinId');
+  const checked=document.getElementById('diagChecked');
+  const note=document.getElementById('diagNote');
+  if(pin)pin.textContent='Pin ID: —';
+  if(checked)checked.textContent='Проверка: —';
+  if(note)note.innerHTML='В Sandbox отдельная органическая аналитика не считается обязательной. Если Pinterest вернёт <code>pin_metrics</code> через Get Pin, покажем это отдельно.';
+}
+
+function renderCycleDiagnostics(data){
+  const status=document.getElementById('cycleDiagStatus');
+  const checks=data?.checks||{};
+
+  if(data?.reason==='no_pins'){
+    if(status){status.textContent='Нет Pin';status.className='pill off';}
+    setCycleCell('diagListPins',checks.list_pins);
+    setCycleCell('diagGetPin',null);
+    setCycleCell('diagIdMatch',null);
+    setCycleCell('diagBoard',null);
+    setCycleCell('diagMetrics',null,'Нет данных');
+    document.getElementById('diagPinId').textContent='Pin ID: —';
+    document.getElementById('diagChecked').textContent='Проверка: '+(data.verified_at?new Date(data.verified_at).toLocaleString('ru-RU'):'—');
+    document.getElementById('diagNote').textContent='В Sandbox пока нет Pin. Создай тестовый Pin — после публикации сервер проверит его чтение автоматически.';
+    return;
+  }
+
+  if(status){
+    status.textContent=data?.verified?'API-цикл PASS':'Нужна проверка';
+    status.className=data?.verified?'pill ok':'pill off';
+  }
+
+  setCycleCell('diagListPins',checks.list_pins);
+  setCycleCell('diagGetPin',checks.get_pin);
+  setCycleCell('diagIdMatch',checks.id_match);
+  setCycleCell('diagBoard',checks.board_present);
+
+  if(checks.metrics_available){
+    const count=Number(data?.metrics?.key_count)||0;
+    setCycleCell('diagMetrics',true,'Доступны'+(count?' · '+count:''));
+  }else{
+    setCycleCell('diagMetrics',null,'Не возвращены');
+  }
+
+  document.getElementById('diagPinId').textContent='Pin ID: '+(data?.pin?.id||'—');
+  document.getElementById('diagChecked').textContent='Проверка: '+(data?.verified_at?new Date(data.verified_at).toLocaleString('ru-RU'):'—');
+
+  const note=document.getElementById('diagNote');
+  if(note){
+    note.textContent=data?.analytics_note||(
+      checks.metrics_available
+        ? 'Pinterest вернул сводные Pin metrics через Get Pin.'
+        : 'Sandbox успешно читает Pin, но pin_metrics не вернул. Это не провал Sandbox-цикла; отдельную органическую аналитику проверим после Trial/Production.'
+    );
+  }
+}
+
+async function runCycleDiagnostics(showToast=true){
+  if(!adminAuthenticated||!activeAccountId){
+    if(showToast)toast('Сначала выбери подключённый аккаунт');
+    return false;
+  }
+
+  const button=document.getElementById('cycleVerifyBtn');
+  if(button){button.disabled=true;button.textContent='Проверка…';}
+
+  const {response,data}=await fetchJson('api/diagnostics?account_id='+encodeURIComponent(activeAccountId));
+
+  if(button){
+    button.disabled=!adminAuthenticated||accounts.length===0;
+    button.textContent='Проверить API-цикл';
+  }
+
+  if(!response.ok||!data?.ok){
+    resetCycleDiagnostics();
+    const status=document.getElementById('cycleDiagStatus');
+    if(status){status.textContent='Ошибка';status.className='pill off';}
+    if(showToast)toast('Pinterest: '+(data?.message||data?.error||response.status));
+    return false;
+  }
+
+  renderCycleDiagnostics(data);
+  if(showToast){
+    if(data.reason==='no_pins')toast('Sandbox Pin ещё не найден');
+    else toast(data.verified?'Pinterest API-цикл подтверждён':'API-цикл требует проверки');
+  }
+  return Boolean(data.verified);
+}
+
+document.getElementById('cycleVerifyBtn').onclick=()=>runCycleDiagnostics(true);
 
 async function loadBoards(accountId){
   boardsLoadFailed=false;
@@ -393,12 +510,17 @@ document.getElementById('createSandboxPin').onclick=async()=>{
   }
 
   const pinId=data.pin?.id||'';
-  const verify=await fetchJson(
-    'api/pin?account_id='+encodeURIComponent(accountId)+'&pin_id='+encodeURIComponent(pinId)
-  );
-  const verified=Boolean(verify.response.ok&&verify.data?.ok);
   sandboxPinModal.classList.remove('show');
-  toast('Sandbox Pin создан'+(verified?' и прочитан обратно':'')+' · ID '+pinId);
+
+  if(data.verification?.ok){
+    toast('Sandbox Pin создан и сервером прочитан обратно · ID '+pinId);
+  }else{
+    toast('Sandbox Pin создан · readback требует проверки · ID '+pinId);
+  }
+
+  activeAccountId=accountId;
+  await loadAccounts();
+  await runCycleDiagnostics(false);
 };
 
 document.getElementById('testBtn').onclick=async()=>{
