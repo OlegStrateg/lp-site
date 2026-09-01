@@ -265,10 +265,11 @@ jobs:
             if (!["unauthorized","preview_auth_not_configured"].includes(x.error)) process.exit(1);
           '
 
-          grep -F "CREATE_SANDBOX_PIN" public/internal/pinterest-automation/app.js
-          grep -F "Pinterest Sandbox" public/internal/pinterest-automation/index.html
+          grep -F "CREATE_SANDBOX_PIN" functions/internal/pinterest-automation/api/pins.js
+          grep -F "mode: 'sandbox'" functions/internal/pinterest-automation/health.js
+          grep -F "Production-публикация заблокирована" public/internal/pinterest-automation/index.html
 
-          echo "Pinterest Sandbox gateway PASS: deployed, live=false, auth gate enforced"
+          echo "Pinterest Sandbox gateway PASS: server create path present, live=false, auth gate enforced"
 
 
       - name: Verify LayerPorter Home V3
