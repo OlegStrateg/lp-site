@@ -44,17 +44,21 @@
 
 ## Опубликованные Home-локали
 
-После LP-036:
+После LP-037:
 - English (EN) → /
 - Русский (RU) → /ru/
 - Deutsch (DE) → /de/
 - Español (ES) → /es/
+- Français (FR) → /fr/
+- Português (PT) → /pt-br/
+- 日本語 (JA) → /ja/
+- 简体中文 (ZH) → /zh-cn/
 
 Для опубликованных Home-страниц:
 - self-canonical;
-- reciprocal hreflang en ↔ ru;
+- reciprocal hreflang между всеми реально опубликованными Home-локалями;
 - x-default → /;
-- обе страницы находятся в sitemap;
+- все опубликованные Home-страницы находятся в sitemap;
 - языковое меню показывает полное название + код;
 - без автоматического редиректа по языку браузера.
 
@@ -65,3 +69,30 @@ DE Home использует root «Browser-Erweiterungen», secondary «Chrome-
 
 
 ES Home использует root «extensiones de navegador», secondary «extensiones de Chrome» и «herramientas online». Основной пункт Español (ES) ведёт на /es/. Региональный Home /es-419/ в LP-036 не создаётся.
+
+
+## LP-037 — семантика новых Home-локалей
+
+FR:
+- root: «extensions de navigateur»;
+- secondary: «extensions Chrome», «outils en ligne».
+
+PT-BR:
+- root: «extensões de navegador»;
+- secondary: «extensões para Chrome», «ferramentas online»;
+- основной human-menu URL: /pt-br/;
+- /pt-pt/ Home в этой задаче не создаётся.
+
+JA:
+- root: «ブラウザ拡張機能»;
+- secondary: «Chrome 拡張機能», «オンラインツール».
+
+ZH-CN:
+- root: «浏览器扩展程序»;
+- secondary: «Chrome 扩展程序», «在线工具»;
+- основной human-menu URL: /zh-cn/;
+- /zh-tw/ Home в этой задаче не создаётся.
+
+Общее правило:
+- exact-intent конвертеров и Pinterest остаётся на дочерних страницах;
+- Home покрывает широкую категорию продуктов LayerPorter, а не отдельную операцию.
