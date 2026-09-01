@@ -1,6 +1,46 @@
 const toast = document.getElementById('toast');
 const lang = (document.documentElement.lang || 'en').toLowerCase();
-const copy = lang.startsWith('es')
+const copy = lang.startsWith('fr')
+  ? {
+      downloadSelected: (count) => `Télécharger ${count} éléments`,
+      selectMedia: 'Sélectionnez un média',
+      selectAtLeastOne: 'Sélectionnez au moins un fichier',
+      selectedWouldDownload: 'Démo : les fichiers sélectionnés seraient téléchargés ici',
+      directDownload: 'Démo : téléchargement direct',
+      selectedInput: (format) => `${format} sélectionné comme format d’entrée`,
+      convertDemo: (format) => `Démo : ${format} → JPG`,
+    }
+  : lang.startsWith('pt')
+  ? {
+      downloadSelected: (count) => `Baixar ${count} selecionados`,
+      selectMedia: 'Selecione a mídia',
+      selectAtLeastOne: 'Selecione pelo menos um arquivo',
+      selectedWouldDownload: 'Demo: os arquivos selecionados seriam baixados aqui',
+      directDownload: 'Demo: download direto',
+      selectedInput: (format) => `${format} selecionado como formato de entrada`,
+      convertDemo: (format) => `Demo: ${format} → JPG`,
+    }
+  : lang.startsWith('ja')
+  ? {
+      downloadSelected: (count) => `選択した${count}件をダウンロード`,
+      selectMedia: 'メディアを選択',
+      selectAtLeastOne: '少なくとも1つのファイルを選択してください',
+      selectedWouldDownload: 'デモ：選択したファイルはここからダウンロードされます',
+      directDownload: 'デモ：直接ダウンロード',
+      selectedInput: (format) => `${format} を入力形式に選択`,
+      convertDemo: (format) => `デモ：${format} → JPG`,
+    }
+  : lang.startsWith('zh')
+  ? {
+      downloadSelected: (count) => `下载已选 ${count} 项`,
+      selectMedia: '选择媒体',
+      selectAtLeastOne: '请至少选择一个文件',
+      selectedWouldDownload: '演示：所选文件将在此下载',
+      directDownload: '演示：直接下载',
+      selectedInput: (format) => `已选择 ${format} 作为输入格式`,
+      convertDemo: (format) => `演示：${format} → JPG`,
+    }
+  : lang.startsWith('es')
   ? {
       downloadSelected: (count) => `Descargar ${count} seleccionados`,
       selectMedia: 'Selecciona contenido',
