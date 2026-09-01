@@ -267,3 +267,42 @@ jobs:
           curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/?verify=${{ github.sha }}" -o /tmp/layerporter-home.html
           grep -F '<meta name="p:domain_verify" content="272122ef2e4a2ceeacbd8a6bc0b0e71f">' /tmp/layerporter-home.html
           echo "Pinterest domain verification meta PASS"
+
+      - name: Verify Pinterest account admin locked
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com/internal/pinterest-automation"
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/admin/auth?verify=${{ github.sha }}" -o /tmp/pa-admin-auth.json
+          node -e '
+            const fs=require("fs");
+            const x=JSON.parse(fs.readFileSync("/tmp/pa-admin-auth.json","utf8"));
+            if(x.ok!==true || x.authenticated!==false) process.exit(1);
+          '
+
+          STATUS="$(curl -sS -o /tmp/pa-admin-accounts.json -w "%{http_code}" --max-time 20 -A "Mozilla/5.0" "$BASE/admin/accounts?verify=${{ github.sha }}")"
+          if [ "$STATUS" != "401" ]; then
+            echo "Admin accounts endpoint must be locked without a session, got HTTP $STATUS"
+            cat /tmp/pa-admin-accounts.json
+            exit 1
+          fi
+
+          node -e '
+            const fs=require("fs");
+            const x=JSON.parse(fs.readFileSync("/tmp/pa-admin-accounts.json","utf8"));
+            if(x.error!=="unauthorized") process.exit(1);
+          '
+
+          grep -F "Подключить аккаунт" public/internal/pinterest-automation/index.html
+          grep -F "admin/accounts" public/internal/pinterest-automation/app.js
+          grep -F "account_id" functions/internal/pinterest-automation/api/pins.js
+
+          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions --exclude-dir=node_modules; then
+            echo "Pinterest access token pattern found in repository files"
+            exit 1
+          fi
+
+          echo "Pinterest account admin PASS: locked, multi-account aware, no token in source"
+
