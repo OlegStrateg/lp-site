@@ -50,6 +50,16 @@ jobs:
           command: pages deploy dist --project-name=layerporter --branch=main --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Deploy Pinterest queue worker
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx wrangler@3.90.0 deploy --config wrangler-pinterest-worker.toml
+          echo "Pinterest queue Worker deployed"
+
       - name: Verify all 52 Pinterest landings
         shell: bash
         run: |
@@ -411,4 +421,53 @@ jobs:
           fi
 
           echo "Pinterest cycle diagnostics PASS: server readback, list/get checks, locked endpoint"
+
+      - name: Verify Pinterest PIN-005 live blocks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com/internal/pinterest-automation"
+
+          grep -F 'crons = ["*/5 * * * *"]' wrangler-pinterest-worker.toml
+          grep -F "network_uncertain" worker/pinterest-queue-worker.js
+          grep -F "server_uncertain" worker/pinterest-queue-worker.js
+          grep -F "daily_limit" worker/pinterest-queue-worker.js
+          grep -F "api/content" public/internal/pinterest-automation/app.js
+          grep -F "api/queue" public/internal/pinterest-automation/app.js
+          grep -F "api/analytics" public/internal/pinterest-automation/app.js
+          grep -F "api/settings" public/internal/pinterest-automation/app.js
+
+          if grep -Fq "Тестовый Pin" public/internal/pinterest-automation/index.html; then
+            echo "Technical Test Pin control must not be visible in product UI"
+            exit 1
+          fi
+
+          if grep -Fq "Проверить API-цикл" public/internal/pinterest-automation/index.html; then
+            echo "Technical API-cycle control must not be visible in product UI"
+            exit 1
+          fi
+
+          for endpoint in content queue analytics settings dashboard; do
+            STATUS="$(curl -sS -o "/tmp/pa-$endpoint.json" -w "%{http_code}" --max-time 20 -A "Mozilla/5.0" "$BASE/api/$endpoint?verify=${{ github.sha }}")"
+            if [ "$STATUS" != "401" ]; then
+              echo "$endpoint must be admin-locked, got HTTP $STATUS"
+              cat "/tmp/pa-$endpoint.json"
+              exit 1
+            fi
+          done
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/health?verify=${{ github.sha }}" -o /tmp/pa-pin005-health.json
+          node -e '
+            const fs=require("fs");
+            const x=JSON.parse(fs.readFileSync("/tmp/pa-pin005-health.json","utf8"));
+            if(x.ok!==true || x.livePublishing!==false || x.workerConfigured!==true) process.exit(1);
+          '
+
+          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions worker --exclude-dir=node_modules; then
+            echo "Pinterest access token pattern found in source"
+            exit 1
+          fi
+
+          echo "PIN-005 PASS: live blocks locked, cron worker configured, Production Live OFF"
 
