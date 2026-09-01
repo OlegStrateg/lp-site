@@ -353,8 +353,8 @@ jobs:
           BASE="https://layerporter.com/internal/pinterest-automation"
 
           grep -F "CREATE_SANDBOX_BOARD" functions/internal/pinterest-automation/api/boards.js
-          grep -F "LayerPorter Sandbox Test" public/internal/pinterest-automation/app.js
-          grep -F "createSandboxTestBoard" public/internal/pinterest-automation/app.js
+          grep -F "pinterestRequest(account, '/boards'" functions/internal/pinterest-automation/api/boards.js
+          grep -F "sandbox_account_required" functions/internal/pinterest-automation/api/boards.js
 
           STATUS="$(curl -sS -o /tmp/pa-create-board.json -w "%{http_code}" --max-time 20             -A "Mozilla/5.0"             -H "Content-Type: application/json"             -X POST             --data '{"confirm":"CREATE_SANDBOX_BOARD","account_id":"acct_test","name":"LayerPorter Sandbox Test"}'             "$BASE/api/boards")"
 
@@ -382,8 +382,7 @@ jobs:
           grep -F "pin_metrics=true" functions/internal/pinterest-automation/api/diagnostics.js
           grep -F "READBACK_DELAYS_MS" functions/internal/pinterest-automation/api/pins.js
           grep -F "list_contains_pin" functions/internal/pinterest-automation/api/diagnostics.js
-          grep -F "Проверить API-цикл" public/internal/pinterest-automation/index.html
-          grep -F "runCycleDiagnostics" public/internal/pinterest-automation/app.js
+          grep -F "requireAdmin(request, env)" functions/internal/pinterest-automation/api/diagnostics.js
 
           STATUS=""
           for i in {1..18}; do
