@@ -1,6 +1,16 @@
 const toast = document.getElementById('toast');
 const lang = (document.documentElement.lang || 'en').toLowerCase();
-const copy = lang.startsWith('ru')
+const copy = lang.startsWith('de')
+  ? {
+      downloadSelected: (count) => `${count} ausgewählte herunterladen`,
+      selectMedia: 'Medien auswählen',
+      selectAtLeastOne: 'Wähle mindestens eine Datei aus',
+      selectedWouldDownload: 'Demo: Die ausgewählten Dateien würden hier heruntergeladen',
+      directDownload: 'Demo: direkter Download',
+      selectedInput: (format) => `${format} als Eingabeformat gewählt`,
+      convertDemo: (format) => `Demo: ${format} → JPG`,
+    }
+  : lang.startsWith('ru')
   ? {
       downloadSelected: (count) => `Скачать выбранные: ${count}`,
       selectMedia: 'Выберите медиа',

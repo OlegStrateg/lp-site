@@ -44,11 +44,12 @@
 
 ## Опубликованные Home-локали
 
-После LP-034:
+После LP-035:
 - English (EN) → /
 - Русский (RU) → /ru/
+- Deutsch (DE) → /de/
 
-Для обеих страниц:
+Для опубликованных Home-страниц:
 - self-canonical;
 - reciprocal hreflang en ↔ ru;
 - x-default → /;
@@ -57,3 +58,6 @@
 - без автоматического редиректа по языку браузера.
 
 RU Home использует широкий root «расширения для браузера». Формулировки Chrome и Яндекс Браузера используются как уточняющие secondary-кластеры, чтобы не ограничивать российскую версию только Chrome.
+
+
+DE Home использует root «Browser-Erweiterungen», secondary «Chrome-Erweiterungen» и «Online-Tools». Конкретные converter-intents остаются на дочерних страницах.
