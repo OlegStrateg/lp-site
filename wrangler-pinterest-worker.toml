@@ -1,0 +1,11 @@
+name = "layerporter-pinterest-queue"
+main = "worker/pinterest-queue-worker.js"
+compatibility_date = "2026-07-01"
+workers_dev = false
+
+[[kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "a9cb0f03a191428085051e44df201bc6"
+
+[triggers]
+crons = ["*/5 * * * *"]
