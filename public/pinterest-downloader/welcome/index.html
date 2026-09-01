@@ -487,20 +487,23 @@ h1{
   }
 
   function detectLocale() {
-    const forced = new URLSearchParams(location.search).get("lang");
-    const forcedLocale = normalizeLocale(forced);
-    if (forcedLocale) return forcedLocale;
+    const params = new URLSearchParams(location.search);
 
-    const browserLanguages =
-      Array.isArray(navigator.languages) && navigator.languages.length
-        ? navigator.languages
-        : [navigator.language || "en"];
-
-    for (const lang of browserLanguages) {
-      const locale = normalizeLocale(lang);
-      if (locale) return locale;
+    // Основной источник — UI locale, явно переданный расширением,
+    // по той же схеме, что уже используется на uninstall-странице.
+    const explicitLocale = params.get("locale");
+    if (explicitLocale !== null) {
+      return normalizeLocale(explicitLocale) || "en";
     }
 
+    // Ручной override оставляем только для QA.
+    const qaLocale = params.get("lang");
+    if (qaLocale !== null) {
+      return normalizeLocale(qaLocale) || "en";
+    }
+
+    // Обычная веб-страница не может надёжно определить Chrome UI language.
+    // Без явно переданного locale безопасный fallback — English.
     return "en";
   }
 
