@@ -20,6 +20,12 @@ function openScreen(id){
 nav.forEach(b=>b.onclick=()=>openScreen(b.dataset.screen));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openScreen(b.dataset.go));
 
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[ch]);
+}
+
 function toast(message){
   const el=document.getElementById('toast');
   el.textContent=message;
@@ -43,7 +49,7 @@ document.getElementById('createDraft').onclick=()=>{
   const board=document.getElementById('draftBoard').value;
   const card=document.createElement('div');
   card.className='content-card';
-  card.innerHTML=`<div class="content-img"></div><div class="content-body"><div class="row"><span class="status draft">Черновик</span><span class="muted">только что</span></div><div class="content-title" style="margin-top:10px">${topic}</div><div class="muted" style="margin-top:7px">${board} · новый черновик</div><div class="row" style="margin-top:12px"><button class="btn small approveBtn">Одобрить</button><button class="btn small">Редактировать</button></div></div>`;
+  card.innerHTML=`<div class="content-img"></div><div class="content-body"><div class="row"><span class="status draft">Черновик</span><span class="muted">только что</span></div><div class="content-title" style="margin-top:10px">${escapeHtml(topic)}</div><div class="muted" style="margin-top:7px">${escapeHtml(board)} · новый черновик</div><div class="row" style="margin-top:12px"><button class="btn small approveBtn">Одобрить</button><button class="btn small">Редактировать</button></div></div>`;
   document.getElementById('contentGrid').prepend(card);
   draftModal.classList.remove('show');
   openScreen('content');
@@ -168,10 +174,10 @@ function renderAccounts(){
     row.className='account-card'+(account.id===activeAccountId?' active':'');
     row.innerHTML=`
       <div class="account-main">
-        <div class="account-avatar">${(account.label||account.username||'P').slice(0,1).toUpperCase()}</div>
+        <div class="account-avatar">${escapeHtml((account.label||account.username||'P').slice(0,1).toUpperCase())}</div>
         <div>
-          <div class="account-title">${account.label||account.username||'Pinterest account'}</div>
-          <div class="account-meta">${account.username?'@'+account.username+' · ':''}Sandbox · ${account.board_count??0} досок · ${account.token_masked||'токен сохранён'}</div>
+          <div class="account-title">${escapeHtml(account.label||account.username||'Pinterest account')}</div>
+          <div class="account-meta">${account.username?'@'+escapeHtml(account.username)+' · ':''}Sandbox · ${Number(account.board_count)||0} досок · ${escapeHtml(account.token_masked||'токен сохранён')}</div>
         </div>
       </div>
       <div class="account-card-actions">
