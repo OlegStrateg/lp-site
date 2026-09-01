@@ -1,85 +1,616 @@
 ---
-// Uninstall-survey target for the browser extensions' chrome.runtime.setUninstallURL.
-// Deliberately noindex: it is a destination page, not a search landing.
-//
-// Analytics pass 12.08: opening this page records one uninstall immediately.
-// If the visitor later submits/skips/abandons after selecting a reason, the
-// same uninstall session is updated server-side and the original Telegram
-// message is edited instead of sending a second uninstall notification.
-// The page remains best-effort and never blocks the visitor on the network.
-//
-// popup-cro pass (04.08): win-back copy (reassurance, never guilt-tripping)
-// keyed off the selected reason, plus a placeholder reinstall link — real
-// Chrome Web Store URL doesn't exist yet, filled in once the extension ships.
-// i18n is client-side text-swap (reason keys stay in English for KV/Telegram,
-// only the visible copy changes) — the static build has no per-request
-// locale, so <html lang> stays "en" site-wide; only .fbx text is translated.
 import PageLayout from '../layouts/PageLayout.astro';
 
 const reasons = [
-  { key: 'capture', label: "Didn't capture the page correctly" },
-  { key: 'missing-feature', label: 'Missing a feature I needed' },
-  { key: 'slow-crash', label: 'Too slow, or it crashed' },
-  { key: 'found-alternative', label: 'Found something that fit better' },
-  { key: 'unsure-how', label: "Wasn't sure how to use it" },
-  { key: 'trying-out', label: 'Just trying it out, not a permanent no' },
-  { key: 'privacy', label: 'Privacy or permissions concern' },
-  { key: 'other', label: 'Other' },
+  { key: 'capture', label: "Couldn't download what I needed" },
+  { key: 'missing-feature', label: 'A feature was missing' },
+  { key: 'slow-crash', label: 'Too slow or errors' },
+  { key: 'found-alternative', label: 'Found another tool' },
+  { key: 'unsure-how', label: "Didn't understand how to use it" },
+  { key: 'trying-out', label: 'I was just trying it' },
+  { key: 'privacy', label: 'Permissions or privacy' },
+  { key: 'other', label: 'Something else' },
 ];
 ---
 
 <PageLayout
-  title="Sorry to see you go — LayerPorter"
-  description="Tell us in ten seconds why you removed the extension. No email, nothing saved to an account."
+  title="Pinterest Downloader removed — LayerPorter"
+  description="Tell us why you removed Pinterest Downloader. One quick answer helps us decide what to improve next."
   canonicalPath="/uninstall/"
   robots="noindex, nofollow"
 >
-  <div class="fbx un-quiet">
-  <h1 id="un-title">Before you go</h1>
-  <p class="answer-first" id="un-intro">
-    This takes ten seconds, no email, nothing saved to an account. It just tells us what to fix.
-  </p>
+  <Fragment slot="head">
+    <style is:global>
+      .site-header,
+      .site-footer {
+        display: none !important;
+      }
 
-  <div class="feedback-card" id="uninstall-widget" data-state="form">
-    <form id="uninstall-form" class="feedback-form" novalidate>
-      <fieldset class="chip-group">
-        <legend class="field-label" id="un-chip-legend">What made you uninstall?</legend>
-        {reasons.map((r) => (
-          <label class="chip">
-            <input type="checkbox" data-key={r.key} value={r.label} />
-            <span data-i18n-key={r.key}>{r.label}</span>
-          </label>
-        ))}
-      </fieldset>
+      body {
+        margin: 0;
+        background: #f7f7f5;
+        color: #111;
+      }
 
-      <div class="win-back-note" id="un-winback" hidden></div>
+      main.wrap {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
 
-      <label class="field-label" for="uninstall-text" id="un-text-label">Anything else?</label>
-      <textarea
-        id="uninstall-text"
-        class="feedback-textarea"
-        placeholder="Optional — a sentence is enough."
-      ></textarea>
+      .page-prose {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
 
-      <div class="uninstall-actions">
-        <button type="submit" class="btn" id="uninstall-send-btn">Send</button>
-        <a class="uninstall-skip" href="/" id="uninstall-skip-link">Skip</a>
+      .uninstall-page,
+      .uninstall-page * {
+        box-sizing: border-box;
+      }
+
+      .uninstall-page {
+        min-height: 100vh;
+        padding: 28px 20px 48px;
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .uninstall-shell {
+        width: min(100%, 760px);
+        margin: 0 auto;
+      }
+
+      .uninstall-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        margin-bottom: 28px;
+        color: #7a7a75;
+        font-size: 13px;
+        font-weight: 760;
+        letter-spacing: 0.02em;
+      }
+
+      .uninstall-brand span {
+        color: #111;
+      }
+
+      .uninstall-hero {
+        text-align: center;
+      }
+
+      .product-lockup {
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 8px 12px 8px 8px;
+        border: 1px solid #e1e1dc;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04);
+        text-align: left;
+      }
+
+      .product-lockup img {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        object-fit: cover;
+        flex: 0 0 auto;
+      }
+
+      .product-copy {
+        min-width: 0;
+      }
+
+      .product-copy strong,
+      .product-copy span {
+        display: block;
+      }
+
+      .product-copy strong {
+        color: #111;
+        font-size: 14px;
+        line-height: 1.2;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .product-copy span {
+        margin-top: 3px;
+        color: #80807a;
+        font-size: 11px;
+        line-height: 1.2;
+      }
+
+      .uninstall-hero h1 {
+        max-width: 660px;
+        margin: 0 auto;
+        color: #111;
+        font-size: clamp(30px, 5vw, 46px);
+        line-height: 1.04;
+        letter-spacing: -0.045em;
+        font-weight: 860;
+        text-wrap: balance;
+      }
+
+      .uninstall-intro {
+        max-width: 530px;
+        margin: 14px auto 0;
+        color: #686863;
+        font-size: 16px;
+        line-height: 1.55;
+        text-wrap: balance;
+      }
+
+      .survey-panel {
+        margin-top: 30px;
+        padding: 24px;
+        border: 1px solid #dfdfda;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow:
+          0 24px 70px rgba(17, 17, 17, 0.07),
+          0 2px 8px rgba(17, 17, 17, 0.035);
+      }
+
+      .feedback-form {
+        display: block;
+      }
+
+      .feedback-form[hidden],
+      .feedback-done[hidden],
+      .detail-wrap[hidden] {
+        display: none !important;
+      }
+
+      .reason-group {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+
+      .reason-group legend {
+        width: 100%;
+        margin: 0 0 13px;
+        padding: 0;
+        color: #111;
+        font-size: 13px;
+        line-height: 1.35;
+        font-weight: 800;
+      }
+
+      .reason-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .reason-card {
+        position: relative;
+        min-width: 0;
+        cursor: pointer;
+      }
+
+      .reason-card input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .reason-card span {
+        min-height: 58px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 12px 44px 12px 14px;
+        border: 1px solid #deded9;
+        border-radius: 13px;
+        background: #fff;
+        color: #242421;
+        font-size: 14px;
+        line-height: 1.3;
+        font-weight: 680;
+        transition:
+          border-color 0.16s ease,
+          background-color 0.16s ease,
+          box-shadow 0.16s ease,
+          transform 0.16s ease;
+      }
+
+      .reason-card span::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: #c7c7c1;
+        transition: background-color 0.16s ease, transform 0.16s ease;
+      }
+
+      .reason-card span::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 15px;
+        width: 18px;
+        height: 18px;
+        border: 1px solid #d6d6d1;
+        border-radius: 999px;
+        transform: translateY(-50%);
+        background: #fff;
+        transition: border-color 0.16s ease, background-color 0.16s ease;
+      }
+
+      .reason-card:hover span {
+        border-color: #bdbdb7;
+        background: #fbfbfa;
+        transform: translateY(-1px);
+      }
+
+      .reason-card input:focus-visible + span {
+        outline: 3px solid rgba(230, 0, 35, 0.16);
+        outline-offset: 2px;
+      }
+
+      .reason-card input:checked + span {
+        border-color: #e60023;
+        background: #fff6f7;
+        box-shadow: 0 0 0 1px rgba(230, 0, 35, 0.04);
+      }
+
+      .reason-card input:checked + span::before {
+        background: #e60023;
+        transform: scale(1.12);
+      }
+
+      .reason-card input:checked + span::after {
+        border-color: #e60023;
+        background:
+          radial-gradient(circle at center, #fff 0 3px, transparent 3.5px),
+          #e60023;
+      }
+
+      .detail-wrap {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #ecece8;
+        animation: detail-in 0.2s ease both;
+      }
+
+      @keyframes detail-in {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .detail-label {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 8px;
+      }
+
+      .detail-label strong {
+        color: #111;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .detail-label small {
+        color: #8b8b85;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .feedback-textarea {
+        width: 100%;
+        min-height: 90px;
+        resize: vertical;
+        padding: 12px 13px;
+        border: 1px solid #d8d8d3;
+        border-radius: 12px;
+        background: #fbfbfa;
+        color: #171715;
+        font: inherit;
+        font-size: 15px;
+        line-height: 1.45;
+        transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+      }
+
+      .feedback-textarea::placeholder {
+        color: #9a9a94;
+      }
+
+      .feedback-textarea:focus {
+        outline: none;
+        border-color: #999993;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+      }
+
+      .uninstall-actions {
+        margin-top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .uninstall-send {
+        min-height: 48px;
+        flex: 1 1 auto;
+        border: 0;
+        border-radius: 11px;
+        padding: 0 22px;
+        background: #e60023;
+        color: #fff;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 820;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(230, 0, 35, 0.16);
+        transition:
+          transform 0.16s ease,
+          background-color 0.16s ease,
+          box-shadow 0.16s ease,
+          opacity 0.16s ease;
+      }
+
+      .uninstall-send:hover:not(:disabled) {
+        background: #d50020;
+        transform: translateY(-1px);
+        box-shadow: 0 9px 22px rgba(230, 0, 35, 0.2);
+      }
+
+      .uninstall-send:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .uninstall-send:focus-visible {
+        outline: 3px solid rgba(230, 0, 35, 0.18);
+        outline-offset: 3px;
+      }
+
+      .uninstall-send:disabled {
+        background: #d9d9d4;
+        color: #8d8d87;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      .uninstall-skip {
+        flex: 0 0 auto;
+        border: 0;
+        background: transparent;
+        color: #74746f;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .uninstall-skip:hover {
+        color: #111;
+        text-decoration: underline;
+      }
+
+      .privacy-note {
+        margin: 13px 0 0;
+        color: #989892;
+        font-size: 11px;
+        line-height: 1.45;
+        text-align: center;
+      }
+
+      .feedback-done {
+        min-height: 330px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 28px 18px;
+      }
+
+      .done-inner {
+        max-width: 470px;
+      }
+
+      .done-mark {
+        width: 58px;
+        height: 58px;
+        margin: 0 auto 18px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: #111;
+        color: #fff;
+        font-size: 27px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
+      .feedback-done h2 {
+        margin: 0;
+        color: #111;
+        font-size: clamp(26px, 4vw, 34px);
+        line-height: 1.08;
+        letter-spacing: -0.035em;
+      }
+
+      .feedback-done p {
+        max-width: 430px;
+        margin: 11px auto 0;
+        color: #6f6f69;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .reinstall-link {
+        width: fit-content;
+        margin: 22px auto 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid #d8d8d3;
+        border-radius: 10px;
+        background: #fff;
+        color: #1d1d1a;
+        font-size: 13px;
+        font-weight: 780;
+        text-decoration: none;
+        transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+      }
+
+      .reinstall-link:hover {
+        border-color: #a9a9a3;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(17, 17, 17, 0.06);
+      }
+
+      .reinstall-link[hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 640px) {
+        .uninstall-page {
+          padding: 20px 14px 32px;
+        }
+
+        .uninstall-brand {
+          margin-bottom: 20px;
+        }
+
+        .product-lockup {
+          margin-bottom: 17px;
+        }
+
+        .uninstall-hero h1 {
+          font-size: clamp(30px, 9vw, 39px);
+        }
+
+        .uninstall-intro {
+          margin-top: 11px;
+          font-size: 15px;
+        }
+
+        .survey-panel {
+          margin-top: 24px;
+          padding: 16px;
+          border-radius: 17px;
+        }
+
+        .reason-grid {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .reason-card span {
+          min-height: 54px;
+        }
+
+        .uninstall-actions {
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .uninstall-send {
+          width: 100%;
+        }
+
+        .feedback-done {
+          min-height: 300px;
+          padding-left: 8px;
+          padding-right: 8px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .uninstall-page *,
+        .uninstall-page *::before,
+        .uninstall-page *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </Fragment>
+
+  <div class="uninstall-page">
+    <div class="uninstall-shell">
+      <div class="uninstall-brand" aria-label="LayerPorter"><span>LayerPorter</span></div>
+
+      <section class="uninstall-hero" aria-labelledby="un-title">
+        <div class="product-lockup" id="product-lockup">
+          <img id="un-product-icon" src="/pinterest-downloader/icon-128.png" alt="" width="38" height="38" />
+          <div class="product-copy">
+            <strong id="un-product-name">Pinterest Downloader</strong>
+            <span id="un-product-meta">Chrome extension</span>
+          </div>
+        </div>
+
+        <h1 id="un-title">Why did you uninstall Pinterest Downloader?</h1>
+        <p class="uninstall-intro" id="un-intro">Choose the main reason. It takes a couple of seconds.</p>
+      </section>
+
+      <div class="survey-panel" id="uninstall-widget" data-state="form">
+        <form id="uninstall-form" class="feedback-form" novalidate>
+          <fieldset class="reason-group">
+            <legend id="un-chip-legend">Choose one reason</legend>
+            <div class="reason-grid">
+              {reasons.map((r) => (
+                <label class="reason-card">
+                  <input type="radio" name="uninstall-reason" data-key={r.key} value={r.label} />
+                  <span data-i18n-key={r.key}>{r.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div class="detail-wrap" id="detail-wrap" hidden>
+            <label class="detail-label" for="uninstall-text">
+              <strong id="un-detail-label">Want to add a little more?</strong>
+              <small id="un-detail-optional">Optional</small>
+            </label>
+            <textarea
+              id="uninstall-text"
+              class="feedback-textarea"
+              rows="3"
+              placeholder="A sentence is enough."
+            ></textarea>
+          </div>
+
+          <div class="uninstall-actions">
+            <button type="submit" class="uninstall-send" id="uninstall-send-btn" disabled>Send feedback</button>
+            <a class="uninstall-skip" href="/" id="uninstall-skip-link">Skip</a>
+          </div>
+
+          <p class="privacy-note" id="un-privacy-note">No email required. Your comment is optional.</p>
+        </form>
+
+        <div class="feedback-done" id="uninstall-done" hidden aria-live="polite">
+          <div class="done-inner">
+            <div class="done-mark" aria-hidden="true">✓</div>
+            <h2 id="un-done-title">Thanks — that helps.</h2>
+            <p id="un-done-text">We use this feedback to decide what to fix first.</p>
+            <a
+              class="reinstall-link"
+              id="un-reinstall-link"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+            >Install Pinterest Downloader again</a>
+          </div>
+        </div>
       </div>
-    </form>
-
-    <div class="feedback-done" id="uninstall-done" hidden>
-      <h2 id="un-done-title">Thanks for the two seconds.</h2>
-      <p id="un-done-text">Your answer helps us fix what's actually broken.</p>
-      <p class="reinstall-note" id="un-reinstall">
-        Change your mind? <!-- TODO(owner): swap href for the real Chrome Web Store URL once published --><a
-          href="#"
-          id="un-reinstall-link"
-          data-pending="chrome-store-url"
-          rel="noopener"
-        >reinstall it here</a>.
-      </p>
     </div>
-  </div>
   </div>
 </PageLayout>
 
@@ -90,271 +621,284 @@ const reasons = [
   const SUPPORTED_LOCALES: Locale[] = ['en', 'ru', 'es', 'de', 'fr', 'pt', 'ja'];
 
   interface Strings {
+    pageTitle: string;
     title: string;
     intro: string;
     chipLegend: string;
     reasons: Record<string, string>;
-    textLabel: string;
-    textPlaceholder: string;
+    detailLabel: string;
+    optional: string;
+    detailPlaceholder: string;
     followUp: Record<string, string>;
     send: string;
     skip: string;
+    privacy: string;
     doneTitle: string;
     doneText: string;
-    reinstallPrefix: string;
-    reinstallLink: string;
-    winBack: {
-      bug: string;
-      alt: string;
-      generic: string;
-    };
+    reinstall: string;
+    productMeta: string;
   }
 
   const TRANSLATIONS: Record<Locale, Strings> = {
     en: {
-      title: 'Before you go',
-      intro: "This takes ten seconds, no email, nothing saved to an account. It just tells us what to fix.",
-      chipLegend: 'What made you uninstall?',
+      pageTitle: '{product} removed — LayerPorter',
+      title: 'Why did you uninstall {product}?',
+      intro: 'Choose the main reason. It takes a couple of seconds.',
+      chipLegend: 'Choose one reason',
       reasons: {
-        capture: "Didn't capture the page correctly",
-        'missing-feature': 'Missing a feature I needed',
-        'slow-crash': 'Too slow, or it crashed',
-        'found-alternative': 'Found something that fit better',
-        'unsure-how': "Wasn't sure how to use it",
-        'trying-out': 'Just trying it out, not a permanent no',
-        privacy: 'Privacy or permissions concern',
-        other: 'Other',
+        capture: "Couldn't download the photos or videos I needed",
+        'missing-feature': 'A feature was missing',
+        'slow-crash': 'Too slow or errors',
+        'found-alternative': 'Found another tool',
+        'unsure-how': "Didn't understand how to use it",
+        'trying-out': 'I was just trying it',
+        privacy: 'Permissions or privacy',
+        other: 'Something else',
       },
-      textLabel: 'Anything else?',
-      textPlaceholder: 'Optional — a sentence is enough.',
+      detailLabel: 'Want to add a little more?',
+      optional: 'Optional',
+      detailPlaceholder: 'A sentence is enough.',
       followUp: {
-        capture: 'What went wrong?',
-        'missing-feature': 'What feature did you need?',
+        capture: "What couldn't you download?",
+        'missing-feature': 'Which feature did you need?',
+        'slow-crash': 'What went wrong?',
+        'found-alternative': 'Which tool worked better for you?',
+        'unsure-how': 'What was unclear?',
+        'trying-out': 'What would have made you keep it?',
         privacy: 'What concerned you?',
-        'slow-crash': 'What were you capturing when it slowed down or crashed?',
-        'found-alternative': 'Which tool fit better?',
+        other: 'Tell us in a few words.',
       },
-      send: 'Send',
+      send: 'Send feedback',
       skip: 'Skip',
-      doneTitle: 'Thanks for the two seconds.',
-      doneText: "Your answer helps us fix what's actually broken.",
-      reinstallPrefix: 'Change your mind? ',
-      reinstallLink: 'reinstall it here',
-      winBack: {
-        bug: "Sorry it broke. If you can spare one more sentence on what happened, it goes straight to the person who'll fix it.",
-        alt: 'Fair enough — thanks for giving it a try.',
-        generic: "No hard feelings. If anything above was close but not quite right, a line about it helps a lot.",
-      },
+      privacy: 'No email required. Your comment is optional.',
+      doneTitle: 'Thanks — that helps.',
+      doneText: 'We use this feedback to decide what to fix first.',
+      reinstall: 'Install Pinterest Downloader again',
+      productMeta: 'Chrome extension',
     },
     ru: {
-      title: 'Прежде чем вы уйдёте',
-      intro: 'Это займёт десять секунд, без почты, ничего не сохраняется в аккаунт. Просто подскажите, что исправить.',
-      chipLegend: 'Почему вы удалили расширение?',
+      pageTitle: '{product} удалён — LayerPorter',
+      title: 'Почему вы удалили {product}?',
+      intro: 'Выберите основную причину — это займёт пару секунд.',
+      chipLegend: 'Выберите одну причину',
       reasons: {
-        capture: 'Неправильно захватывало страницу',
+        capture: 'Не скачивало нужные фото или видео',
         'missing-feature': 'Не хватило нужной функции',
-        'slow-crash': 'Слишком медленно или падало',
-        'found-alternative': 'Нашёл что-то более подходящее',
-        'unsure-how': 'Не разобрался, как пользоваться',
-        'trying-out': 'Просто пробовал, не окончательное "нет"',
-        privacy: 'Вопросы приватности или разрешений',
-        other: 'Другое',
+        'slow-crash': 'Работало медленно или с ошибками',
+        'found-alternative': 'Нашёл другой инструмент',
+        'unsure-how': 'Не понял, как пользоваться',
+        'trying-out': 'Просто попробовал',
+        privacy: 'Не устроили разрешения или приватность',
+        other: 'Другая причина',
       },
-      textLabel: 'Что-то ещё?',
-      textPlaceholder: 'Необязательно — достаточно одной фразы.',
+      detailLabel: 'Хотите добавить пару слов?',
+      optional: 'Необязательно',
+      detailPlaceholder: 'Достаточно одной фразы.',
       followUp: {
-        capture: 'Что пошло не так?',
-        'missing-feature': 'Какая функция была нужна?',
-        privacy: 'Что именно беспокоило?',
-        'slow-crash': 'Что вы конвертировали, когда стало медленно или упало?',
+        capture: 'Что именно не удалось скачать?',
+        'missing-feature': 'Какой функции не хватило?',
+        'slow-crash': 'Что именно произошло?',
         'found-alternative': 'Какой инструмент подошёл лучше?',
+        'unsure-how': 'Что было непонятно?',
+        'trying-out': 'Что помогло бы оставить расширение?',
+        privacy: 'Что именно вызвало вопрос?',
+        other: 'Расскажите в двух словах.',
       },
-      send: 'Отправить',
+      send: 'Отправить отзыв',
       skip: 'Пропустить',
-      doneTitle: 'Спасибо за эти две секунды.',
-      doneText: 'Ваш ответ помогает исправить то, что действительно не работает.',
-      reinstallPrefix: 'Передумали? ',
-      reinstallLink: 'переустановите её здесь',
-      winBack: {
-        bug: 'Жаль, что не сработало. Если найдётся ещё пара слов о том, что случилось — они попадут прямиком к тому, кто это исправит.',
-        alt: 'Понимаем — спасибо, что попробовали.',
-        generic: 'Без обид. Если что-то из выбранного было близко, но не совсем то — короткое пояснение очень поможет.',
-      },
+      privacy: 'Email не нужен. Комментарий необязателен.',
+      doneTitle: 'Спасибо — это действительно помогает.',
+      doneText: 'По этим ответам мы понимаем, что исправлять в первую очередь.',
+      reinstall: 'Установить Pinterest Downloader снова',
+      productMeta: 'Расширение Chrome',
     },
     es: {
-      title: 'Antes de irte',
-      intro: 'Son diez segundos, sin correo, nada se guarda en una cuenta. Esto solo nos dice qué arreglar.',
-      chipLegend: '¿Por qué desinstalaste la extensión?',
+      pageTitle: '{product} desinstalado — LayerPorter',
+      title: '¿Por qué desinstalaste {product}?',
+      intro: 'Elige el motivo principal. Solo tarda un par de segundos.',
+      chipLegend: 'Elige un motivo',
       reasons: {
-        capture: 'No capturaba la página correctamente',
-        'missing-feature': 'Le faltaba una función que necesitaba',
-        'slow-crash': 'Muy lenta, o se bloqueaba',
-        'found-alternative': 'Encontré algo que me quedó mejor',
-        'unsure-how': 'No sabía bien cómo usarla',
-        'trying-out': 'Solo la estaba probando, no es un no definitivo',
-        privacy: 'Preocupación de privacidad o permisos',
+        capture: 'No descargaba las fotos o vídeos que necesitaba',
+        'missing-feature': 'Faltaba una función',
+        'slow-crash': 'Iba lento o daba errores',
+        'found-alternative': 'Encontré otra herramienta',
+        'unsure-how': 'No entendí cómo usarlo',
+        'trying-out': 'Solo lo estaba probando',
+        privacy: 'Permisos o privacidad',
         other: 'Otro motivo',
       },
-      textLabel: '¿Algo más?',
-      textPlaceholder: 'Opcional — una frase es suficiente.',
+      detailLabel: '¿Quieres añadir algo más?',
+      optional: 'Opcional',
+      detailPlaceholder: 'Una frase es suficiente.',
       followUp: {
-        capture: '¿Qué salió mal?',
+        capture: '¿Qué no pudiste descargar?',
         'missing-feature': '¿Qué función necesitabas?',
+        'slow-crash': '¿Qué salió mal?',
+        'found-alternative': '¿Qué herramienta te funcionó mejor?',
+        'unsure-how': '¿Qué no quedó claro?',
+        'trying-out': '¿Qué te habría hecho conservarla?',
         privacy: '¿Qué te preocupó?',
-        'slow-crash': '¿Qué estabas capturando cuando se puso lenta o se bloqueó?',
-        'found-alternative': '¿Qué herramienta te quedó mejor?',
+        other: 'Cuéntanoslo en pocas palabras.',
       },
-      send: 'Enviar',
+      send: 'Enviar opinión',
       skip: 'Omitir',
-      doneTitle: 'Gracias por esos dos segundos.',
-      doneText: 'Tu respuesta ayuda a arreglar lo que realmente está roto.',
-      reinstallPrefix: '¿Cambiaste de opinión? ',
-      reinstallLink: 'reinstálala aquí',
-      winBack: {
-        bug: 'Lamentamos que fallara. Si puedes añadir una frase más sobre qué pasó, llega directo a quien lo va a arreglar.',
-        alt: 'Entendido — gracias por probarla.',
-        generic: 'Sin problema. Si algo de lo elegido se acercaba pero no era exacto, una línea al respecto ayuda mucho.',
-      },
+      privacy: 'No hace falta email. El comentario es opcional.',
+      doneTitle: 'Gracias — nos ayuda mucho.',
+      doneText: 'Usamos estas respuestas para decidir qué corregir primero.',
+      reinstall: 'Instalar Pinterest Downloader de nuevo',
+      productMeta: 'Extensión de Chrome',
     },
     de: {
-      title: 'Bevor du gehst',
-      intro: 'Das dauert zehn Sekunden, keine E-Mail, nichts wird in einem Konto gespeichert. Es sagt uns nur, was zu reparieren ist.',
-      chipLegend: 'Warum hast du die Erweiterung deinstalliert?',
+      pageTitle: '{product} deinstalliert — LayerPorter',
+      title: 'Warum hast du {product} deinstalliert?',
+      intro: 'Wähle den wichtigsten Grund. Das dauert nur ein paar Sekunden.',
+      chipLegend: 'Wähle einen Grund',
       reasons: {
-        capture: 'Hat die Seite nicht richtig erfasst',
-        'missing-feature': 'Eine benötigte Funktion hat gefehlt',
-        'slow-crash': 'Zu langsam, oder sie ist abgestürzt',
-        'found-alternative': 'Etwas Besseres gefunden',
-        'unsure-how': 'War mir nicht sicher, wie man sie benutzt',
-        'trying-out': 'Nur ausprobiert, kein endgültiges Nein',
-        privacy: 'Bedenken zu Datenschutz oder Berechtigungen',
+        capture: 'Fotos oder Videos ließen sich nicht herunterladen',
+        'missing-feature': 'Eine Funktion hat gefehlt',
+        'slow-crash': 'Zu langsam oder fehlerhaft',
+        'found-alternative': 'Anderes Tool gefunden',
+        'unsure-how': 'Bedienung war unklar',
+        'trying-out': 'Nur ausprobiert',
+        privacy: 'Berechtigungen oder Datenschutz',
         other: 'Anderer Grund',
       },
-      textLabel: 'Sonst noch etwas?',
-      textPlaceholder: 'Optional — ein Satz reicht.',
+      detailLabel: 'Möchtest du noch etwas ergänzen?',
+      optional: 'Optional',
+      detailPlaceholder: 'Ein Satz reicht.',
       followUp: {
-        capture: 'Was ist schiefgelaufen?',
-        'missing-feature': 'Welche Funktion hast du gebraucht?',
-        privacy: 'Was hat dich beschäftigt?',
-        'slow-crash': 'Was hast du konvertiert, als sie langsam wurde oder abstürzte?',
-        'found-alternative': 'Welches Tool hat besser gepasst?',
+        capture: 'Was konntest du nicht herunterladen?',
+        'missing-feature': 'Welche Funktion hat gefehlt?',
+        'slow-crash': 'Was ist passiert?',
+        'found-alternative': 'Welches Tool hat besser funktioniert?',
+        'unsure-how': 'Was war unklar?',
+        'trying-out': 'Was hätte dich zum Behalten bewegt?',
+        privacy: 'Was hat dich beunruhigt?',
+        other: 'Ein paar Worte genügen.',
       },
-      send: 'Senden',
+      send: 'Feedback senden',
       skip: 'Überspringen',
-      doneTitle: 'Danke für die zwei Sekunden.',
-      doneText: 'Deine Antwort hilft, das zu reparieren, was wirklich kaputt ist.',
-      reinstallPrefix: 'Meinung geändert? ',
-      reinstallLink: 'hier neu installieren',
-      winBack: {
-        bug: 'Schade, dass es nicht funktioniert hat. Ein Satz mehr dazu, was passiert ist, geht direkt an die Person, die es behebt.',
-        alt: 'Verstehen wir — danke, dass du es probiert hast.',
-        generic: 'Kein Problem. Falls etwas davon nah dran war, aber nicht ganz passte, hilft eine kurze Zeile dazu sehr.',
-      },
+      privacy: 'Keine E-Mail nötig. Der Kommentar ist optional.',
+      doneTitle: 'Danke — das hilft uns.',
+      doneText: 'Mit diesem Feedback entscheiden wir, was wir zuerst verbessern.',
+      reinstall: 'Pinterest Downloader erneut installieren',
+      productMeta: 'Chrome-Erweiterung',
     },
     fr: {
-      title: 'Avant de partir',
-      intro: "Ça prend dix secondes, sans e-mail, rien n'est enregistré sur un compte. Ça nous dit juste ce qu'il faut corriger.",
-      chipLegend: "Pourquoi as-tu désinstallé l'extension ?",
+      pageTitle: '{product} désinstallé — LayerPorter',
+      title: 'Pourquoi avez-vous désinstallé {product} ?',
+      intro: 'Choisissez la raison principale. Cela ne prend que quelques secondes.',
+      chipLegend: 'Choisissez une raison',
       reasons: {
-        capture: 'Elle ne capturait pas correctement la page',
-        'missing-feature': 'Il manquait une fonctionnalité dont j\'avais besoin',
-        'slow-crash': 'Trop lente, ou elle plantait',
-        'found-alternative': 'J\'ai trouvé quelque chose qui convenait mieux',
-        'unsure-how': "Je ne savais pas trop comment l'utiliser",
-        'trying-out': "Je testais juste, ce n'est pas un non définitif",
-        privacy: 'Préoccupation de confidentialité ou de permissions',
+        capture: 'Impossible de télécharger les photos ou vidéos voulues',
+        'missing-feature': 'Une fonctionnalité manquait',
+        'slow-crash': 'Trop lent ou des erreurs',
+        'found-alternative': 'J’ai trouvé un autre outil',
+        'unsure-how': 'Je n’ai pas compris comment l’utiliser',
+        'trying-out': 'Je voulais juste essayer',
+        privacy: 'Autorisations ou confidentialité',
         other: 'Autre raison',
       },
-      textLabel: 'Autre chose ?',
-      textPlaceholder: 'Facultatif — une phrase suffit.',
+      detailLabel: 'Vous voulez ajouter un détail ?',
+      optional: 'Facultatif',
+      detailPlaceholder: 'Une phrase suffit.',
       followUp: {
-        capture: "Qu'est-ce qui s'est mal passé ?",
-        'missing-feature': 'De quelle fonctionnalité avais-tu besoin ?',
-        privacy: "Qu'est-ce qui t'inquiétait ?",
-        'slow-crash': 'Que convertissais-tu quand ça a ralenti ou planté ?',
-        'found-alternative': 'Quel outil convenait mieux ?',
+        capture: 'Qu’est-ce que vous n’avez pas pu télécharger ?',
+        'missing-feature': 'Quelle fonctionnalité vous manquait ?',
+        'slow-crash': 'Qu’est-ce qui s’est passé ?',
+        'found-alternative': 'Quel outil vous a mieux convenu ?',
+        'unsure-how': 'Qu’est-ce qui n’était pas clair ?',
+        'trying-out': 'Qu’est-ce qui vous aurait donné envie de la garder ?',
+        privacy: 'Qu’est-ce qui vous a inquiété ?',
+        other: 'Quelques mots suffisent.',
       },
-      send: 'Envoyer',
+      send: 'Envoyer mon avis',
       skip: 'Passer',
-      doneTitle: 'Merci pour ces deux secondes.',
-      doneText: 'Ta réponse aide à corriger ce qui est vraiment cassé.',
-      reinstallPrefix: 'Changé d\'avis ? ',
-      reinstallLink: 'réinstalle-la ici',
-      winBack: {
-        bug: "Désolé que ça n'ait pas fonctionné. Une phrase de plus sur ce qui s'est passé va directement à la personne qui va le corriger.",
-        alt: "Compris — merci de l'avoir essayée.",
-        generic: "Pas de souci. Si l'un des choix ci-dessus était proche sans être exact, une ligne à ce sujet aide beaucoup.",
-      },
+      privacy: 'Aucun e-mail requis. Le commentaire est facultatif.',
+      doneTitle: 'Merci — cela nous aide vraiment.',
+      doneText: 'Ces réponses nous aident à décider quoi corriger en priorité.',
+      reinstall: 'Réinstaller Pinterest Downloader',
+      productMeta: 'Extension Chrome',
     },
     pt: {
-      title: 'Antes de você ir',
-      intro: 'Leva dez segundos, sem e-mail, nada é salvo em uma conta. Só nos diz o que corrigir.',
-      chipLegend: 'Por que você desinstalou a extensão?',
+      pageTitle: '{product} desinstalado — LayerPorter',
+      title: 'Por que você desinstalou o {product}?',
+      intro: 'Escolha o principal motivo. Leva só alguns segundos.',
+      chipLegend: 'Escolha um motivo',
       reasons: {
-        capture: 'Não capturava a página corretamente',
-        'missing-feature': 'Faltava um recurso que eu precisava',
-        'slow-crash': 'Muito lenta, ou travava',
-        'found-alternative': 'Encontrei algo que se encaixou melhor',
-        'unsure-how': 'Não tinha certeza de como usar',
-        'trying-out': 'Só estava testando, não é um não definitivo',
-        privacy: 'Preocupação com privacidade ou permissões',
+        capture: 'Não baixava as fotos ou vídeos que eu precisava',
+        'missing-feature': 'Faltava um recurso',
+        'slow-crash': 'Lento ou com erros',
+        'found-alternative': 'Encontrei outra ferramenta',
+        'unsure-how': 'Não entendi como usar',
+        'trying-out': 'Eu só estava testando',
+        privacy: 'Permissões ou privacidade',
         other: 'Outro motivo',
       },
-      textLabel: 'Mais alguma coisa?',
-      textPlaceholder: 'Opcional — uma frase é suficiente.',
+      detailLabel: 'Quer acrescentar mais alguma coisa?',
+      optional: 'Opcional',
+      detailPlaceholder: 'Uma frase é suficiente.',
       followUp: {
-        capture: 'O que deu errado?',
-        'missing-feature': 'Que recurso você precisava?',
+        capture: 'O que você não conseguiu baixar?',
+        'missing-feature': 'Qual recurso estava faltando?',
+        'slow-crash': 'O que aconteceu?',
+        'found-alternative': 'Qual ferramenta funcionou melhor?',
+        'unsure-how': 'O que não ficou claro?',
+        'trying-out': 'O que faria você continuar usando?',
         privacy: 'O que te preocupou?',
-        'slow-crash': 'O que você estava convertendo quando ela ficou lenta ou travou?',
-        'found-alternative': 'Qual ferramenta se encaixou melhor?',
+        other: 'Conte em poucas palavras.',
       },
-      send: 'Enviar',
+      send: 'Enviar feedback',
       skip: 'Pular',
-      doneTitle: 'Obrigado por esses dois segundos.',
-      doneText: 'Sua resposta ajuda a corrigir o que realmente está quebrado.',
-      reinstallPrefix: 'Mudou de ideia? ',
-      reinstallLink: 'reinstale aqui',
-      winBack: {
-        bug: 'Sentimos que não funcionou. Se puder acrescentar mais uma frase sobre o que aconteceu, ela vai direto para quem vai corrigir.',
-        alt: 'Entendido — obrigado por experimentar.',
-        generic: 'Sem problemas. Se alguma opção acima estava perto mas não exata, uma linha sobre isso ajuda bastante.',
-      },
+      privacy: 'Não precisa de e-mail. O comentário é opcional.',
+      doneTitle: 'Obrigado — isso ajuda muito.',
+      doneText: 'Usamos essas respostas para decidir o que corrigir primeiro.',
+      reinstall: 'Instalar Pinterest Downloader novamente',
+      productMeta: 'Extensão do Chrome',
     },
     ja: {
-      title: 'アンインストールする前に',
-      intro: '10秒で終わります。メールは不要で、アカウントには何も保存されません。改善のヒントになるだけです。',
-      chipLegend: 'アンインストールした理由は何ですか？',
+      pageTitle: '{product} をアンインストールしました — LayerPorter',
+      title: '{product} をアンインストールした理由を教えてください',
+      intro: '主な理由を1つ選んでください。数秒で終わります。',
+      chipLegend: '理由を1つ選択',
       reasons: {
-        capture: 'ページを正しくキャプチャできなかった',
+        capture: '必要な写真や動画をダウンロードできなかった',
         'missing-feature': '必要な機能がなかった',
-        'slow-crash': '遅い、またはクラッシュした',
-        'found-alternative': 'もっと合うものを見つけた',
-        'unsure-how': '使い方がよくわからなかった',
-        'trying-out': 'ただ試していただけで、最終的な「いいえ」ではない',
-        privacy: 'プライバシーや権限が気になった',
+        'slow-crash': '遅い、またはエラーが出た',
+        'found-alternative': '別のツールを見つけた',
+        'unsure-how': '使い方が分からなかった',
+        'trying-out': '試していただけ',
+        privacy: '権限やプライバシーが気になった',
         other: 'その他',
       },
-      textLabel: '他に何かありますか？',
-      textPlaceholder: '任意 — 一言で十分です。',
+      detailLabel: 'もう少し教えていただけますか？',
+      optional: '任意',
+      detailPlaceholder: '一言で十分です。',
       followUp: {
-        capture: '何がうまくいきませんでしたか？',
+        capture: '何をダウンロードできませんでしたか？',
         'missing-feature': 'どの機能が必要でしたか？',
+        'slow-crash': '何が起きましたか？',
+        'found-alternative': 'どのツールが使いやすかったですか？',
+        'unsure-how': 'どこが分かりにくかったですか？',
+        'trying-out': '何があれば使い続けたいと思いましたか？',
         privacy: '何が気になりましたか？',
-        'slow-crash': '遅くなったりクラッシュしたとき、何を変換していましたか？',
-        'found-alternative': 'どのツールがより合っていましたか？',
+        other: '一言で教えてください。',
       },
-      send: '送信',
+      send: 'フィードバックを送信',
       skip: 'スキップ',
-      doneTitle: '2秒のご協力ありがとうございました。',
-      doneText: 'いただいた回答は、実際の不具合の修正に役立ちます。',
-      reinstallPrefix: '気が変わったら？ ',
-      reinstallLink: 'こちらから再インストール',
-      winBack: {
-        bug: '不具合があり申し訳ありません。何が起きたかもう一言いただけると、修正担当者に直接届きます。',
-        alt: '承知しました — お試しいただきありがとうございました。',
-        generic: 'ご遠慮なく。選んだ内容が近いけれど少し違う場合、一言添えていただけると大変助かります。',
-      },
+      privacy: 'メールは不要です。コメントは任意です。',
+      doneTitle: 'ありがとうございます。とても参考になります。',
+      doneText: 'いただいた回答をもとに、優先して改善する内容を決めます。',
+      reinstall: 'Pinterest Downloader を再インストール',
+      productMeta: 'Chrome 拡張機能',
+    },
+  };
+
+  const PRODUCTS: Record<string, { name: string; icon: string; store: string }> = {
+    pd: {
+      name: 'Pinterest Downloader',
+      icon: '/pinterest-downloader/icon-128.png',
+      store: 'https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=uninstall&utm_campaign=pinterest_downloader&utm_content=reinstall',
     },
   };
 
@@ -368,43 +912,60 @@ const reasons = [
     return 'en';
   }
 
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('product') || 'unknown';
+  const v = params.get('v') || '';
   const locale = detectLocale();
   const t = TRANSLATIONS[locale];
+  const product = PRODUCTS[p] ?? {
+    name: 'LayerPorter extension',
+    icon: '/favicon.svg',
+    store: '',
+  };
 
-  document.getElementById('un-title')!.textContent = t.title;
+  const interpolate = (value: string) => value.replaceAll('{product}', product.name);
+
+  document.documentElement.lang = locale;
+  document.title = interpolate(t.pageTitle);
+
+  const productIcon = document.getElementById('un-product-icon') as HTMLImageElement;
+  productIcon.src = product.icon;
+  document.getElementById('un-product-name')!.textContent = product.name;
+  document.getElementById('un-product-meta')!.textContent = v ? `${t.productMeta} · v${v}` : t.productMeta;
+
+  document.getElementById('un-title')!.textContent = interpolate(t.title);
   document.getElementById('un-intro')!.textContent = t.intro;
   document.getElementById('un-chip-legend')!.textContent = t.chipLegend;
-  document.getElementById('un-text-label')!.textContent = t.textLabel;
+  document.getElementById('un-detail-label')!.textContent = t.detailLabel;
+  document.getElementById('un-detail-optional')!.textContent = t.optional;
   document.getElementById('uninstall-send-btn')!.textContent = t.send;
   document.getElementById('uninstall-skip-link')!.textContent = t.skip;
+  document.getElementById('un-privacy-note')!.textContent = t.privacy;
   document.getElementById('un-done-title')!.textContent = t.doneTitle;
   document.getElementById('un-done-text')!.textContent = t.doneText;
-  document.getElementById('un-reinstall-link')!.textContent = t.reinstallLink;
-  {
-    const reinstallEl = document.getElementById('un-reinstall')!;
-    reinstallEl.firstChild!.textContent = t.reinstallPrefix;
-  }
-  document.querySelectorAll<HTMLElement>('.chip span[data-i18n-key]').forEach((span) => {
+
+  document.querySelectorAll<HTMLElement>('.reason-card span[data-i18n-key]').forEach((span) => {
     const key = span.dataset.i18nKey!;
     span.textContent = t.reasons[key] ?? span.textContent ?? '';
   });
 
-  const params = new URLSearchParams(window.location.search);
-  const p = params.get('product') || 'unknown';
-  const v = params.get('v') || '';
-
-  track('un_view', { p, v, locale });
-
   const widget = document.getElementById('uninstall-widget')!;
   const form = document.getElementById('uninstall-form') as HTMLFormElement;
   const textEl = document.getElementById('uninstall-text') as HTMLTextAreaElement;
+  const detailWrap = document.getElementById('detail-wrap')!;
   const doneEl = document.getElementById('uninstall-done')!;
+  const sendBtn = document.getElementById('uninstall-send-btn') as HTMLButtonElement;
   const skipLink = document.getElementById('uninstall-skip-link')!;
-  const chipInputs = document.querySelectorAll<HTMLInputElement>('.chip input[type="checkbox"]');
-  const winBackEl = document.getElementById('un-winback')!;
+  const reasonInputs = document.querySelectorAll<HTMLInputElement>('input[name="uninstall-reason"]');
+  const reinstallLink = document.getElementById('un-reinstall-link') as HTMLAnchorElement;
 
-  textEl.placeholder = t.textPlaceholder;
-  const DEFAULT_PLACEHOLDER = t.textPlaceholder;
+  textEl.placeholder = t.detailPlaceholder;
+
+  if (product.store) {
+    reinstallLink.href = product.store;
+    reinstallLink.textContent = t.reinstall;
+    reinstallLink.hidden = false;
+  }
 
   const sid = crypto.randomUUID();
   const uninstallBase = { p, sid, v, locale };
@@ -417,62 +978,40 @@ const reasons = [
       body: JSON.stringify(payload),
       keepalive: true,
     }).catch(() => {
-      /* Best-effort only — a failed beacon must never block the uninstall UI. */
+      /* Best-effort only — a failed beacon must never block the UI. */
     });
   }
 
-  // The uninstall itself is useful information even when the visitor leaves
-  // without touching the survey. The backend deduplicates this sid.
-  postUninstall('open');
-
-  // Which win-back copy fits a reason: bug-shaped reasons get the "sorry,
-  // help us fix it" tone, "found something else" gets a no-guilt goodbye,
-  // everything else gets the generic honest-feedback line. No discounts or
-  // perks are offered anywhere here — none exist, so none are invented.
-  const WIN_BACK_VARIANT: Record<string, 'bug' | 'alt'> = {
-    capture: 'bug',
-    'slow-crash': 'bug',
-    'found-alternative': 'alt',
-  };
-
-  function updateWinBack() {
-    const checked = Array.from(chipInputs).filter((i) => i.checked).map((i) => i.dataset.key ?? '');
-    if (checked.length === 0) {
-      winBackEl.hidden = true;
-      return;
-    }
-    const variant = checked.map((k) => WIN_BACK_VARIANT[k]).find(Boolean) ?? 'generic';
-    winBackEl.textContent = t.winBack[variant];
-    winBackEl.hidden = false;
+  function selectedReason(): HTMLInputElement | undefined {
+    return Array.from(reasonInputs).find((input) => input.checked);
   }
 
-  chipInputs.forEach((input) => {
+  track('un_view', { p, v, locale });
+  postUninstall('open');
+
+  reasonInputs.forEach((input) => {
     input.addEventListener('change', () => {
-      const key = input.dataset.key ?? 'unknown';
-      if (input.checked) {
-        textEl.placeholder = t.followUp[key] ?? DEFAULT_PLACEHOLDER;
-      }
-      updateWinBack();
+      const key = input.dataset.key ?? 'other';
+      detailWrap.hidden = false;
+      textEl.placeholder = t.followUp[key] ?? t.detailPlaceholder;
+      sendBtn.disabled = false;
       track('un_chip', { reason: key });
     });
   });
 
-  // One uninstall session = one Telegram message. The initial page open creates
-  // it; later survey actions update that same session/message on the backend.
   let submitted = false;
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const selected = selectedReason();
+    if (!selected) return;
+
+    const reasonKey = selected.dataset.key ?? '';
+    const comment = textEl.value.trim();
+
     track('un_submit');
     submitted = true;
-
-    const selected = Array.from(chipInputs)
-      .filter((i) => i.checked)
-      .map((i) => i.dataset.key ?? '')
-      .filter(Boolean);
-    const extra = textEl.value.trim();
-
-    postUninstall('feedback', { reasonKeys: selected, comment: extra });
+    postUninstall('feedback', { reasonKeys: reasonKey ? [reasonKey] : [], comment });
 
     widget.dataset.state = 'done';
     form.hidden = true;
@@ -481,28 +1020,31 @@ const reasons = [
 
   skipLink.addEventListener('click', () => {
     track('un_skip');
-    submitted = true; // explicit skip updates the already-created uninstall session
+    submitted = true;
     postUninstall('skip');
   });
 
-  // Abandonment fallback: fires at most once, only if the user picked at
-  // least one chip and never submitted or skipped. Tagged 'draft:' so it
-  // reads in Telegram as a partial selection, never confusable with a real
-  // Send. sendBeacon survives tab-close better than a fetch here.
   window.addEventListener('pagehide', () => {
     if (submitted) return;
-    const selected = Array.from(chipInputs)
-      .filter((i) => i.checked)
-      .map((i) => i.dataset.key ?? '')
-      .filter(Boolean);
-    if (selected.length === 0) return;
-    submitted = true;
+    const selected = selectedReason();
+    if (!selected) return;
 
-    const payload = JSON.stringify({ ...uninstallBase, phase: 'partial', reasonKeys: selected, comment: textEl.value.trim() });
+    submitted = true;
+    const reasonKey = selected.dataset.key ?? '';
+    const payload = JSON.stringify({
+      ...uninstallBase,
+      phase: 'partial',
+      reasonKeys: reasonKey ? [reasonKey] : [],
+      comment: textEl.value.trim(),
+    });
+
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/uninstall', new Blob([payload], { type: 'application/json' }));
     } else {
-      postUninstall('partial', { reasonKeys: selected, comment: textEl.value.trim() });
+      postUninstall('partial', {
+        reasonKeys: reasonKey ? [reasonKey] : [],
+        comment: textEl.value.trim(),
+      });
     }
   });
 </script>
