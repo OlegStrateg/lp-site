@@ -1,5 +1,5 @@
-import { json, requireAuthorized } from '../../../_lib/pinterest-automation-auth.js';
-import { pinterestSandboxFetch, readPinterestJson } from '../../../_lib/pinterest-automation-sandbox.js';
+import { getAccount, json, requireAdmin } from '../../../_lib/pinterest-automation-admin.js';
+import { pinterestFailure, pinterestRequest } from '../../../_lib/pinterest-automation-client.js';
 
 const MAX = { title: 100, description: 500, alt_text: 500, link: 2048, image_url: 2048 };
 
@@ -17,7 +17,7 @@ function httpsUrl(value) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const denied = await requireAuthorized(request, env);
+  const denied = await requireAdmin(request, env);
   if (denied) return denied;
 
   let body;
@@ -27,6 +27,10 @@ export async function onRequestPost({ request, env }) {
   if (body?.confirm !== 'CREATE_SANDBOX_PIN') {
     return json({ ok: false, error: 'confirmation_required' }, 400);
   }
+
+  const account = await getAccount(env, text(body.account_id, 100));
+  if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  if (account.environment !== 'sandbox') return json({ ok: false, error: 'sandbox_account_required' }, 400);
 
   const boardId = text(body.board_id, 32);
   const title = text(body.title, MAX.title);
@@ -44,38 +48,32 @@ export async function onRequestPost({ request, env }) {
     title,
     description,
     alt_text: altText,
-    media_source: {
-      source_type: 'image_url',
-      url: imageUrl,
-    },
+    media_source: { source_type: 'image_url', url: imageUrl },
   };
   if (link) payload.link = link;
 
-  const { response, error } = await pinterestSandboxFetch(env, '/pins', {
+  const result = await pinterestRequest(account, '/pins', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  if (error) return json({ ok: false, error: error.code }, error.status);
 
-  const data = await readPinterestJson(response);
-  if (!response.ok) {
-    return json({
-      ok: false,
-      error: 'pinterest_api_error',
-      pinterest_status: response.status,
-      pinterest_code: data?.code ?? null,
-      message: data?.message ?? null,
-    }, response.status >= 500 ? 502 : response.status);
+  if (result.error) return json({ ok: false, error: result.error }, 502);
+  if (!result.response.ok) {
+    return json(
+      pinterestFailure(result.data, result.response.status),
+      result.response.status >= 500 ? 502 : result.response.status
+    );
   }
 
   return json({
     ok: true,
+    account_id: account.id,
     pin: {
-      id: String(data?.id || ''),
-      board_id: String(data?.board_id || boardId),
-      title: data?.title || title,
-      link: data?.link || link || null,
-      created_at: data?.created_at || null,
+      id: String(result.data?.id || ''),
+      board_id: String(result.data?.board_id || boardId),
+      title: result.data?.title || title,
+      link: result.data?.link || link || null,
+      created_at: result.data?.created_at || null,
     },
   }, 201);
 }
