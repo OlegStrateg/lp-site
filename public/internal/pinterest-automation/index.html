@@ -2,10 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
-<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
-<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />\n<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />\n<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />\n<meta name="referrer" content="no-referrer" />
 <title>Pinterest Automation — интерфейс прототип</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -42,9 +39,9 @@
           <div class="qitem"><div class="time">16:30</div><div class="thumb t3"></div><div><div class="qtitle">Спокойная палитра для спальни</div><div class="qmeta">Bedroom · #colors</div></div><span class="status scheduled">Запланирован</span></div>
           <div class="qitem"><div class="time">19:00</div><div class="thumb t4"></div><div><div class="qtitle">Уютный балкон: 7 простых решений</div><div class="qmeta">Small Spaces · #balcony</div></div><span class="status scheduled">Запланирован</span></div>
         </div></div></div>
-        <div class="card"><div class="cardhead"><h3>Контроль системы</h3><span class="pill">Прототип</span></div><div class="cardbody">
+        <div class="card"><div class="cardhead"><h3>Контроль системы</h3><span class="pill">Sandbox</span></div><div class="cardbody">
           <div class="row" style="padding:7px 0"><span class="muted">Preview API</span><b id="previewApiStatus" style="font-size:12px">Проверка…</b></div>
-          <div class="row" style="padding:7px 0"><span class="muted">Pinterest API</span><b id="pinterestApiStatus" style="font-size:12px">Не подключён</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Pinterest Sandbox</span><b id="pinterestApiStatus" style="font-size:12px">Проверка…</b></div>
           <div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Не подключён</b></div>
           <div class="row" style="padding:7px 0"><span class="muted">Последняя публикация</span><b style="font-size:12px">14:01</b></div>
           <div class="row" style="padding:7px 0"><span class="muted">Ошибки сегодня</span><b style="font-size:12px;color:#b5001c">1</b></div>
@@ -101,14 +98,17 @@
 
     <section class="screen" id="settings">
       <div class="settings-grid">
-        <div class="setting"><div class="row"><h3>Pinterest</h3><span class="pill off">Не подключён</span></div><div class="muted">Подключение через официальный OAuth. Токены в интерфейсе не показываются.</div><button class="btn red" style="margin-top:14px" id="connectBtn">Подключить Pinterest</button></div>
+        <div class="setting"><div class="row"><h3>Pinterest Sandbox</h3><span class="pill off" id="sandboxStatusPill">Не настроен</span></div><div class="muted">Безопасный живой контур Pinterest API. Sandbox Pins видны только владельцу аккаунта и не попадают в реальную выдачу.</div><div class="row" style="margin-top:14px;justify-content:flex-start"><button class="btn" id="previewLoginBtn">Войти во внутренний режим</button><button class="btn red" id="sandboxTestPinBtn">Создать тестовый Pin</button></div></div>
         <div class="setting"><h3>Безопасность публикации</h3><div class="row"><div><b style="font-size:12px">Live-публикация</b><div class="muted">По умолчанию выключена</div></div><div class="toggle" id="liveToggle"></div></div><div class="field"><label>Дневной лимит публикаций</label><input value="5"></div><div class="notice" style="margin-top:12px">В прототипе переключатель Live не активирует реальные публикации. Это только демонстрация UX.</div></div>
         <div class="setting"><h3>Контент</h3><div class="field"><label>Режим одобрения</label><select><option>Всегда вручную</option><option>Только новые темы</option><option>Автоматически после проверки</option></select></div><div class="field"><label>Основной формат</label><select><option>Вертикальный Pin</option><option>Видео Pin</option></select></div></div>
-        <div class="setting"><h3>Система</h3><div class="row" style="padding:7px 0"><span class="muted">Preview API</span><b id="settingsApiStatus" style="font-size:12px">Проверка…</b></div><div class="row" style="padding:7px 0"><span class="muted">База</span><b style="font-size:12px">Не подключена</b></div><div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Не подключён</b></div><button class="btn" style="margin-top:10px" id="testBtn">Запустить тест интерфейса</button></div>
+        <div class="setting"><h3>Система</h3><div class="row" style="padding:7px 0"><span class="muted">Preview API</span><b id="settingsApiStatus" style="font-size:12px">Проверка…</b></div><div class="row" style="padding:7px 0"><span class="muted">Внутренний доступ</span><b id="authStatus" style="font-size:12px">Проверка…</b></div><div class="row" style="padding:7px 0"><span class="muted">Sandbox token</span><b id="sandboxTokenStatus" style="font-size:12px">Проверка…</b></div><div class="row" style="padding:7px 0"><span class="muted">База</span><b style="font-size:12px">Не подключена</b></div><div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Не подключён</b></div><button class="btn" style="margin-top:10px" id="testBtn">Проверить соединение</button></div>
       </div>
     </section>
   </main>
 </div>
+
+<div class="modal" id="previewLoginModal"><div class="modalbox"><h2>Внутренний доступ</h2><div class="field"><label>Пароль preview</label><input id="previewPassword" type="password" autocomplete="current-password" placeholder="Пароль внутренней консоли"></div><div class="modalactions"><button class="btn" id="cancelPreviewLogin">Отмена</button><button class="btn primary" id="submitPreviewLogin">Войти</button></div></div></div>
+<div class="modal" id="sandboxPinModal"><div class="modalbox"><h2>Тестовый Pin в Sandbox</h2><div class="notice">Это живой запрос в Pinterest Sandbox. Pin не попадёт в публичную выдачу Pinterest.</div><div class="field"><label>Доска</label><select id="sandboxBoard"></select></div><div class="field"><label>Заголовок</label><input id="sandboxTitle" value="Pinterest Automation Test"></div><div class="field"><label>Описание</label><input id="sandboxDescription" value="Technical sandbox test pin"></div><div class="field"><label>Image URL</label><input id="sandboxImageUrl" value="https://layerporter.com/internal/pinterest-automation/test-pin.png"></div><div class="field"><label>Ссылка</label><input id="sandboxLink" value="https://layerporter.com/"></div><div class="modalactions"><button class="btn" id="cancelSandboxPin">Отмена</button><button class="btn red" id="createSandboxPin">Создать в Sandbox</button></div></div></div>
 <div class="modal" id="draftModal"><div class="modalbox"><h2>Новый черновик</h2><div class="field"><label>Тема</label><input id="draftTopic" value="Современная прихожая"></div><div class="field"><label>Доска</label><select id="draftBoard"><option>Interior Ideas</option><option>Small Spaces</option><option>Workspace Ideas</option></select></div><div class="field"><label>Целевая ссылка</label><input value="https://example.com/article"></div><div class="modalactions"><button class="btn" id="cancelModal">Отмена</button><button class="btn primary" id="createDraft">Создать черновик</button></div></div></div>
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
