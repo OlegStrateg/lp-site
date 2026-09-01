@@ -315,6 +315,20 @@ jobs:
 
           echo "LayerPorter Home V3 RU PASS"
 
+          DE_URL="https://layerporter.com/de/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$DE_URL" -o /tmp/layerporter-home-v3-de.html
+          grep -F '<html lang="de">' /tmp/layerporter-home-v3-de.html
+          grep -F '<title>LayerPorter — Browser-Erweiterungen &amp; Online-Tools</title>' /tmp/layerporter-home-v3-de.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/de/"' /tmp/layerporter-home-v3-de.html
+          grep -F 'hreflang="en" href="https://layerporter.com/"' /tmp/layerporter-home-v3-de.html
+          grep -F 'hreflang="ru" href="https://layerporter.com/ru/"' /tmp/layerporter-home-v3-de.html
+          grep -F 'hreflang="de" href="https://layerporter.com/de/"' /tmp/layerporter-home-v3-de.html
+          grep -F 'Deutsch <b>(DE)</b>' /tmp/layerporter-home-v3-de.html
+          grep -F 'href="/de/pinterest-downloader/"' /tmp/layerporter-home-v3-de.html
+          grep -F '<loc>https://layerporter.com/de/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+
+          echo "LayerPorter Home V3 DE PASS"
+
       - name: Verify Pinterest domain ownership meta
         shell: bash
         run: |
