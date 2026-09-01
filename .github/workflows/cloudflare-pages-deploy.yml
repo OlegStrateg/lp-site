@@ -215,3 +215,48 @@ jobs:
 
           echo "Pinterest Automation preview PASS: live, assets OK, noindex, absent from sitemap"
 
+      - name: Verify Pinterest Sandbox gateway locked
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com/internal/pinterest-automation"
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/health?verify=${{ github.sha }}" -o /tmp/pa-sandbox-health.json
+          node -e '
+            const fs = require("fs");
+            const x = JSON.parse(fs.readFileSync("/tmp/pa-sandbox-health.json","utf8"));
+            if (x.ok !== true) process.exit(1);
+            if (x.mode !== "sandbox") process.exit(1);
+            if (x.livePublishing !== false) process.exit(1);
+            for (const k of ["sandboxConfigured","previewAuthConfigured","previewAuthenticated"]) {
+              if (typeof x[k] !== "boolean") process.exit(1);
+            }
+          '
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/auth/status?verify=${{ github.sha }}" -o /tmp/pa-auth.json
+          node -e '
+            const fs = require("fs");
+            const x = JSON.parse(fs.readFileSync("/tmp/pa-auth.json","utf8"));
+            if (x.ok !== true) process.exit(1);
+            if (typeof x.configured !== "boolean" || typeof x.authenticated !== "boolean") process.exit(1);
+          '
+
+          STATUS="$(curl -sS -o /tmp/pa-boards.json -w "%{http_code}" --max-time 20 -A "Mozilla/5.0" "$BASE/api/boards?verify=${{ github.sha }}")"
+          if [ "$STATUS" != "401" ] && [ "$STATUS" != "503" ]; then
+            echo "Boards endpoint must stay locked without internal auth, got HTTP $STATUS"
+            cat /tmp/pa-boards.json
+            exit 1
+          fi
+
+          node -e '
+            const fs = require("fs");
+            const x = JSON.parse(fs.readFileSync("/tmp/pa-boards.json","utf8"));
+            if (!["unauthorized","preview_auth_not_configured"].includes(x.error)) process.exit(1);
+          '
+
+          grep -F "CREATE_SANDBOX_PIN" public/internal/pinterest-automation/app.js
+          grep -F "Pinterest Sandbox" public/internal/pinterest-automation/index.html
+
+          echo "Pinterest Sandbox gateway PASS: deployed, live=false, auth gate enforced"
+
