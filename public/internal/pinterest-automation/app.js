@@ -8,4 +8,30 @@ const modal=document.getElementById('draftModal');['newDraftBtn'].forEach(id=>do
 function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
 document.getElementById('createDraft').onclick=()=>{const topic=document.getElementById('draftTopic').value.trim()||'Новый пин';const board=document.getElementById('draftBoard').value;const card=document.createElement('div');card.className='content-card';card.innerHTML=`<div class="content-img"></div><div class="content-body"><div class="row"><span class="status draft">Черновик</span><span class="muted">только что</span></div><div class="content-title" style="margin-top:10px">${topic}</div><div class="muted" style="margin-top:7px">${board} · новый черновик</div><div class="row" style="margin-top:12px"><button class="btn small approveBtn">Одобрить</button><button class="btn small">Редактировать</button></div></div>`;document.getElementById('contentGrid').prepend(card);modal.classList.remove('show');openScreen('content');wireButtons();toast('Черновик создан')};
 function wireButtons(){document.querySelectorAll('.approveBtn').forEach(b=>b.onclick=()=>{const s=b.closest('.content-body').querySelector('.status');s.textContent='Запланирован';s.className='status scheduled';b.textContent='Одобрено';toast('Добавлено в очередь')});document.querySelectorAll('.retryBtn').forEach(b=>b.onclick=()=>{const s=b.closest('.content-body').querySelector('.status');s.textContent='Запланирован';s.className='status scheduled';toast('Повторная попытка поставлена в очередь')})}wireButtons();
-document.getElementById('connectBtn').onclick=()=>toast('Здесь откроется Pinterest OAuth');document.getElementById('testBtn').onclick=()=>toast('Интерфейс: OK · Mock API: OK · Worker: OK');document.getElementById('liveToggle').onclick=()=>toast('Live заблокирован до реального Pinterest API теста');
+async function loadPreviewStatus(showToast=false){
+  const top=document.getElementById('previewApiStatus');
+  const settings=document.getElementById('settingsApiStatus');
+  const pinterest=document.getElementById('pinterestApiStatus');
+  try{
+    const response=await fetch('health',{cache:'no-store'});
+    if(!response.ok) throw new Error('http_'+response.status);
+    const data=await response.json();
+    if(!data.ok) throw new Error('health_not_ok');
+    top.textContent='Онлайн';
+    settings.textContent='Онлайн';
+    top.style.color=settings.style.color='#19764d';
+    pinterest.textContent=data.pinterestConfigured?'Ключи настроены':'Ключи не настроены';
+    pinterest.style.color=data.pinterestConfigured?'#19764d':'#a86a00';
+    if(showToast) toast('Preview API: онлайн · Live: выключен');
+  }catch(error){
+    top.textContent='Недоступен';
+    settings.textContent='Недоступен';
+    top.style.color=settings.style.color='#b5001c';
+    pinterest.textContent='Статус неизвестен';
+    if(showToast) toast('Preview API недоступен');
+  }
+}
+document.getElementById('connectBtn').onclick=()=>toast('OAuth подключим после настройки Pinterest App ID / Secret');
+document.getElementById('testBtn').onclick=()=>loadPreviewStatus(true);
+document.getElementById('liveToggle').onclick=()=>toast('Live заблокирован до реального Pinterest API теста');
+loadPreviewStatus();
