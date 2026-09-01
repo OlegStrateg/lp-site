@@ -297,7 +297,23 @@ jobs:
           grep -F '.locale-current' /tmp/home-v3.css
           grep -F 'Download ${count} selected' /tmp/home-v3.js
 
-          echo "LayerPorter Home V3 PASS"
+          echo "LayerPorter Home V3 EN PASS"
+
+          RU_URL="https://layerporter.com/ru/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$RU_URL" -o /tmp/layerporter-home-v3-ru.html
+          grep -F '<html lang="ru">' /tmp/layerporter-home-v3-ru.html
+          grep -F '<title>LayerPorter — расширения для браузера и онлайн-инструменты</title>' /tmp/layerporter-home-v3-ru.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/ru/"' /tmp/layerporter-home-v3-ru.html
+          grep -F 'hreflang="en" href="https://layerporter.com/"' /tmp/layerporter-home-v3-ru.html
+          grep -F 'hreflang="ru" href="https://layerporter.com/ru/"' /tmp/layerporter-home-v3-ru.html
+          grep -F 'hreflang="x-default" href="https://layerporter.com/"' /tmp/layerporter-home-v3-ru.html
+          grep -F 'Русский <b>(RU)</b>' /tmp/layerporter-home-v3-ru.html
+          grep -F 'href="/ru/pinterest-downloader/"' /tmp/layerporter-home-v3-ru.html
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/sitemap.xml?verify=${{ github.sha }}" -o /tmp/layerporter-home-v3-sitemap.xml
+          grep -F '<loc>https://layerporter.com/ru/</loc>' /tmp/layerporter-home-v3-sitemap.xml
+
+          echo "LayerPorter Home V3 RU PASS"
 
       - name: Verify Pinterest domain ownership meta
         shell: bash
