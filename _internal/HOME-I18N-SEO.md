@@ -44,10 +44,11 @@
 
 ## Опубликованные Home-локали
 
-После LP-035:
+После LP-036:
 - English (EN) → /
 - Русский (RU) → /ru/
 - Deutsch (DE) → /de/
+- Español (ES) → /es/
 
 Для опубликованных Home-страниц:
 - self-canonical;
@@ -61,3 +62,6 @@ RU Home использует широкий root «расширения для �
 
 
 DE Home использует root «Browser-Erweiterungen», secondary «Chrome-Erweiterungen» и «Online-Tools». Конкретные converter-intents остаются на дочерних страницах.
+
+
+ES Home использует root «extensiones de navegador», secondary «extensiones de Chrome» и «herramientas online». Основной пункт Español (ES) ведёт на /es/. Региональный Home /es-419/ в LP-036 не создаётся.
