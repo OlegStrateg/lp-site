@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+<meta name="referrer" content="no-referrer" />
+<title>Pinterest Automation — интерфейс прототип</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brandmark">P</div><div><div class="brandtitle">Pinterest<br>Automation</div><div class="brandsub">операторская консоль</div></div></div>
+    <nav class="nav">
+      <button class="active" data-screen="home"><span class="ico">⌂</span><span>Главная</span></button>
+      <button data-screen="content"><span class="ico">▦</span><span>Контент</span></button>
+      <button data-screen="queue"><span class="ico">◷</span><span>Очередь</span></button>
+      <button data-screen="analytics"><span class="ico">↗</span><span>Аналитика</span></button>
+      <button data-screen="settings"><span class="ico">⚙</span><span>Настройки</span></button>
+    </nav>
+    <div class="sidebottom">
+      <div class="livebox"><div class="livehead"><span>Публикация</span><span class="pill off">LIVE OFF</span></div><div class="muted" style="margin-top:8px;line-height:1.45">Сейчас всё работает на тестовых данных. Реальных публикаций нет.</div></div>
+      <div class="muted" style="padding:0 8px">Прототип интерфейса · v0.0.1</div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar"><div class="title"><h1 id="screenTitle">Главная</h1><p id="screenSub">Что готово, что выйдет сегодня и что работает лучше всего.</p></div><div class="topactions"><button class="btn">Импорт</button><button class="btn primary" id="newDraftBtn">+ Новый пин</button></div></div>
+
+    <section class="screen active" id="home">
+      <div class="stats">
+        <div class="stat"><div class="statlabel">Сегодня запланировано</div><div class="statnum">12</div><div class="delta">8 уже опубликовано</div></div>
+        <div class="stat"><div class="statlabel">В очереди</div><div class="statnum">31</div><div class="delta">на 4 дня вперёд</div></div>
+        <div class="stat"><div class="statlabel">Исходящий CTR</div><div class="statnum">3,8%</div><div class="delta">+0,7% к прошлой неделе</div></div>
+        <div class="stat"><div class="statlabel">Нужна проверка</div><div class="statnum">1</div><div class="delta warn">ошибка публикации</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="cardhead"><h3>Сегодняшняя очередь</h3><button class="btn small" data-go="queue">Открыть календарь</button></div><div class="cardbody"><div class="queue">
+          <div class="qitem"><div class="time">12:30</div><div class="thumb"></div><div><div class="qtitle">Минималистичный домашний офис</div><div class="qmeta">Workspace Ideas · #interior</div></div><span class="status published">Опубликован</span></div>
+          <div class="qitem"><div class="time">14:00</div><div class="thumb t2"></div><div><div class="qtitle">5 идей хранения для маленькой кухни</div><div class="qmeta">Kitchen Ideas · #storage</div></div><span class="status published">Опубликован</span></div>
+          <div class="qitem"><div class="time">16:30</div><div class="thumb t3"></div><div><div class="qtitle">Спокойная палитра для спальни</div><div class="qmeta">Bedroom · #colors</div></div><span class="status scheduled">Запланирован</span></div>
+          <div class="qitem"><div class="time">19:00</div><div class="thumb t4"></div><div><div class="qtitle">Уютный балкон: 7 простых решений</div><div class="qmeta">Small Spaces · #balcony</div></div><span class="status scheduled">Запланирован</span></div>
+        </div></div></div>
+        <div class="card"><div class="cardhead"><h3>Контроль системы</h3><span class="pill">Прототип</span></div><div class="cardbody">
+          <div class="row" style="padding:7px 0"><span class="muted">Pinterest API</span><b style="font-size:12px">Не подключён</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Mock</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Последняя публикация</span><b style="font-size:12px">14:01</b></div>
+          <div class="row" style="padding:7px 0"><span class="muted">Ошибки сегодня</span><b style="font-size:12px;color:#b5001c">1</b></div>
+          <div class="notice" style="margin-top:12px">Live-режим намеренно выключен. Пока мы проверяем UX, интерфейс ничего не публикует в Pinterest.</div>
+        </div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="cardhead"><h3>Лучшие пины за 7 дней</h3><button class="btn small" data-go="analytics">Вся аналитика</button></div><div class="cardbody"><div class="pin-grid">
+        <div class="pin"><div class="pinimg"></div><div class="pintext"><div class="pinname">Нейтральная гостиная без перегруза</div><div class="pinmetrics"><span>42k показов</span><span>4,9% CTR</span></div></div></div>
+        <div class="pin"><div class="pinimg g2"></div><div class="pintext"><div class="pinname">Маленькая кухня: хранение</div><div class="pinmetrics"><span>37k</span><span>4,3% CTR</span></div></div></div>
+        <div class="pin"><div class="pinimg g3"></div><div class="pintext"><div class="pinname">Палитра спокойной спальни</div><div class="pinmetrics"><span>31k</span><span>3,8% CTR</span></div></div></div>
+        <div class="pin"><div class="pinimg g4"></div><div class="pintext"><div class="pinname">Тёплый балкон на 3 м²</div><div class="pinmetrics"><span>28k</span><span>3,6% CTR</span></div></div></div>
+      </div></div></div>
+    </section>
+
+    <section class="screen" id="content">
+      <div class="toolbar"><input class="search" placeholder="Поиск по контенту, теме или доске"><div><button class="btn">Фильтр</button></div></div>
+      <div class="content-grid" id="contentGrid">
+        <div class="content-card"><div class="content-img"></div><div class="content-body"><div class="row"><span class="status draft">Черновик</span><span class="muted">сегодня</span></div><div class="content-title" style="margin-top:10px">10 идей компактного рабочего места</div><div class="muted" style="margin-top:7px">Workspace Ideas · 2 варианта</div><div class="row" style="margin-top:12px"><button class="btn small approveBtn">Одобрить</button><button class="btn small">Редактировать</button></div></div></div>
+        <div class="content-card"><div class="content-img i2"></div><div class="content-body"><div class="row"><span class="status scheduled">Запланирован</span><span class="muted">16:30</span></div><div class="content-title" style="margin-top:10px">Спокойная палитра для спальни</div><div class="muted" style="margin-top:7px">Bedroom · Pinterest SEO готов</div><div class="row" style="margin-top:12px"><button class="btn small">Открыть</button><button class="btn small">Дублировать</button></div></div></div>
+        <div class="content-card"><div class="content-img i3"></div><div class="content-body"><div class="row"><span class="status error">Ошибка</span><span class="muted">13:10</span></div><div class="content-title" style="margin-top:10px">Зелёные акценты в маленькой кухне</div><div class="muted" style="margin-top:7px">Kitchen Ideas · board_id invalid</div><div class="row" style="margin-top:12px"><button class="btn small retryBtn">Повторить</button><button class="btn small">Исправить</button></div></div></div>
+      </div>
+    </section>
+
+    <section class="screen" id="queue">
+      <div class="card"><div class="cardhead"><h3>Сегодня · 1 сентября</h3><div><button class="btn small">‹</button> <button class="btn small">Сегодня</button> <button class="btn small">›</button></div></div><div class="cardbody" style="padding-top:4px">
+        <div class="calendar">
+          <div class="cal-time">12:00</div><div class="cal-slot"><div class="slot-card"><div class="thumb" style="width:44px;height:54px"></div><div><div class="qtitle">Домашний офис</div><div class="qmeta">Опубликован · 12:30</div></div><span class="status published" style="margin-left:auto">Готово</span></div></div>
+          <div class="cal-time">14:00</div><div class="cal-slot"><div class="slot-card"><div class="thumb t2" style="width:44px;height:54px"></div><div><div class="qtitle">Хранение на кухне</div><div class="qmeta">Опубликован · 14:00</div></div><span class="status published" style="margin-left:auto">Готово</span></div></div>
+          <div class="cal-time">16:00</div><div class="cal-slot"><div class="thumb t3" style="width:44px;height:54px"></div><div><div class="qtitle">Палитра спальни</div><div class="qmeta">План · 16:30</div></div><span class="status scheduled" style="margin-left:auto">В очереди</span></div></div>
+          <div class="cal-time">19:00</div><div class="cal-slot"><div class="slot-card"><div class="thumb t4" style="width:44px;height:54px"></div><div><div class="qtitle">Уютный балкон</div><div class="qmeta">План · 19:00</div></div><span class="status scheduled" style="margin-left:auto">В очереди</span></div></div>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="screen" id="analytics">
+      <div class="stats">
+        <div class="stat"><div class="statlabel">Показы · 7 дней</div><div class="statnum">184k</div><div class="delta">+21%</div></div>
+        <div class="stat"><div class="statlabel">Сохранения</div><div class="statnum">6,2k</div><div class="delta">+14%</div></div>
+        <div class="stat"><div class="statlabel">Исходящие клики</div><div class="statnum">7,0k</div><div class="delta">+27%</div></div>
+        <div class="stat"><div class="statlabel">CTR</div><div class="statnum">3,8%</div><div class="delta">+0,7 п.п.</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="cardhead"><h3>Исходящие клики</h3><span class="muted">последние 7 дней</span></div><div class="cardbody"><div class="chart">
+          <div class="barwrap"><div class="bar" style="height:39%"></div><div class="barlabel">Ср</div></div><div class="barwrap"><div class="bar" style="height:52%"></div><div class="barlabel">Чт</div></div><div class="barwrap"><div class="bar" style="height:47%"></div><div class="barlabel">Пт</div></div><div class="barwrap"><div class="bar" style="height:68%"></div><div class="barlabel">Сб</div></div><div class="barwrap"><div class="bar" style="height:61%"></div><div class="barlabel">Вс</div></div><div class="barwrap"><div class="bar" style="height:82%"></div><div class="barlabel">Пн</div></div><div class="barwrap"><div class="bar" style="height:94%"></div><div class="barlabel">Вт</div></div>
+        </div></div></div>
+        <div class="card"><div class="cardhead"><h3>Что сейчас выигрывает</h3></div><div class="cardbody">
+          <div class="row" style="padding:9px 0"><div><b style="font-size:12px">Маленькие пространства</b><div class="muted">кластер</div></div><b>4,7%</b></div>
+          <div class="row" style="padding:9px 0"><div><b style="font-size:12px">Светлый фон + 1 объект</b><div class="muted">визуал</div></div><b>4,4%</b></div>
+          <div class="row" style="padding:9px 0"><div><b style="font-size:12px">Списки 5–10 идей</b><div class="muted">заголовок</div></div><b>4,1%</b></div>
+        </div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="cardhead"><h3>Темы</h3></div><div class="cardbody"><table class="table"><thead><tr><th>Тема</th><th>Пины</th><th>Показы</th><th>Сохранения</th><th>CTR</th></tr></thead><tbody><tr><td><b>Small Spaces</b></td><td>18</td><td>71k</td><td>2,6k</td><td>4,7%</td></tr><tr><td><b>Kitchen Ideas</b></td><td>21</td><td>63k</td><td>2,1k</td><td>3,9%</td></tr><tr><td><b>Bedroom</b></td><td>14</td><td>50k</td><td>1,5k</td><td>3,1%</td></tr></tbody></table></div></div>
+    </section>
+
+    <section class="screen" id="settings">
+      <div class="settings-grid">
+        <div class="setting"><div class="row"><h3>Pinterest</h3><span class="pill off">Не подключён</span></div><div class="muted">Подключение через официальный OAuth. Токены в интерфейсе не показываются.</div><button class="btn red" style="margin-top:14px" id="connectBtn">Подключить Pinterest</button></div>
+        <div class="setting"><h3>Безопасность публикации</h3><div class="row"><div><b style="font-size:12px">Live-публикация</b><div class="muted">По умолчанию выключена</div></div><div class="toggle" id="liveToggle"></div></div><div class="field"><label>Дневной лимит публикаций</label><input value="5"></div><div class="notice" style="margin-top:12px">В прототипе переключатель Live не активирует реальные публикации. Это только демонстрация UX.</div></div>
+        <div class="setting"><h3>Контент</h3><div class="field"><label>Режим одобрения</label><select><option>Всегда вручную</option><option>Только новые темы</option><option>Автоматически после проверки</option></select></div><div class="field"><label>Основной формат</label><select><option>Вертикальный Pin</option><option>Видео Pin</option></select></div></div>
+        <div class="setting"><h3>Система</h3><div class="row" style="padding:7px 0"><span class="muted">API</span><b style="font-size:12px">Mock</b></div><div class="row" style="padding:7px 0"><span class="muted">База</span><b style="font-size:12px">Mock</b></div><div class="row" style="padding:7px 0"><span class="muted">Worker</span><b style="font-size:12px">Mock</b></div><button class="btn" style="margin-top:10px" id="testBtn">Запустить тест интерфейса</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="modal" id="draftModal"><div class="modalbox"><h2>Новый черновик</h2><div class="field"><label>Тема</label><input id="draftTopic" value="Современная прихожая"></div><div class="field"><label>Доска</label><select id="draftBoard"><option>Interior Ideas</option><option>Small Spaces</option><option>Workspace Ideas</option></select></div><div class="field"><label>Целевая ссылка</label><input value="https://example.com/article"></div><div class="modalactions"><button class="btn" id="cancelModal">Отмена</button><button class="btn primary" id="createDraft">Создать черновик</button></div></div></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
