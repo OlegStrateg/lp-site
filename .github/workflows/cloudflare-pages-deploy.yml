@@ -260,3 +260,10 @@ jobs:
 
           echo "Pinterest Sandbox gateway PASS: deployed, live=false, auth gate enforced"
 
+      - name: Verify Pinterest domain ownership meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/?verify=${{ github.sha }}" -o /tmp/layerporter-home.html
+          grep -F '<meta name="p:domain_verify" content="272122ef2e4a2ceeacbd8a6bc0b0e71f">' /tmp/layerporter-home.html
+          echo "Pinterest domain verification meta PASS"
