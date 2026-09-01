@@ -260,6 +260,34 @@ jobs:
 
           echo "Pinterest Sandbox gateway PASS: deployed, live=false, auth gate enforced"
 
+
+      - name: Verify LayerPorter Home V3
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          URL="https://layerporter.com/?verify=${{ github.sha }}"
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.html
+          grep -F '<title>LayerPorter — Chrome Extensions &amp; Browser Tools</title>' /tmp/layerporter-home-v3.html
+          grep -F '<h1>Save it.<br>Convert it.<br><span class="soft">Keep moving.</span></h1>' /tmp/layerporter-home-v3.html
+          grep -F 'English <b>(EN)</b>' /tmp/layerporter-home-v3.html
+          grep -F 'href="/home-v3.css"' /tmp/layerporter-home-v3.html
+          grep -F 'src="/home-v3.js"' /tmp/layerporter-home-v3.html
+          grep -F 'hreflang="en"' /tmp/layerporter-home-v3.html
+          grep -F 'hreflang="x-default"' /tmp/layerporter-home-v3.html
+          grep -F 'images.unsplash.com' /tmp/layerporter-home-v3.html
+
+          curl -fsSI --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.headers
+          grep -Fi 'content-security-policy:' /tmp/layerporter-home-v3.headers
+          grep -Fi 'images.unsplash.com' /tmp/layerporter-home-v3.headers
+
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/home-v3.css?verify=${{ github.sha }}" -o /tmp/home-v3.css
+          curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/home-v3.js?verify=${{ github.sha }}" -o /tmp/home-v3.js
+          grep -F '.locale-current' /tmp/home-v3.css
+          grep -F 'Download ${count} selected' /tmp/home-v3.js
+
+          echo "LayerPorter Home V3 PASS"
+
       - name: Verify Pinterest domain ownership meta
         shell: bash
         run: |
