@@ -3,7 +3,7 @@ import { pinterestFailure, pinterestRequest } from '../../../_lib/pinterest-auto
 
 function summarizeMetrics(pinMetrics) {
   if (!pinMetrics || typeof pinMetrics !== 'object') {
-    return { available: false, key_count: 0, keys: [], data: null };
+    return { available: false, key_count: 0, keys: [] };
   }
 
   const keys = Object.keys(pinMetrics);
@@ -11,7 +11,6 @@ function summarizeMetrics(pinMetrics) {
     available: keys.length > 0,
     key_count: keys.length,
     keys: keys.slice(0, 30),
-    data: pinMetrics,
   };
 }
 
@@ -36,33 +35,26 @@ export async function onRequestGet({ request, env }) {
     return json({ ok: false, error: 'sandbox_account_required' }, 400);
   }
 
-  let pinId = account.last_pin_id || null;
-  let listPinsPassed = false;
-  let listedPinCount = null;
+  const listResult = await pinterestRequest(account, '/pins?page_size=25&pin_metrics=true');
 
-  if (!pinId) {
-    const listResult = await pinterestRequest(account, '/pins?page_size=25&pin_metrics=true');
-
-    if (listResult.error) {
-      return json({ ok: false, error: listResult.error }, 502);
-    }
-
-    if (!listResult.response.ok) {
-      return json(
-        pinterestFailure(listResult.data, listResult.response.status),
-        listResult.response.status >= 500 ? 502 : listResult.response.status
-      );
-    }
-
-    const items = Array.isArray(listResult.data?.items) ? listResult.data.items : [];
-    listedPinCount = items.length;
-    listPinsPassed = true;
-
-    const latest = sortPins(items)[0] || null;
-    pinId = latest?.id ? String(latest.id) : null;
-  } else {
-    listPinsPassed = true;
+  if (listResult.error) {
+    return json({ ok: false, error: listResult.error }, 502);
   }
+
+  if (!listResult.response.ok) {
+    return json(
+      pinterestFailure(listResult.data, listResult.response.status),
+      listResult.response.status >= 500 ? 502 : listResult.response.status
+    );
+  }
+
+  const items = Array.isArray(listResult.data?.items) ? listResult.data.items : [];
+  const sorted = sortPins(items);
+  const storedPinId = account.last_pin_id ? String(account.last_pin_id) : null;
+  const storedPinInList = storedPinId ? items.some(pin => String(pin?.id || '') === storedPinId) : false;
+  const latest = sorted[0] || null;
+  const pinId = storedPinInList ? storedPinId : (latest?.id ? String(latest.id) : null);
+  const verifiedAt = new Date().toISOString();
 
   if (!pinId) {
     return json({
@@ -71,16 +63,17 @@ export async function onRequestGet({ request, env }) {
       verified: false,
       reason: 'no_pins',
       checks: {
-        list_pins: listPinsPassed,
+        list_pins: true,
+        list_contains_pin: false,
         get_pin: false,
         id_match: false,
         board_present: false,
         metrics_available: false,
       },
-      listed_pin_count: listedPinCount,
+      listed_pin_count: items.length,
       pin: null,
-      metrics: { available: false, key_count: 0, keys: [], data: null },
-      verified_at: new Date().toISOString(),
+      metrics: { available: false, key_count: 0, keys: [] },
+      verified_at: verifiedAt,
     });
   }
 
@@ -100,7 +93,6 @@ export async function onRequestGet({ request, env }) {
   const returnedId = String(pinResult.data?.id || '');
   const boardId = String(pinResult.data?.board_id || '');
   const metrics = summarizeMetrics(pinResult.data?.pin_metrics);
-  const verifiedAt = new Date().toISOString();
   const verified = returnedId === pinId && Boolean(boardId);
 
   account.last_pin_id = pinId;
@@ -115,13 +107,14 @@ export async function onRequestGet({ request, env }) {
     account_id: account.id,
     verified,
     checks: {
-      list_pins: listPinsPassed,
+      list_pins: true,
+      list_contains_pin: items.some(pin => String(pin?.id || '') === pinId),
       get_pin: true,
       id_match: returnedId === pinId,
       board_present: Boolean(boardId),
       metrics_available: metrics.available,
     },
-    listed_pin_count: listedPinCount,
+    listed_pin_count: items.length,
     pin: {
       id: returnedId,
       board_id: boardId,
