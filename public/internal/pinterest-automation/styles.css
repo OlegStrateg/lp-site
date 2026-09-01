@@ -25,3 +25,15 @@ button,input,select{font:inherit}.app{min-height:100vh;display:grid;grid-templat
   .account-card{align-items:flex-start;flex-direction:column}
   .account-card-actions{width:100%;justify-content:flex-start}
 }
+
+.cycle-diagnostics{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fafbfc}
+.cycle-diag-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cycle-diag-title{font-size:13px;font-weight:800}
+.cycle-diag-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}
+.cycle-check{border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px}
+.cycle-check span{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}
+.cycle-check b{font-size:12px}
+.cycle-diag-foot{display:flex;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap}
+.cycle-note{margin-top:10px}
+@media(max-width:900px){.cycle-diag-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.cycle-diag-grid{grid-template-columns:1fr}}
