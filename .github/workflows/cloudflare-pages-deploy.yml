@@ -332,3 +332,38 @@ jobs:
 
           echo "Pinterest empty-board recovery PASS: create path present and locked"
 
+      - name: Verify Pinterest cycle diagnostics locked
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com/internal/pinterest-automation"
+
+          grep -F "pin_metrics=true" functions/internal/pinterest-automation/api/pins.js
+          grep -F "pin_metrics=true" functions/internal/pinterest-automation/api/diagnostics.js
+          grep -F "READBACK_DELAYS_MS" functions/internal/pinterest-automation/api/pins.js
+          grep -F "list_contains_pin" functions/internal/pinterest-automation/api/diagnostics.js
+          grep -F "Проверить API-цикл" public/internal/pinterest-automation/index.html
+          grep -F "runCycleDiagnostics" public/internal/pinterest-automation/app.js
+
+          STATUS="$(curl -sS -o /tmp/pa-diag.json -w "%{http_code}" --max-time 20             -A "Mozilla/5.0"             "$BASE/api/diagnostics?account_id=acct_test")"
+
+          if [ "$STATUS" != "401" ]; then
+            echo "Diagnostics endpoint must be locked without admin session, got HTTP $STATUS"
+            cat /tmp/pa-diag.json
+            exit 1
+          fi
+
+          node -e '
+            const fs=require("fs");
+            const x=JSON.parse(fs.readFileSync("/tmp/pa-diag.json","utf8"));
+            if(x.error!=="unauthorized") process.exit(1);
+          '
+
+          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions --exclude-dir=node_modules; then
+            echo "Pinterest access token pattern found in source"
+            exit 1
+          fi
+
+          echo "Pinterest cycle diagnostics PASS: server readback, list/get checks, locked endpoint"
+

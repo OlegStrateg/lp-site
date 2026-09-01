@@ -113,9 +113,31 @@
             <button class="btn" id="adminLoginBtn">Войти в админку</button>
             <button class="btn primary" id="addAccountBtn" disabled>+ Подключить аккаунт</button>
             <button class="btn red" id="sandboxTestPinBtn" disabled>Тестовый Pin</button>
+            <button class="btn" id="cycleVerifyBtn" disabled>Проверить API-цикл</button>
           </div>
           <div class="accounts-list" id="accountsList">
             <div class="accounts-empty">Войди в админку, чтобы увидеть подключённые аккаунты.</div>
+          </div>
+          <div class="cycle-diagnostics" id="cycleDiagnostics">
+            <div class="cycle-diag-head">
+              <div>
+                <div class="cycle-diag-title">Проверка Pinterest API</div>
+                <div class="muted">Последний Sandbox Pin · серверная проверка чтения и метрик</div>
+              </div>
+              <span class="pill off" id="cycleDiagStatus">Не проверено</span>
+            </div>
+            <div class="cycle-diag-grid">
+              <div class="cycle-check"><span>List Pins</span><b id="diagListPins">—</b></div>
+              <div class="cycle-check"><span>Get Pin</span><b id="diagGetPin">—</b></div>
+              <div class="cycle-check"><span>Pin ID совпал</span><b id="diagIdMatch">—</b></div>
+              <div class="cycle-check"><span>Board ID</span><b id="diagBoard">—</b></div>
+              <div class="cycle-check"><span>Pin metrics</span><b id="diagMetrics">—</b></div>
+            </div>
+            <div class="cycle-diag-foot">
+              <span class="muted" id="diagPinId">Pin ID: —</span>
+              <span class="muted" id="diagChecked">Проверка: —</span>
+            </div>
+            <div class="notice cycle-note" id="diagNote">В Sandbox отдельная органическая аналитика не считается обязательной. Если Pinterest вернёт <code>pin_metrics</code> через Get Pin, покажем это отдельно.</div>
           </div>
         </div>
 
