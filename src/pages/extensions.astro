@@ -1,88 +1,336 @@
 ---
-// Hub for all LayerPorter browser extensions. Available products come first;
-// future products stay secondary and never borrow claims from a different job.
-import PageLayout from '../layouts/PageLayout.astro';
-import { extensions } from '../data/extensions';
+import BaseLayout from '../layouts/BaseLayout.astro';
 
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
-const pageUrl = `${site}/extensions/`;
+const pinterestStore = 'https://chromewebstore.google.com/detail/pinterest-downloader/nmpahchhmcdejmfcmkphnbhckmlhhnon?utm_source=layerporter&utm_medium=website&utm_campaign=extensions_hub';
+const pictureStore = 'https://chromewebstore.google.com/detail/image-converter/ooiklbnjmhbcfnllkgjahadblibecgfj?utm_source=layerporter&utm_medium=website&utm_campaign=extensions_hub';
 
-// No SoftwareApplication/offers schema — there's no store listing to back an
-// offer claim yet, and marking one up would be describing a product that
-// doesn't exist. A plain WebPage node is the honest amount of markup here.
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': `${site}/#org`,
+      '@id': site + '/#org',
       name: 'LayerPorter',
-      url: `${site}/`,
+      url: site + '/',
     },
     {
       '@type': 'WebPage',
-      '@id': `${pageUrl}#webpage`,
-      name: 'Browser extensions',
-      description: 'LayerPorter browser extensions for faster media and design workflows. Downloader is available now for Pinterest images, GIFs, videos, and board ZIP exports.',
-      url: pageUrl,
-      isPartOf: { '@id': `${site}/#website` },
-      publisher: { '@id': `${site}/#org` },
+      '@id': site + '/extensions/#webpage',
+      url: site + '/extensions/',
+      name: 'Chrome Extensions by LayerPorter',
+      description: 'LayerPorter Chrome extensions for downloading Pinterest media and converting image files directly in Chrome.',
+      publisher: { '@id': site + '/#org' },
+      mainEntity: { '@id': site + '/extensions/#list' },
+    },
+    {
+      '@type': 'ItemList',
+      '@id': site + '/extensions/#list',
+      numberOfItems: 2,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          item: {
+            '@type': 'SoftwareApplication',
+            name: 'Pinterest Downloader',
+            applicationCategory: 'BrowserApplication',
+            operatingSystem: 'Chrome',
+            url: site + '/pinterest-downloader/',
+            installUrl: pinterestStore,
+            description: 'Download Pinterest videos, images and GIFs, including selected batches and ZIP.',
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          item: {
+            '@type': 'SoftwareApplication',
+            name: 'Picture Converter',
+            applicationCategory: 'BrowserApplication',
+            operatingSystem: 'Chrome',
+            url: site + '/picture-converter/',
+            installUrl: pictureStore,
+            description: 'Pick an image from a website or computer and convert it to PNG, JPG, WebP, PDF or ICO.',
+          },
+        },
+      ],
     },
   ],
 };
 ---
 
-<PageLayout
-  title="Browser Extensions for Files & Design — LayerPorter"
-  description="LayerPorter browser extensions for faster media and design workflows. Downloader saves Pinterest images, GIFs, videos, and complete board selections."
+<BaseLayout
+  title="Chrome Extensions — Pinterest Downloader & Picture Converter | LayerPorter"
+  description="LayerPorter Chrome extensions for downloading Pinterest videos, images and GIFs, plus converting website and local image files directly in Chrome."
   canonicalPath="/extensions/"
-  ogImage={`${site}/og/home.png`}
+  ogImage={site + '/og/home.png'}
 >
   <Fragment slot="head">
+    <link rel="stylesheet" href="/extensions-hub.css" />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
   </Fragment>
 
-  <h1>Browser extensions for faster file and design workflows</h1>
-  <p class="answer-first">
-    <strong>Downloader is available now</strong> for saving Pinterest images, GIFs, videos, and board selections in Chrome. More LayerPorter extensions are coming next for turning live websites into editable design layers.
-  </p>
+  <div class="extensions-hub">
+    <section class="extensions-hero">
+      <span class="extensions-kicker">Browser extensions</span>
+      <h1>Chrome extensions for downloading and converting images</h1>
+      <p>
+        Two focused tools. Use Pinterest Downloader to save media from Pinterest, or Picture Converter to pick an image
+        from a website or computer and save it in the format you need.
+      </p>
+    </section>
 
-  <div class="extension-showcase">
-    {extensions.map((e) => (
-      <div class="extension-show-card" id={e.id} class:list={[{ featured: e.storeUrl !== null }]}>
-        <div class="extension-show-head">
-          <h2>{e.name}</h2>
-          {e.storeUrl ? (
-            <span class="trust-badge extension-status-badge extension-live-badge">Available now</span>
-          ) : (
-            <span class="trust-badge extension-status-badge">Coming to Chrome Web Store</span>
-          )}
+    <section class="extensions-grid" aria-label="LayerPorter Chrome extensions">
+      <article class="extension-product">
+        <div class="extension-product-visual pinterest" aria-label="Pinterest Downloader interface preview">
+          <div class="ux-window">
+            <div class="ux-window-head">
+              <div class="ux-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+              <div class="ux-url">pinterest.com / board / references</div>
+              <div class="ux-extension-icon">
+                <img src="/pinterest-downloader/icon-128.png" alt="" width="21" height="21" decoding="async" />
+              </div>
+            </div>
+
+            <div class="pd-workspace">
+              <div class="pd-page">
+                <div class="pd-page-head"><b>Pinterest</b><span>Board</span></div>
+                <div class="pd-pins">
+                  <div class="pd-pin tall">
+                    <img
+                      src="/images/home/fashion-reference-320.webp"
+                      srcset="/images/home/fashion-reference-320.webp 320w, /images/home/fashion-reference-640.webp 640w"
+                      sizes="110px"
+                      alt=""
+                      width="320"
+                      height="443"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span class="pd-pin-action" aria-hidden="true">↓</span>
+                  </div>
+                  <div class="pd-pin">
+                    <img
+                      src="/images/home/travel-reference-320.webp"
+                      srcset="/images/home/travel-reference-320.webp 320w, /images/home/travel-reference-640.webp 640w"
+                      sizes="110px"
+                      alt=""
+                      width="320"
+                      height="213"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span class="pd-pin-action" aria-hidden="true">↓</span>
+                  </div>
+                  <div class="pd-pin">
+                    <img
+                      src="/images/home/workspace-reference-320.webp"
+                      srcset="/images/home/workspace-reference-320.webp 320w, /images/home/workspace-reference-640.webp 640w"
+                      sizes="110px"
+                      alt=""
+                      width="320"
+                      height="214"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span class="pd-pin-action" aria-hidden="true">↓</span>
+                  </div>
+                  <div class="pd-pin tall">
+                    <img
+                      src="/images/home/fashion-board-reference-320.webp"
+                      srcset="/images/home/fashion-board-reference-320.webp 320w, /images/home/fashion-board-reference-640.webp 640w"
+                      sizes="110px"
+                      alt=""
+                      width="320"
+                      height="213"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span class="pd-pin-action" aria-hidden="true">↓</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pd-panel">
+                <div class="pd-entry">
+                  <div class="pd-web-card">
+                    <span class="pd-web-icon" aria-hidden="true">←</span>
+                    <span class="pd-web-copy">
+                      <b>Pick an image or video</b>
+                      <small>Click an image or video on the page</small>
+                    </span>
+                    <span class="pd-web-go" aria-hidden="true">◎</span>
+                  </div>
+                  <div class="pd-web-card">
+                    <span class="pd-web-icon" aria-hidden="true">▦</span>
+                    <span class="pd-web-copy">
+                      <b>Find all images on this page</b>
+                      <small>Scan page, frames and lazy-loaded images</small>
+                    </span>
+                    <span class="pd-web-go" aria-hidden="true">→</span>
+                  </div>
+                </div>
+
+                <div class="pd-bulk">
+                  <div class="pd-bulk-head">
+                    <button class="pd-bulk-btn" type="button" tabindex="-1" aria-hidden="true">←</button>
+                    <div class="pd-bulk-title"><b>Images on page</b><small>24 images found</small></div>
+                    <button class="pd-bulk-btn" type="button" tabindex="-1" aria-hidden="true">↻</button>
+                    <button class="pd-bulk-btn" type="button" tabindex="-1" aria-hidden="true">≡</button>
+                  </div>
+                  <div class="pd-bulk-actions"><span>Select all</span><span>Clear</span><span>6 selected</span></div>
+                  <div class="pd-bulk-grid">
+                    <div class="pd-bulk-card">
+                      <img src="/images/home/fashion-reference-320.webp" alt="" width="320" height="443" loading="lazy" decoding="async" />
+                      <span class="pd-tick">✓</span>
+                    </div>
+                    <div class="pd-bulk-card">
+                      <img src="/images/home/travel-reference-320.webp" alt="" width="320" height="213" loading="lazy" decoding="async" />
+                      <span class="pd-tick">✓</span>
+                    </div>
+                    <div class="pd-bulk-card">
+                      <img src="/images/home/workspace-reference-320.webp" alt="" width="320" height="214" loading="lazy" decoding="async" />
+                      <span class="pd-tick">✓</span>
+                    </div>
+                    <div class="pd-bulk-card">
+                      <img src="/images/home/fashion-board-reference-320.webp" alt="" width="320" height="213" loading="lazy" decoding="async" />
+                      <span class="pd-tick">✓</span>
+                    </div>
+                    <div class="pd-bulk-card">
+                      <img src="/images/home/fashion-reference-320.webp" alt="" width="320" height="443" loading="lazy" decoding="async" />
+                      <span class="pd-tick">✓</span>
+                    </div>
+                    <div class="pd-bulk-card">
+                      <img src="/images/home/travel-reference-320.webp" alt="" width="320" height="213" loading="lazy" decoding="async" />
+                      <span class="pd-tick">✓</span>
+                    </div>
+                  </div>
+                  <div class="pd-download-bar">
+                    <div class="pd-download-row">
+                      <div class="pd-save">
+                        <label>Save as</label>
+                        <select class="pd-select" tabindex="-1" aria-hidden="true"><option>Original</option></select>
+                      </div>
+                      <div class="pd-download-split">
+                        <button class="pd-download-main" type="button" tabindex="-1" aria-hidden="true">Download</button>
+                        <button class="pd-download-more" type="button" tabindex="-1" aria-hidden="true">⌄</button>
+                      </div>
+                    </div>
+                    <div class="pd-download-meta">Download to folder · Create ZIP</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p>{e.whatItDoes}</p>
-        <ul class="extension-show-bullets">
-          {e.bullets.map((b) => (
-            <li>{b}</li>
-          ))}
-        </ul>
-        {e.id === 'picture-converter' && (
-          <p><a class="text-link" href="/extensions/picture-converter/">See Downloader details →</a></p>
-        )}
-        {e.storeUrl ? (
-          <a class="btn extension-install-btn btn-primary" href={e.storeUrl} rel="noopener">Add to Chrome — Free</a>
-        ) : (
-          <button class="btn extension-install-btn" disabled aria-disabled="true" title="Not in the Chrome Web Store yet — this button goes live with the listing">
-            Add to Chrome — coming soon
-          </button>
-        )}
-        <p class="extension-show-bridge">
-          Use a LayerPorter tool now → <a href={e.bridgeHref}>{e.bridgeLabel}</a>
-        </p>
-      </div>
-    ))}
-  </div>
 
-  <p class="extension-why-not-yet">
-    <strong>More extensions coming soon:</strong> Site to Canva and PSD Export are in final polish and Chrome Web
-    Store submission. This page will link to each listing as soon as it's live.
-  </p>
-</PageLayout>
+        <div class="extension-product-copy">
+          <div class="extension-product-top">
+            <div class="extension-product-name">Pinterest Downloader</div>
+            <span class="extension-live">Available</span>
+          </div>
+          <p>
+            Download Pinterest videos, images and GIFs from the page you are viewing. Pick one item or scan the whole
+            page, select several files and save them directly or as ZIP.
+          </p>
+          <div class="extension-features" aria-label="Pinterest Downloader features">
+            <span class="extension-feature">Pick one</span>
+            <span class="extension-feature">Scan page</span>
+            <span class="extension-feature">Bulk select</span>
+            <span class="extension-feature">Original</span>
+            <span class="extension-feature">ZIP</span>
+          </div>
+          <div class="extension-actions">
+            <a class="extension-btn primary" href={pinterestStore} target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a>
+            <a class="extension-btn secondary" href="/pinterest-downloader/">View details →</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="extension-product">
+        <div class="extension-product-visual converter" aria-label="Picture Converter interface preview">
+          <div class="ux-window">
+            <div class="ux-window-head">
+              <div class="ux-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+              <div class="ux-url">example.com / product-image.webp</div>
+              <div class="ux-extension-icon">
+                <img src="/picture-converter/welcome/picture-converter-icon.png" alt="" width="21" height="21" decoding="async" />
+              </div>
+            </div>
+
+            <div class="pc-workspace">
+              <div class="pc-source-card">
+                <span class="pc-source-arrow" aria-hidden="true">←</span>
+                <span class="pc-source-copy">
+                  <b>Pick an image from a website</b>
+                  <small>Import assets from any URL</small>
+                </span>
+                <span class="pc-source-icon">
+                  <img src="/picture-converter/welcome/picture-converter-icon.png" alt="" width="25" height="25" decoding="async" />
+                </span>
+              </div>
+
+              <div class="pc-main">
+                <div class="pc-stage">
+                  <div class="pc-gallery-icon" aria-hidden="true">▧</div>
+                  <strong>Drag &amp; drop an image here</strong>
+                  <p>or choose one from your computer</p>
+                  <button class="pc-choose" type="button" tabindex="-1" aria-hidden="true">Choose an image</button>
+                  <div class="pc-formats-title">Supported input formats</div>
+                  <div class="pc-inputs" aria-hidden="true">
+                    <span>PNG</span><span>JPG</span><span>WebP</span><span>HEIC</span><span>AVIF</span>
+                    <span>GIF</span><span>BMP</span><span>JFIF</span><span>SVG</span><span>+1</span>
+                  </div>
+                </div>
+
+                <div class="pc-settings">
+                  <div class="pc-output-formats" aria-hidden="true">
+                    <span class="pc-format active">PNG ✓</span>
+                    <span class="pc-format">JPG</span>
+                    <span class="pc-format">WEBP</span>
+                    <span class="pc-format">PDF</span>
+                    <span class="pc-format">ICO</span>
+                  </div>
+                  <div class="pc-option">
+                    <div class="pc-option-row"><span>Quality</span><span>92%</span></div>
+                    <div class="pc-range"></div>
+                  </div>
+                  <button class="pc-download" type="button" tabindex="-1" aria-hidden="true">↓ Download PNG</button>
+                  <div class="pc-summary"><b>Input</b> WebP · 1600×1200<br /><b>Output</b> PNG · 1600×1200</div>
+                  <div class="pc-local">Processed locally. Nothing is uploaded.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="extension-product-copy">
+          <div class="extension-product-top">
+            <div class="extension-product-name">Picture Converter</div>
+            <span class="extension-live">Available</span>
+          </div>
+          <p>
+            Pick an image from a website or choose one from your computer, then save it as PNG, JPG, WebP, PDF or ICO.
+            Local files stay on your device while they are processed.
+          </p>
+          <div class="extension-features" aria-label="Picture Converter features">
+            <span class="extension-feature">From website</span>
+            <span class="extension-feature">From computer</span>
+            <span class="extension-feature">PNG / JPG / WebP</span>
+            <span class="extension-feature">PDF / ICO</span>
+            <span class="extension-feature">Local</span>
+          </div>
+          <div class="extension-actions">
+            <a class="extension-btn primary" href={pictureStore} target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a>
+            <a class="extension-btn secondary" href="/picture-converter/">View details →</a>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <p class="extensions-note">
+      Product visuals follow the actual extension controls and workflows. Each product has a dedicated page with the full details.
+    </p>
+  </div>
+</BaseLayout>
