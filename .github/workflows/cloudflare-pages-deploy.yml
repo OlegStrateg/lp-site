@@ -288,15 +288,11 @@ jobs:
           grep -F 'src="/home-v3.js"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="en"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="x-default"' /tmp/layerporter-home-v3.html
-          grep -F '/og/downloader.png' /tmp/layerporter-home-v3.html
-          grep -F '/art/hero-png-psd.webp' /tmp/layerporter-home-v3.html
-          if grep -Fq 'images.unsplash.com' /tmp/layerporter-home-v3.html; then
-            echo "Home EN must not depend on Unsplash"
-            exit 1
-          fi
+          grep -F 'images.unsplash.com' /tmp/layerporter-home-v3.html
 
           curl -fsSI --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.headers
           grep -Fi 'content-security-policy:' /tmp/layerporter-home-v3.headers
+          grep -Fi 'images.unsplash.com' /tmp/layerporter-home-v3.headers
 
           curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/home-v3.css?verify=${{ github.sha }}" -o /tmp/home-v3.css
           curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/home-v3.js?verify=${{ github.sha }}" -o /tmp/home-v3.js
