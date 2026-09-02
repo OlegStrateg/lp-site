@@ -281,6 +281,7 @@ jobs:
           curl -fsS --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.html
           grep -F '<title>LayerPorter — Chrome Extensions &amp; Browser Tools</title>' /tmp/layerporter-home-v3.html
           grep -F '<meta name="description" content="Download media with Chrome extensions and convert images, PDFs and design files with focused browser tools. No account, no unnecessary steps.">' /tmp/layerporter-home-v3.html
+          test "$(grep -Fo 'Download media with Chrome extensions and convert images, PDFs and design files with focused browser tools. No account, no unnecessary steps.' /tmp/layerporter-home-v3.html | wc -l)" -eq 3
           grep -F '<h1>Save it.<br>Convert it.<br><span class="soft">Keep moving.</span></h1>' /tmp/layerporter-home-v3.html
           grep -F 'English <b>(EN)</b>' /tmp/layerporter-home-v3.html
           grep -F 'href="/home-v3.css"' /tmp/layerporter-home-v3.html
@@ -309,6 +310,7 @@ jobs:
           grep -F '<html lang="ru">' /tmp/layerporter-home-v3-ru.html
           grep -F '<title>LayerPorter — расширения для браузера и онлайн-инструменты</title>' /tmp/layerporter-home-v3-ru.html
           grep -F '<meta name="description" content="Расширения для браузера LayerPorter: расширения для Chrome, расширения для Яндекс Браузера и онлайн-инструменты для скачивания медиа и конвертации файлов.">' /tmp/layerporter-home-v3-ru.html
+          test "$(grep -Fo 'Расширения для браузера LayerPorter: расширения для Chrome, расширения для Яндекс Браузера и онлайн-инструменты для скачивания медиа и конвертации файлов.' /tmp/layerporter-home-v3-ru.html | wc -l)" -eq 3
           grep -F 'Расширения для Chrome и расширения для Яндекс Браузера помогают скачивать изображения и видео прямо со страниц, а онлайн-инструменты — менять форматы файлов без лишних сервисов и регистрации.' /tmp/layerporter-home-v3-ru.html
           grep -F '<link rel="canonical" href="https://layerporter.com/ru/"' /tmp/layerporter-home-v3-ru.html
           grep -F 'hreflang="en" href="https://layerporter.com/"' /tmp/layerporter-home-v3-ru.html
@@ -334,6 +336,7 @@ jobs:
           grep -F '<html lang="de">' /tmp/layerporter-home-v3-de.html
           grep -F '<title>LayerPorter — Browser-Erweiterungen &amp; Online-Tools</title>' /tmp/layerporter-home-v3-de.html
           grep -F '<meta name="description" content="Browser-Erweiterungen und Chrome-Erweiterungen von LayerPorter sowie Online-Tools zum Speichern von Medien und Konvertieren von Bildern, PDFs und Dateien.">' /tmp/layerporter-home-v3-de.html
+          test "$(grep -Fo 'Browser-Erweiterungen und Chrome-Erweiterungen von LayerPorter sowie Online-Tools zum Speichern von Medien und Konvertieren von Bildern, PDFs und Dateien.' /tmp/layerporter-home-v3-de.html | wc -l)" -eq 3
           grep -F 'LayerPorter bietet Browser-Erweiterungen, darunter Chrome-Erweiterungen, sowie Online-Tools zum Speichern von Medien und Konvertieren von Dateien.' /tmp/layerporter-home-v3-de.html
           grep -F '<link rel="canonical" href="https://layerporter.com/de/"' /tmp/layerporter-home-v3-de.html
           grep -F 'hreflang="en" href="https://layerporter.com/"' /tmp/layerporter-home-v3-de.html
@@ -357,6 +360,7 @@ jobs:
           grep -F '<html lang="es">' /tmp/layerporter-home-v3-es.html
           grep -F '<title>LayerPorter — Extensiones de navegador y herramientas online</title>' /tmp/layerporter-home-v3-es.html
           grep -F '<meta name="description" content="Extensiones de navegador y extensiones de Chrome de LayerPorter, además de herramientas online para guardar contenido y convertir imágenes, PDF y archivos.">' /tmp/layerporter-home-v3-es.html
+          test "$(grep -Fo 'Extensiones de navegador y extensiones de Chrome de LayerPorter, además de herramientas online para guardar contenido y convertir imágenes, PDF y archivos.' /tmp/layerporter-home-v3-es.html | wc -l)" -eq 3
           grep -F 'LayerPorter reúne extensiones de navegador, incluidas extensiones de Chrome, y herramientas online para guardar imágenes y vídeos desde la web y convertir archivos al formato que necesitas.' /tmp/layerporter-home-v3-es.html
           grep -F '<link rel="canonical" href="https://layerporter.com/es/"' /tmp/layerporter-home-v3-es.html
           grep -F 'hreflang="en" href="https://layerporter.com/"' /tmp/layerporter-home-v3-es.html
@@ -385,6 +389,7 @@ jobs:
           grep -F '<html lang="fr">' /tmp/layerporter-home-v3-fr.html
           grep -F '<title>LayerPorter — Extensions de navigateur et outils en ligne</title>' /tmp/layerporter-home-v3-fr.html
           grep -F '<meta name="description" content="Extensions de navigateur et extensions Chrome LayerPorter, avec des outils en ligne pour enregistrer des médias et convertir des images, PDF et fichiers.">' /tmp/layerporter-home-v3-fr.html
+          test "$(grep -Fo 'Extensions de navigateur et extensions Chrome LayerPorter, avec des outils en ligne pour enregistrer des médias et convertir des images, PDF et fichiers.' /tmp/layerporter-home-v3-fr.html | wc -l)" -eq 3
           grep -F 'LayerPorter réunit des extensions de navigateur, notamment des extensions Chrome, et des outils en ligne pour enregistrer images et vidéos depuis le web et convertir vos fichiers au bon format.' /tmp/layerporter-home-v3-fr.html
           grep -F '<link rel="canonical" href="https://layerporter.com/fr/"' /tmp/layerporter-home-v3-fr.html
           grep -F 'hreflang="fr" href="https://layerporter.com/fr/"' /tmp/layerporter-home-v3-fr.html
@@ -405,6 +410,7 @@ jobs:
           grep -F '<html lang="pt-BR">' /tmp/layerporter-home-v3-pt.html
           grep -F '<title>LayerPorter — Extensões de navegador e ferramentas online</title>' /tmp/layerporter-home-v3-pt.html
           grep -F '<meta name="description" content="Extensões de navegador e extensões para Chrome da LayerPorter, além de ferramentas online para salvar mídias e converter imagens, PDFs e arquivos.">' /tmp/layerporter-home-v3-pt.html
+          test "$(grep -Fo 'Extensões de navegador e extensões para Chrome da LayerPorter, além de ferramentas online para salvar mídias e converter imagens, PDFs e arquivos.' /tmp/layerporter-home-v3-pt.html | wc -l)" -eq 3
           grep -F 'A LayerPorter reúne extensões de navegador, incluindo extensões para Chrome, e ferramentas online para salvar imagens e vídeos da web e converter arquivos para o formato necessário.' /tmp/layerporter-home-v3-pt.html
           grep -F '<link rel="canonical" href="https://layerporter.com/pt-br/"' /tmp/layerporter-home-v3-pt.html
           grep -F 'hreflang="pt-BR" href="https://layerporter.com/pt-br/"' /tmp/layerporter-home-v3-pt.html
@@ -425,6 +431,7 @@ jobs:
           grep -F '<html lang="ja">' /tmp/layerporter-home-v3-ja.html
           grep -F '<title>LayerPorter — ブラウザ拡張機能とオンラインツール</title>' /tmp/layerporter-home-v3-ja.html
           grep -F '<meta name="description" content="ブラウザ拡張機能、Chrome 拡張機能、オンラインツールで、Web上の画像や動画を保存し、画像・PDF・ファイルを変換。登録不要。">' /tmp/layerporter-home-v3-ja.html
+          test "$(grep -Fo 'ブラウザ拡張機能、Chrome 拡張機能、オンラインツールで、Web上の画像や動画を保存し、画像・PDF・ファイルを変換。登録不要。' /tmp/layerporter-home-v3-ja.html | wc -l)" -eq 3
           grep -F 'LayerPorter は、ブラウザ拡張機能、Chrome 拡張機能、オンラインツールをまとめて提供します。閲覧中のページから画像や動画を保存し、必要な形式に変換して、そのまま次の作業へ進めます。' /tmp/layerporter-home-v3-ja.html
           grep -F '<link rel="canonical" href="https://layerporter.com/ja/"' /tmp/layerporter-home-v3-ja.html
           grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' /tmp/layerporter-home-v3-ja.html
@@ -445,6 +452,7 @@ jobs:
           grep -F '<html lang="zh-CN">' /tmp/layerporter-home-v3-zh.html
           grep -F '<title>LayerPorter — 浏览器扩展程序和在线工具</title>' /tmp/layerporter-home-v3-zh.html
           grep -F '<meta name="description" content="浏览器扩展程序、Chrome 扩展程序和在线工具，用于保存网页中的图片和视频，并转换图片、PDF 和文件。无需注册。">' /tmp/layerporter-home-v3-zh.html
+          test "$(grep -Fo '浏览器扩展程序、Chrome 扩展程序和在线工具，用于保存网页中的图片和视频，并转换图片、PDF 和文件。无需注册。' /tmp/layerporter-home-v3-zh.html | wc -l)" -eq 3
           grep -F 'LayerPorter 提供浏览器扩展程序、Chrome 扩展程序和在线工具，可直接从当前网页保存图片和视频、转换文件格式，然后继续下一步操作。' /tmp/layerporter-home-v3-zh.html
           grep -F '<link rel="canonical" href="https://layerporter.com/zh-cn/"' /tmp/layerporter-home-v3-zh.html
           grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' /tmp/layerporter-home-v3-zh.html
