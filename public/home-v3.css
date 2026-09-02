@@ -89,3 +89,99 @@ h1{font-size:clamp(58px,7vw,96px);line-height:.89;letter-spacing:-.078em;margin:
   .home-ja h1{font-size:42px;line-height:1.06;letter-spacing:-.015em}
   .home-zh h1{font-size:43px;line-height:1.06;letter-spacing:-.01em}
 }
+
+
+/* LP-041 — meaningful format icons for Home web-tool cards. */
+.tool-icon{
+  right:14px;
+  top:13px;
+  width:60px;
+  height:48px;
+  border-radius:0;
+  background:transparent;
+  display:block;
+  overflow:visible;
+  pointer-events:none;
+}
+.tool-icon svg{display:none}
+.tool-icon::before,
+.tool-icon::after{
+  position:absolute;
+  top:2px;
+  width:35px;
+  height:44px;
+  border-radius:9px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0 3px 7px;
+  font-size:8px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:.035em;
+  border:1px solid rgba(16,16,15,.10);
+  box-shadow:0 7px 16px rgba(16,16,15,.08);
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.tool-icon::before{
+  content:var(--tool-from);
+  left:1px;
+  z-index:1;
+  color:var(--tool-from-fg);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.72),rgba(255,255,255,0) 48%),
+    var(--tool-from-bg);
+  transform:rotate(-7deg) translateY(2px);
+}
+.tool-icon::after{
+  content:var(--tool-to);
+  right:0;
+  z-index:2;
+  color:var(--tool-to-fg);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.76),rgba(255,255,255,0) 48%),
+    var(--tool-to-bg);
+  transform:rotate(5deg);
+}
+.tool:hover .tool-icon::before{
+  transform:rotate(-9deg) translate(-2px,3px);
+  box-shadow:0 9px 20px rgba(16,16,15,.10);
+}
+.tool:hover .tool-icon::after{
+  transform:rotate(7deg) translate(2px,-1px);
+  box-shadow:0 10px 22px rgba(16,16,15,.12);
+}
+.tools-grid .tool:nth-child(1) .tool-icon{
+  --tool-from:"JPG";--tool-to:"PDF";
+  --tool-from-bg:#fff1db;--tool-from-fg:#8a5410;
+  --tool-to-bg:#ffe4e0;--tool-to-fg:#b42318;
+}
+.tools-grid .tool:nth-child(2) .tool-icon{
+  --tool-from:"PDF";--tool-to:"JPG";
+  --tool-from-bg:#ffe4e0;--tool-from-fg:#b42318;
+  --tool-to-bg:#eeeaff;--tool-to-fg:#4b3cc4;
+}
+.tools-grid .tool:nth-child(3) .tool-icon{
+  --tool-from:"IMG";--tool-to:"ICO";
+  --tool-from-bg:#eef0f3;--tool-from-fg:#4c5158;
+  --tool-to-bg:#e8e4ff;--tool-to-fg:#4938b8;
+}
+.tools-grid .tool:nth-child(4) .tool-icon{
+  --tool-from:"PSD";--tool-to:"PNG";
+  --tool-from-bg:#dfe8ff;--tool-from-fg:#1f55b7;
+  --tool-to-bg:#dff5ed;--tool-to-fg:#137456;
+}
+.tools-grid .tool:nth-child(5) .tool-icon{
+  --tool-from:"PSD";--tool-to:"JPG";
+  --tool-from-bg:#dfe8ff;--tool-from-fg:#1f55b7;
+  --tool-to-bg:#fff1db;--tool-to-fg:#8a5410;
+}
+.tools-grid .tool:nth-child(6) .tool-icon{
+  --tool-from:"PNG";--tool-to:"PSD";
+  --tool-from-bg:#dff5ed;--tool-from-fg:#137456;
+  --tool-to-bg:#dfe8ff;--tool-to-fg:#1f55b7;
+}
+@media(max-width:620px){
+  .tool-icon{right:12px;top:12px;width:56px;height:44px}
+  .tool-icon::before,.tool-icon::after{width:33px;height:41px;font-size:7.5px}
+}
