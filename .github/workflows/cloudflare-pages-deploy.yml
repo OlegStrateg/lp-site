@@ -288,7 +288,8 @@ jobs:
           grep -F 'src="/home-v3.js"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="en"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="x-default"' /tmp/layerporter-home-v3.html
-          grep -F 'images.unsplash.com' /tmp/layerporter-home-v3.html
+          grep -F '/images/home/fashion-reference-960.webp' /tmp/layerporter-home-v3.html
+          grep -F 'srcset="/images/home/fashion-reference-320.webp 320w' /tmp/layerporter-home-v3.html
 
           curl -fsSI --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.headers
           grep -Fi 'content-security-policy:' /tmp/layerporter-home-v3.headers
@@ -314,8 +315,8 @@ jobs:
           grep -F 'hreflang="x-default" href="https://layerporter.com/"' /tmp/layerporter-home-v3-ru.html
           grep -F 'Русский <b>(RU)</b>' /tmp/layerporter-home-v3-ru.html
           grep -F 'href="/ru/pinterest-downloader/"' /tmp/layerporter-home-v3-ru.html
-          grep -F '/og/downloader.png' /tmp/layerporter-home-v3-ru.html
-          grep -F '/art/hero-png-psd.webp' /tmp/layerporter-home-v3-ru.html
+          grep -F '/images/home/fashion-reference-960.webp' /tmp/layerporter-home-v3-ru.html
+          grep -F 'alt="Референс уличного модного образа"' /tmp/layerporter-home-v3-ru.html
           grep -F '<h1>Сохраняйте.<br>Меняйте формат.<br><span class="soft">Работайте дальше.</span></h1>' /tmp/layerporter-home-v3-ru.html
           if grep -Fq 'images.unsplash.com' /tmp/layerporter-home-v3-ru.html; then
             echo "Home RU must not depend on Unsplash"
@@ -342,7 +343,7 @@ jobs:
           grep -F 'href="/de/pinterest-downloader/"' /tmp/layerporter-home-v3-de.html
           grep -F '<body class="home-de">' /tmp/layerporter-home-v3-de.html
           grep -F '<h1>Speichern.<br>Konvertieren.<br><span class="soft">Direkt weiter.</span></h1>' /tmp/layerporter-home-v3-de.html
-          grep -F 'alt="Pinterest-Bildvorschau"' /tmp/layerporter-home-v3-de.html
+          grep -F 'alt="Streetstyle-Mode als Referenz"' /tmp/layerporter-home-v3-de.html
           if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-de.html; then
             echo "Home DE contains English image alt placeholder"
             exit 1
@@ -367,7 +368,7 @@ jobs:
           grep -F 'href="/es/pinterest-downloader/"' /tmp/layerporter-home-v3-es.html
           grep -F '<body class="home-es">' /tmp/layerporter-home-v3-es.html
           grep -F '<h1>Guarda.<br>Convierte.<br><span class="soft">Sigue sin rodeos.</span></h1>' /tmp/layerporter-home-v3-es.html
-          grep -F 'alt="Vista previa de imagen de Pinterest"' /tmp/layerporter-home-v3-es.html
+          grep -F 'alt="Referencia de estilo urbano"' /tmp/layerporter-home-v3-es.html
           if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-es.html; then
             echo "Home ES contains English image alt placeholder"
             exit 1
@@ -393,7 +394,7 @@ jobs:
           grep -F 'href="/fr/pinterest-downloader/"' /tmp/layerporter-home-v3-fr.html
           grep -F '<body class="home-fr">' /tmp/layerporter-home-v3-fr.html
           grep -F '<h1>Enregistrez.<br>Convertissez.<br><span class="soft">Continuez sans détour.</span></h1>' /tmp/layerporter-home-v3-fr.html
-          grep -F 'alt="Aperçu d’image Pinterest"' /tmp/layerporter-home-v3-fr.html
+          grep -F 'alt="Référence de style urbain"' /tmp/layerporter-home-v3-fr.html
           if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-fr.html; then
             echo "Home FR contains English image alt placeholder"
             exit 1
@@ -414,7 +415,7 @@ jobs:
           grep -F 'href="/pt-br/pinterest-downloader/"' /tmp/layerporter-home-v3-pt.html
           grep -F '<body class="home-pt">' /tmp/layerporter-home-v3-pt.html
           grep -F '<h1>Salve.<br>Converta.<br><span class="soft">Continue sem interrupções.</span></h1>' /tmp/layerporter-home-v3-pt.html
-          grep -F 'alt="Prévia de imagem do Pinterest"' /tmp/layerporter-home-v3-pt.html
+          grep -F 'alt="Referência de estilo urbano"' /tmp/layerporter-home-v3-pt.html
           if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-pt.html; then
             echo "Home PT-BR contains English image alt placeholder"
             exit 1
@@ -435,7 +436,7 @@ jobs:
           grep -F 'href="/ja/pinterest-downloader/"' /tmp/layerporter-home-v3-ja.html
           grep -F '<body class="home-ja">' /tmp/layerporter-home-v3-ja.html
           grep -F '<h1>保存して、変換して、<br><span class="soft">そのまま次へ。</span></h1>' /tmp/layerporter-home-v3-ja.html
-          grep -F 'alt="Pinterest の画像プレビュー"' /tmp/layerporter-home-v3-ja.html
+          grep -F 'alt="ストリートファッションの参考画像"' /tmp/layerporter-home-v3-ja.html
           if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-ja.html; then
             echo "Home JA contains English image alt placeholder"
             exit 1
@@ -456,7 +457,7 @@ jobs:
           grep -F 'href="/zh-cn/pinterest-downloader/"' /tmp/layerporter-home-v3-zh.html
           grep -F '<body class="home-zh">' /tmp/layerporter-home-v3-zh.html
           grep -F '<h1>保存、转换，<br><span class="soft">继续下一步。</span></h1>' /tmp/layerporter-home-v3-zh.html
-          grep -F 'alt="Pinterest 图片预览"' /tmp/layerporter-home-v3-zh.html
+          grep -F 'alt="街头时尚参考图"' /tmp/layerporter-home-v3-zh.html
           if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-zh.html; then
             echo "Home ZH-CN contains English image alt placeholder"
             exit 1
@@ -474,6 +475,16 @@ jobs:
             grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' "$html"
             grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' "$html"
             grep -F 'hreflang="x-default" href="https://layerporter.com/"' "$html"
+            grep -F '/images/home/fashion-reference-960.webp' "$html"
+            grep -F 'srcset="/images/home/fashion-reference-320.webp 320w' "$html"
+            if grep -Fq 'images.unsplash.com' "$html"; then
+              echo "Home locale must not depend on Unsplash after LP-043"
+              exit 1
+            fi
+            if grep -Eq 'src="/og/downloader.png"|src="/art/hero-png-psd.webp"|src="/og/home.png"|src="/og/pdf-to-jpg.png"|src="/og/export-ai-builders.png"' "$html"; then
+              echo "Home locale contains obsolete content image sources after LP-043"
+              exit 1
+            fi
           done
 
           echo "LayerPorter Home V3 ALL 8 LOCALES PASS"
