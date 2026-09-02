@@ -336,6 +336,13 @@ jobs:
           grep -F 'hreflang="de" href="https://layerporter.com/de/"' /tmp/layerporter-home-v3-de.html
           grep -F 'Deutsch <b>(DE)</b>' /tmp/layerporter-home-v3-de.html
           grep -F 'href="/de/pinterest-downloader/"' /tmp/layerporter-home-v3-de.html
+          grep -F '<body class="home-de">' /tmp/layerporter-home-v3-de.html
+          grep -F '<h1>Speichern.<br>Konvertieren.<br><span class="soft">Direkt weiter.</span></h1>' /tmp/layerporter-home-v3-de.html
+          grep -F 'alt="Pinterest-Bildvorschau"' /tmp/layerporter-home-v3-de.html
+          if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-de.html; then
+            echo "Home DE contains English image alt placeholder"
+            exit 1
+          fi
           grep -F '<loc>https://layerporter.com/de/</loc>' /tmp/layerporter-home-v3-sitemap.xml
 
           echo "LayerPorter Home V3 DE PASS"
@@ -351,6 +358,13 @@ jobs:
           grep -F 'hreflang="es" href="https://layerporter.com/es/"' /tmp/layerporter-home-v3-es.html
           grep -F 'Español <b>(ES)</b>' /tmp/layerporter-home-v3-es.html
           grep -F 'href="/es/pinterest-downloader/"' /tmp/layerporter-home-v3-es.html
+          grep -F '<body class="home-es">' /tmp/layerporter-home-v3-es.html
+          grep -F '<h1>Guarda.<br>Convierte.<br><span class="soft">Sigue sin rodeos.</span></h1>' /tmp/layerporter-home-v3-es.html
+          grep -F 'alt="Vista previa de imagen de Pinterest"' /tmp/layerporter-home-v3-es.html
+          if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-es.html; then
+            echo "Home ES contains English image alt placeholder"
+            exit 1
+          fi
           grep -F '<loc>https://layerporter.com/es/</loc>' /tmp/layerporter-home-v3-sitemap.xml
           if grep -Fq '\n        <a href="/de/"' /tmp/layerporter-home-v3-es.html; then
             echo "Literal backslash-n found in locale menu"
@@ -366,6 +380,13 @@ jobs:
           grep -F 'hreflang="fr" href="https://layerporter.com/fr/"' /tmp/layerporter-home-v3-fr.html
           grep -F 'Français <b>(FR)</b>' /tmp/layerporter-home-v3-fr.html
           grep -F 'href="/fr/pinterest-downloader/"' /tmp/layerporter-home-v3-fr.html
+          grep -F '<body class="home-fr">' /tmp/layerporter-home-v3-fr.html
+          grep -F '<h1>Enregistrez.<br>Convertissez.<br><span class="soft">Continuez sans détour.</span></h1>' /tmp/layerporter-home-v3-fr.html
+          grep -F 'alt="Aperçu d’image Pinterest"' /tmp/layerporter-home-v3-fr.html
+          if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-fr.html; then
+            echo "Home FR contains English image alt placeholder"
+            exit 1
+          fi
           grep -F '<loc>https://layerporter.com/fr/</loc>' /tmp/layerporter-home-v3-sitemap.xml
           echo "LayerPorter Home V3 FR PASS"
 
@@ -376,6 +397,13 @@ jobs:
           grep -F 'hreflang="pt-BR" href="https://layerporter.com/pt-br/"' /tmp/layerporter-home-v3-pt.html
           grep -F 'Português <b>(PT)</b>' /tmp/layerporter-home-v3-pt.html
           grep -F 'href="/pt-br/pinterest-downloader/"' /tmp/layerporter-home-v3-pt.html
+          grep -F '<body class="home-pt">' /tmp/layerporter-home-v3-pt.html
+          grep -F '<h1>Salve.<br>Converta.<br><span class="soft">Continue sem interrupções.</span></h1>' /tmp/layerporter-home-v3-pt.html
+          grep -F 'alt="Prévia de imagem do Pinterest"' /tmp/layerporter-home-v3-pt.html
+          if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-pt.html; then
+            echo "Home PT-BR contains English image alt placeholder"
+            exit 1
+          fi
           grep -F '<loc>https://layerporter.com/pt-br/</loc>' /tmp/layerporter-home-v3-sitemap.xml
           echo "LayerPorter Home V3 PT-BR PASS"
 
@@ -386,6 +414,13 @@ jobs:
           grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' /tmp/layerporter-home-v3-ja.html
           grep -F '日本語 <b>(JA)</b>' /tmp/layerporter-home-v3-ja.html
           grep -F 'href="/ja/pinterest-downloader/"' /tmp/layerporter-home-v3-ja.html
+          grep -F '<body class="home-ja">' /tmp/layerporter-home-v3-ja.html
+          grep -F '<h1>保存して、変換して、<br><span class="soft">そのまま次へ。</span></h1>' /tmp/layerporter-home-v3-ja.html
+          grep -F 'alt="Pinterest の画像プレビュー"' /tmp/layerporter-home-v3-ja.html
+          if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-ja.html; then
+            echo "Home JA contains English image alt placeholder"
+            exit 1
+          fi
           grep -F '<loc>https://layerporter.com/ja/</loc>' /tmp/layerporter-home-v3-sitemap.xml
           echo "LayerPorter Home V3 JA PASS"
 
@@ -396,6 +431,13 @@ jobs:
           grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' /tmp/layerporter-home-v3-zh.html
           grep -F '简体中文 <b>(ZH)</b>' /tmp/layerporter-home-v3-zh.html
           grep -F 'href="/zh-cn/pinterest-downloader/"' /tmp/layerporter-home-v3-zh.html
+          grep -F '<body class="home-zh">' /tmp/layerporter-home-v3-zh.html
+          grep -F '<h1>保存、转换，<br><span class="soft">继续下一步。</span></h1>' /tmp/layerporter-home-v3-zh.html
+          grep -F 'alt="Pinterest 图片预览"' /tmp/layerporter-home-v3-zh.html
+          if grep -Fq 'alt="Pinterest visual reference"' /tmp/layerporter-home-v3-zh.html; then
+            echo "Home ZH-CN contains English image alt placeholder"
+            exit 1
+          fi
           grep -F '<loc>https://layerporter.com/zh-cn/</loc>' /tmp/layerporter-home-v3-sitemap.xml
           echo "LayerPorter Home V3 ZH-CN PASS"
 
