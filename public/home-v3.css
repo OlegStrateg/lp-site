@@ -185,3 +185,104 @@ h1{font-size:clamp(58px,7vw,96px);line-height:.89;letter-spacing:-.078em;margin:
   .tool-icon{right:12px;top:12px;width:56px;height:44px}
   .tool-icon::before,.tool-icon::after{width:33px;height:41px;font-size:7.5px}
 }
+
+
+/* LP-041 part 2 — stronger format visuals in product preview and web-tools tile. */
+.file-stack{gap:11px}
+.file{
+  width:68px;
+  height:86px;
+  border-radius:13px;
+  overflow:hidden;
+  box-shadow:0 10px 24px rgba(0,0,0,.16);
+}
+.file::before{
+  left:9px;
+  right:9px;
+  top:10px;
+  height:34px;
+  border-radius:8px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,0) 55%),
+    linear-gradient(135deg,#474743,#30302d);
+}
+.file::after{
+  content:"";
+  position:absolute;
+  right:0;
+  top:0;
+  width:20px;
+  height:20px;
+  background:linear-gradient(225deg,rgba(255,255,255,.14) 49%,transparent 50%);
+}
+.file span{
+  margin-top:42px;
+  font-size:10px;
+  letter-spacing:.045em;
+}
+.file.out{
+  background:#ff4f2f;
+  border-color:#ff4f2f;
+}
+.file.out::before{
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%),
+    linear-gradient(135deg,#ff8c73,#ff5b3d);
+}
+.file-arrow{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:#2a2a28;
+  color:#b7b3aa;
+  font-size:12px;
+  box-shadow:inset 0 0 0 1px #3a3a36;
+}
+
+.web-grid span{
+  position:relative;
+  gap:5px;
+  padding-top:32px;
+  overflow:hidden;
+  color:#111;
+}
+.web-grid span svg{display:none}
+.web-grid span::before{
+  content:"";
+  position:absolute;
+  top:11px;
+  left:50%;
+  width:25px;
+  height:30px;
+  border-radius:7px;
+  transform:translateX(-50%);
+  border:1px solid rgba(16,16,15,.10);
+  box-shadow:0 5px 12px rgba(16,16,15,.08);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.72),rgba(255,255,255,0) 48%),
+    var(--format-bg,#ece9e2);
+}
+.web-grid span::after{
+  content:"";
+  position:absolute;
+  top:11px;
+  left:calc(50% + 5px);
+  width:9px;
+  height:9px;
+  border-radius:0 6px 0 4px;
+  background:rgba(255,255,255,.76);
+}
+.web-grid span:nth-child(1){--format-bg:#fff1db}
+.web-grid span:nth-child(2){--format-bg:#ffe4e0}
+.web-grid span:nth-child(3){--format-bg:#dff5ed}
+.web-grid span:nth-child(4){--format-bg:#dfe8ff}
+.web-grid span:nth-child(5){--format-bg:#e8e4ff}
+.web-grid span:nth-child(6){--format-bg:#e8f1ff}
+.web-grid span:nth-child(1)::before{box-shadow:inset 0 -7px 0 #f0b55c,0 5px 12px rgba(16,16,15,.08)}
+.web-grid span:nth-child(2)::before{box-shadow:inset 0 -7px 0 #ef6b62,0 5px 12px rgba(16,16,15,.08)}
+.web-grid span:nth-child(3)::before{box-shadow:inset 0 -7px 0 #46a98a,0 5px 12px rgba(16,16,15,.08)}
+.web-grid span:nth-child(4)::before{box-shadow:inset 0 -7px 0 #5d86e8,0 5px 12px rgba(16,16,15,.08)}
+.web-grid span:nth-child(5)::before{box-shadow:inset 0 -7px 0 #7564dd,0 5px 12px rgba(16,16,15,.08)}
+.web-grid span:nth-child(6)::before{box-shadow:inset 0 -7px 0 #6d9ee8,0 5px 12px rgba(16,16,15,.08)}
