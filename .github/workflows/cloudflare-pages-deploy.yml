@@ -481,8 +481,8 @@ jobs:
               echo "Home locale must not depend on Unsplash after LP-043"
               exit 1
             fi
-            if grep -Eq '/og/downloader.png|/art/hero-png-psd.webp|/og/home.png|/og/pdf-to-jpg.png|/og/export-ai-builders.png' "$html"; then
-              echo "Home locale contains obsolete image assets after LP-043"
+            if grep -Eq 'src="/og/downloader.png"|src="/art/hero-png-psd.webp"|src="/og/home.png"|src="/og/pdf-to-jpg.png"|src="/og/export-ai-builders.png"' "$html"; then
+              echo "Home locale contains obsolete content image sources after LP-043"
               exit 1
             fi
           done
