@@ -494,29 +494,63 @@ jobs:
         run: |
           set -euo pipefail
 
-          curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/extensions/?verify=${{ github.sha }}" -o /tmp/layerporter-extensions.html
-          grep -F '<h1>Chrome extensions for downloading and converting images</h1>' /tmp/layerporter-extensions.html
-          grep -F 'Pinterest Downloader' /tmp/layerporter-extensions.html
-          grep -F 'Picture Converter' /tmp/layerporter-extensions.html
-          grep -F '/pinterest-downloader/' /tmp/layerporter-extensions.html
-          grep -F '/picture-converter/' /tmp/layerporter-extensions.html
-          grep -F '/images/home/fashion-reference-320.webp' /tmp/layerporter-extensions.html
-          grep -F 'srcset="/images/home/fashion-reference-320.webp 320w, /images/home/fashion-reference-640.webp 640w"' /tmp/layerporter-extensions.html
-          if grep -Fq 'images.unsplash.com' /tmp/layerporter-extensions.html; then
-            echo "Extensions hub must not depend on Unsplash"
-            exit 1
-          fi
-          if grep -Fq '/og/downloader.png' /tmp/layerporter-extensions.html; then
-            echo "Extensions hub must not use heavy Downloader OG image as content"
-            exit 1
-          fi
+          verify_extensions_locale () {
+            locale_path="$1"
+            expected_h1="$2"
+            expected_pc_name="$3"
+            expected_pd_name="$4"
+            out="$5"
+
+            curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com${locale_path}?verify=${{ github.sha }}" -o "$out"
+            grep -F "<h1>${expected_h1}</h1>" "$out"
+            grep -F "$expected_pc_name" "$out"
+            grep -F "$expected_pd_name" "$out"
+            grep -F '/picture-converter/' "$out"
+            grep -F '/images/home/fashion-reference-320.webp' "$out"
+            grep -F 'srcset="/images/home/fashion-reference-320.webp 320w, /images/home/fashion-reference-640.webp 640w"' "$out"
+            if grep -Fq 'images.unsplash.com' "$out"; then
+              echo "Extensions locale must not depend on Unsplash: $locale_path"
+              exit 1
+            fi
+            if grep -Fq '/og/downloader.png' "$out"; then
+              echo "Extensions locale must not use heavy Downloader OG image as content: $locale_path"
+              exit 1
+            fi
+          }
+
+          verify_extensions_locale "/extensions/" "Chrome extensions for downloading and converting images" "Picture Converter" "Pinterest Downloader" "/tmp/ext-en.html"
+          verify_extensions_locale "/ru/extensions/" "Расширения для Chrome для скачивания и конвертации изображений" "Конвертер картинок" "Скачать фото с Пинтерест" "/tmp/ext-ru.html"
+          verify_extensions_locale "/de/extensions/" "Chrome-Erweiterungen zum Herunterladen und Konvertieren von Bildern" "Bildkonverter" "Pinterest Download" "/tmp/ext-de.html"
+          verify_extensions_locale "/es/extensions/" "Extensiones de Chrome para descargar y convertir imágenes" "Conversor de Imágenes" "Descargar Pinterest" "/tmp/ext-es.html"
+          verify_extensions_locale "/fr/extensions/" "Extensions Chrome pour télécharger et convertir des images" "Convertisseur d'images" "Télécharger Pinterest" "/tmp/ext-fr.html"
+          verify_extensions_locale "/pt-br/extensions/" "Extensões para Chrome para baixar e converter imagens" "Conversor de Imagens" "Baixar Pinterest" "/tmp/ext-pt.html"
+          verify_extensions_locale "/ja/extensions/" "画像のダウンロードと変換に使える Chrome 拡張機能" "画像コンバーター" "ピンタレスト ダウンロード" "/tmp/ext-ja.html"
+          verify_extensions_locale "/zh-cn/extensions/" "用于下载和转换图片的 Chrome 扩展程序" "图片转换器" "Pinterest 下载" "/tmp/ext-zh.html"
+
+          grep -F '<link rel="alternate" hreflang="ru" href="https://layerporter.com/ru/extensions/">' /tmp/ext-en.html
+          grep -F '<link rel="alternate" hreflang="x-default" href="https://layerporter.com/extensions/">' /tmp/ext-en.html
+          grep -F '<link rel="canonical" href="https://layerporter.com/ru/extensions/">' /tmp/ext-ru.html
+          grep -F '<html lang="ru">' /tmp/ext-ru.html
+          grep -F '<html lang="de">' /tmp/ext-de.html
+          grep -F '<html lang="es">' /tmp/ext-es.html
+          grep -F '<html lang="fr">' /tmp/ext-fr.html
+          grep -F '<html lang="pt-BR">' /tmp/ext-pt.html
+          grep -F '<html lang="ja">' /tmp/ext-ja.html
+          grep -F '<html lang="zh-CN">' /tmp/ext-zh.html
+
+          for page in /tmp/ext-ru.html /tmp/ext-de.html /tmp/ext-es.html /tmp/ext-fr.html /tmp/ext-pt.html /tmp/ext-ja.html /tmp/ext-zh.html; do
+            if grep -Eq 'Two focused tools|Add to Chrome|View details|Pick an image or video|Find all images on this page|Drag & drop an image here|Processed locally\. Nothing is uploaded\.|Local engine' "$page"; then
+              echo "Untranslated English UI/marketing text found in $page"
+              exit 1
+            fi
+          done
 
           curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/picture-converter/?verify=${{ github.sha }}" -o /tmp/layerporter-picture-converter.html
           grep -F '<h1' /tmp/layerporter-picture-converter.html
           grep -F 'Picture Converter' /tmp/layerporter-picture-converter.html
           grep -F 'ooiklbnjmhbcfnllkgjahadblibecgfj' /tmp/layerporter-picture-converter.html
 
-          echo "LayerPorter Extensions CRO hub PASS"
+          echo "LayerPorter Extensions CRO hub ALL 8 LOCALES PASS"
 
       - name: Verify Pinterest domain ownership meta
         shell: bash
