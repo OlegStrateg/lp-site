@@ -143,7 +143,7 @@ jobs:
               exit 1
             fi
 
-            grep -Fq 'meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1"' "$tmp"
+            grep -Fq 'meta name="robots" content="index,follow"' "$tmp"
             grep -Fq 'hreflang="x-default"' "$tmp"
             grep -Fq "nmpahchhmcdejmfcmkphnbhckmlhhnon" "$tmp"
             ok=$((ok+1))
@@ -288,7 +288,7 @@ jobs:
           grep -F 'src="/home-v3.js"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="en"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="x-default"' /tmp/layerporter-home-v3.html
-          grep -F '/images/picture-converter/webp-to-jpg-example-960.webp' /tmp/layerporter-home-v3.html
+          grep -F '/images/home/fashion-reference-960.webp' /tmp/layerporter-home-v3.html
           grep -F 'srcset="/images/home/fashion-reference-320.webp 320w' /tmp/layerporter-home-v3.html
 
           curl -fsSI --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.headers
@@ -315,7 +315,7 @@ jobs:
           grep -F 'hreflang="x-default" href="https://layerporter.com/"' /tmp/layerporter-home-v3-ru.html
           grep -F 'Русский <b>(RU)</b>' /tmp/layerporter-home-v3-ru.html
           grep -F 'href="/ru/pinterest-downloader/"' /tmp/layerporter-home-v3-ru.html
-          grep -F '/images/picture-converter/webp-to-jpg-example-960.webp' /tmp/layerporter-home-v3-ru.html
+          grep -F '/images/home/fashion-reference-960.webp' /tmp/layerporter-home-v3-ru.html
           grep -F 'alt="Референс уличного модного образа"' /tmp/layerporter-home-v3-ru.html
           grep -F '<h1>Сохраняйте.<br>Меняйте формат.<br><span class="soft">Работайте дальше.</span></h1>' /tmp/layerporter-home-v3-ru.html
           if grep -Fq 'images.unsplash.com' /tmp/layerporter-home-v3-ru.html; then
@@ -475,7 +475,7 @@ jobs:
             grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' "$html"
             grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' "$html"
             grep -F 'hreflang="x-default" href="https://layerporter.com/"' "$html"
-            grep -F '/images/picture-converter/webp-to-jpg-example-960.webp' "$html"
+            grep -F '/images/home/fashion-reference-960.webp' "$html"
             grep -F 'srcset="/images/home/fashion-reference-320.webp 320w' "$html"
             if grep -Fq 'images.unsplash.com' "$html"; then
               echo "Home locale must not depend on Unsplash after LP-043"
@@ -609,179 +609,7 @@ jobs:
           NODE
 
           ok=0
-          while IFS=
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fsS --max-time 20 -A "Mozilla/5.0" "https://layerporter.com/?verify=${{ github.sha }}" -o /tmp/layerporter-home.html
-          grep -F '<meta name="p:domain_verify" content="272122ef2e4a2ceeacbd8a6bc0b0e71f">' /tmp/layerporter-home.html
-          echo "Pinterest domain verification meta PASS"
-
-      - name: Verify Pinterest account admin locked
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          BASE="https://layerporter.com/internal/pinterest-automation"
-
-          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/admin/auth?verify=${{ github.sha }}" -o /tmp/pa-admin-auth.json
-          node -e '
-            const fs=require("fs");
-            const x=JSON.parse(fs.readFileSync("/tmp/pa-admin-auth.json","utf8"));
-            if(x.ok!==true || x.authenticated!==false) process.exit(1);
-          '
-
-          STATUS="$(curl -sS -o /tmp/pa-admin-accounts.json -w "%{http_code}" --max-time 20 -A "Mozilla/5.0" "$BASE/admin/accounts?verify=${{ github.sha }}")"
-          if [ "$STATUS" != "401" ]; then
-            echo "Admin accounts endpoint must be locked without a session, got HTTP $STATUS"
-            cat /tmp/pa-admin-accounts.json
-            exit 1
-          fi
-
-          node -e '
-            const fs=require("fs");
-            const x=JSON.parse(fs.readFileSync("/tmp/pa-admin-accounts.json","utf8"));
-            if(x.error!=="unauthorized") process.exit(1);
-          '
-
-          grep -F "Подключить аккаунт" public/internal/pinterest-automation/index.html
-          grep -F "admin/accounts" public/internal/pinterest-automation/app.js
-          grep -F "account_id" functions/internal/pinterest-automation/api/pins.js
-
-          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions --exclude-dir=node_modules; then
-            echo "Pinterest access token pattern found in repository files"
-            exit 1
-          fi
-
-          echo "Pinterest account admin PASS: locked, multi-account aware, no token in source"
-
-      - name: Verify Pinterest empty-board recovery path
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          BASE="https://layerporter.com/internal/pinterest-automation"
-
-          grep -F "CREATE_SANDBOX_BOARD" functions/internal/pinterest-automation/api/boards.js
-          grep -F "pinterestRequest(account, '/boards'" functions/internal/pinterest-automation/api/boards.js
-          grep -F "sandbox_account_required" functions/internal/pinterest-automation/api/boards.js
-
-          STATUS="$(curl -sS -o /tmp/pa-create-board.json -w "%{http_code}" --max-time 20             -A "Mozilla/5.0"             -H "Content-Type: application/json"             -X POST             --data '{"confirm":"CREATE_SANDBOX_BOARD","account_id":"acct_test","name":"LayerPorter Sandbox Test"}'             "$BASE/api/boards")"
-
-          if [ "$STATUS" != "401" ] && [ "$STATUS" != "403" ]; then
-            echo "Unauthenticated Sandbox board creation must remain blocked, got HTTP $STATUS"
-            cat /tmp/pa-create-board.json
-            exit 1
-          fi
-
-          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions --exclude-dir=node_modules; then
-            echo "Pinterest access token pattern found in source"
-            exit 1
-          fi
-
-          echo "Pinterest empty-board recovery PASS: create path present and locked"
-
-      - name: Verify Pinterest cycle diagnostics locked
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          BASE="https://layerporter.com/internal/pinterest-automation"
-
-          grep -F "pin_metrics=true" functions/internal/pinterest-automation/api/pins.js
-          grep -F "pin_metrics=true" functions/internal/pinterest-automation/api/diagnostics.js
-          grep -F "READBACK_DELAYS_MS" functions/internal/pinterest-automation/api/pins.js
-          grep -F "list_contains_pin" functions/internal/pinterest-automation/api/diagnostics.js
-          grep -F "requireAdmin(request, env)" functions/internal/pinterest-automation/api/diagnostics.js
-
-          STATUS=""
-          for i in {1..18}; do
-            STATUS="$(curl -sS -o /tmp/pa-diag.json -w "%{http_code}" --max-time 20               -A "Mozilla/5.0"               "$BASE/api/diagnostics?account_id=acct_test&verify=${{ github.sha }}")"
-
-            if [ "$STATUS" = "401" ]; then
-              break
-            fi
-
-            if [ "$STATUS" = "404" ]; then
-              echo "Diagnostics route not propagated yet (attempt $i/18)"
-              sleep 5
-              continue
-            fi
-
-            echo "Diagnostics endpoint returned unexpected HTTP $STATUS"
-            cat /tmp/pa-diag.json
-            exit 1
-          done
-
-          if [ "$STATUS" != "401" ]; then
-            echo "Diagnostics endpoint did not propagate as locked route, final HTTP $STATUS"
-            cat /tmp/pa-diag.json
-            exit 1
-          fi
-
-          node -e '
-            const fs=require("fs");
-            const x=JSON.parse(fs.readFileSync("/tmp/pa-diag.json","utf8"));
-            if(x.error!=="unauthorized") process.exit(1);
-          '
-
-          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions --exclude-dir=node_modules; then
-            echo "Pinterest access token pattern found in source"
-            exit 1
-          fi
-
-          echo "Pinterest cycle diagnostics PASS: server readback, list/get checks, locked endpoint"
-
-      - name: Verify Pinterest PIN-005 live blocks
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          BASE="https://layerporter.com/internal/pinterest-automation"
-
-          grep -F 'crons = ["*/5 * * * *"]' wrangler-pinterest-worker.toml
-          grep -F "network_uncertain" worker/pinterest-queue-worker.js
-          grep -F "server_uncertain" worker/pinterest-queue-worker.js
-          grep -F "daily_limit" worker/pinterest-queue-worker.js
-          grep -F "api/content" public/internal/pinterest-automation/app.js
-          grep -F "api/queue" public/internal/pinterest-automation/app.js
-          grep -F "api/analytics" public/internal/pinterest-automation/app.js
-          grep -F "api/settings" public/internal/pinterest-automation/app.js
-
-          if grep -Fq "Тестовый Pin" public/internal/pinterest-automation/index.html; then
-            echo "Technical Test Pin control must not be visible in product UI"
-            exit 1
-          fi
-
-          if grep -Fq "Проверить API-цикл" public/internal/pinterest-automation/index.html; then
-            echo "Technical API-cycle control must not be visible in product UI"
-            exit 1
-          fi
-
-          for endpoint in content queue analytics settings dashboard; do
-            STATUS="$(curl -sS -o "/tmp/pa-$endpoint.json" -w "%{http_code}" --max-time 20 -A "Mozilla/5.0" "$BASE/api/$endpoint?verify=${{ github.sha }}")"
-            if [ "$STATUS" != "401" ]; then
-              echo "$endpoint must be admin-locked, got HTTP $STATUS"
-              cat "/tmp/pa-$endpoint.json"
-              exit 1
-            fi
-          done
-
-          curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE/health?verify=${{ github.sha }}" -o /tmp/pa-pin005-health.json
-          node -e '
-            const fs=require("fs");
-            const x=JSON.parse(fs.readFileSync("/tmp/pa-pin005-health.json","utf8"));
-            if(x.ok!==true || x.livePublishing!==false || x.workerConfigured!==true) process.exit(1);
-          '
-
-          if grep -R -E "pina_[A-Za-z0-9_-]{20,}" public functions worker --exclude-dir=node_modules; then
-            echo "Pinterest access token pattern found in source"
-            exit 1
-          fi
-
-          echo "PIN-005 PASS: live blocks locked, cron worker configured, Production Live OFF"
-
-\t' read -r code route tier; do
+          while read -r code route tier; do
             if [ "$code" = "en" ]; then
               path="/picture-converter/"
             else
@@ -792,8 +620,7 @@ jobs:
 
             passed=0
             for attempt in {1..6}; do
-              if curl -fsS --max-time 20 -A "Mozilla/5.0" "$url" -o "$tmp" \
-                && grep -Fq "name=\"lp-locale\" content=\"$code\"" "$tmp"; then
+              if curl -fsS --max-time 20 -A "Mozilla/5.0" "$url" -o "$tmp" && grep -Fq "name=\"lp-locale\" content=\"$code\"" "$tmp"; then
                 passed=1
                 break
               fi
