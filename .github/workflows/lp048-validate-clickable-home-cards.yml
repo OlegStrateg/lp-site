@@ -1,0 +1,55 @@
+name: LP-048 Validate Clickable Home Cards
+
+on:
+  push:
+    branches:
+      - cro/LP-048-home-clickable-extension-cards
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Validate all 8 Home locales
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          pages={
+            "en":("dist/index.html","/pinterest-downloader/"),
+            "ru":("dist/ru/index.html","/ru/pinterest-downloader/"),
+            "de":("dist/de/index.html","/de/pinterest-downloader/"),
+            "es":("dist/es/index.html","/es/pinterest-downloader/"),
+            "fr":("dist/fr/index.html","/fr/pinterest-downloader/"),
+            "pt-br":("dist/pt-br/index.html","/pt-br/pinterest-downloader/"),
+            "ja":("dist/ja/index.html","/ja/pinterest-downloader/"),
+            "zh-cn":("dist/zh-cn/index.html","/zh-cn/pinterest-downloader/"),
+          }
+          for slug,(file,pd) in pages.items():
+            s=Path(file).read_text("utf-8")
+            assert f'<a class="product red product-card-link" href="{pd}"' in s, slug
+            assert '<a class="product dark product-card-link" href="/picture-converter/"' in s, slug
+            assert s.count('product-card-link') == 2, (slug,s.count('product-card-link'))
+            assert '<a class="product-link"' not in s, slug
+            assert '<span class="product-link">' in s, slug
+            assert '<article class="product">' in s, slug
+          css=Path("dist/home-v3.css").read_text("utf-8")
+          for token in [
+            ".product-card-link{color:inherit",
+            ".product-card-link:hover",
+            ".product-card-link:focus-visible"
+          ]:
+            assert token in css, token
+          print("LP-048 CLICKABLE HOME CARDS PASS")
+          PY
