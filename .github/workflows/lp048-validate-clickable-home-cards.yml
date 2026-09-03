@@ -41,8 +41,8 @@ jobs:
             assert f'<a class="product red product-card-link" href="{pd}"' in s, slug
             assert '<a class="product dark product-card-link" href="/picture-converter/"' in s, slug
             assert s.count('product-card-link') == 2, (slug,s.count('product-card-link'))
-            assert '<a class="product-link"' not in s, slug
-            assert '<span class="product-link">' in s, slug
+            assert s.count('<span class="product-link">') == 2, (slug,"extension labels")
+            assert s.count('<a class="product-link"') == 1, (slug,"web tools link")
             assert '<article class="product">' in s, slug
           css=Path("dist/home-v3.css").read_text("utf-8")
           for token in [
