@@ -506,6 +506,7 @@ jobs:
             grep -F "$expected_pc_name" "$out"
             grep -F "$expected_pd_name" "$out"
             grep -F '/picture-converter/' "$out"
+            grep -F 'href="/extensions-hub-v2.css"' "$out"
             grep -F 'extensions-locale-menu' "$out"
             grep -F 'extensions-locale-options' "$out"
             grep -F '/ru/extensions/' "$out"
