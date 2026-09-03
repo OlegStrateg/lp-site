@@ -64,6 +64,7 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
             <a href="/extensions/">Extensions</a>
             <a href="/#learn">Learn</a>
           </nav>
+          <slot name="headerExtra" />
           <span class="local-pill" title="All tools run on your device">
             <span class="local-pill-dot" aria-hidden="true"></span>
             Local engine
