@@ -196,9 +196,9 @@ export const PICTURE_CONVERTER_LOCALES = [
   {
     "code": "es",
     "route": "es",
-    "lang": "es-ES",
-    "hreflang": "es-ES",
-    "name": "Español (España)",
+    "lang": "es",
+    "hreflang": "es",
+    "name": "Español",
     "dir": "ltr",
     "root": "Conversor de Imágenes",
     "seoTitle": "Convertidor de imágenes: convierte archivos y guarda fotos de sitios web",
