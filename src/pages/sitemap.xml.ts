@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import { PICTURE_CONVERTER_LOCALES, pictureConverterPath } from '../../scripts/picture-converter-locales-data.mjs';
 
 // Deliberately hand-rolled instead of @astrojs/sitemap for explicit control of
 // what's listed. Final site: home + hub + every converter page (from the content
@@ -62,7 +63,9 @@ const PINTEREST_LOCALE_PATHS = [
   "/zh-tw/pinterest-downloader/"
 ];
 
-const STATIC_PATHS = ['/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/', '/convert/', '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/', '/picture-converter/', '/privacy/', '/terms/', '/formats/', '/guides/'];
+const PICTURE_CONVERTER_LOCALE_PATHS = PICTURE_CONVERTER_LOCALES.map(pictureConverterPath);
+
+const STATIC_PATHS = ['/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/', '/convert/', '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/', '/privacy/', '/terms/', '/formats/', '/guides/'];
 
 export const GET: APIRoute = async () => {
   const converters = await getCollection('converters');
@@ -70,6 +73,7 @@ export const GET: APIRoute = async () => {
   const paths = [
     ...STATIC_PATHS,
     ...PINTEREST_LOCALE_PATHS,
+    ...PICTURE_CONVERTER_LOCALE_PATHS,
     ...converters.map((c) => `/convert/${c.data.key}/`).sort(),
     ...articles.map((a) => `/${a.data.section}/${a.data.slug}/`).sort(),
   ];

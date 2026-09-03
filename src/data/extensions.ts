@@ -26,19 +26,19 @@ export interface Extension {
 export const extensions: Extension[] = [
   {
     id: 'picture-converter',
-    name: 'Downloader',
-    job: 'media-download',
-    storeUrl: 'https://chromewebstore.google.com/detail/downloader/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=extensions-page',
-    blurb: "Download Pinterest images, GIFs, and videos from Chrome — one Pin or a whole board, with batch ZIP export.",
+    name: 'Picture Converter',
+    job: 'image-conversion',
+    storeUrl: 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=extensions-page',
+    blurb: "Convert one selected website image or a local image file to JPG, PNG, WebP, PDF or ICO in Chrome.",
     whatItDoes:
-      "Save Pinterest images, GIFs, and videos without leaving the page. Download a single Pin or collect available media from a board and export the batch as a ZIP.",
+      "Select one image on a website or open a local WebP, HEIC, AVIF, PNG, JPG, JPEG, GIF, BMP, JFIF or SVG file, choose an output format, and save a converted copy. Up to 30 images can be combined into one PDF.",
     bullets: [
-      'Images, GIFs, and videos from Pinterest',
-      'Single-Pin and whole-board workflows',
-      'Batch selection with ZIP export',
+      'Website image → JPG / PNG / WebP / PDF / ICO',
+      'WebP / HEIC / AVIF / SVG and other local image inputs',
+      'Up to 30 images → one ordered PDF',
     ],
-    bridgeHref: '/convert/',
-    bridgeLabel: 'Browse LayerPorter tools',
+    bridgeHref: '/picture-converter/',
+    bridgeLabel: 'Open Picture Converter details',
   },
   {
     id: 'site-to-canva',
