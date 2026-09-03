@@ -71,7 +71,7 @@ function install(row, content, extra='') {
 
 function img(name, alt, priority=false) {
   return `<img src="/images/picture-converter/${name}-960.webp"
-    srcset="/images/home/${name}-320.webp 320w, /images/home/${name}-640.webp 640w, /images/picture-converter/${name}-960.webp 960w, /images/home/${name}-1440.webp 1440w"
+    srcset="/images/picture-converter/${name}-320.webp 320w, /images/picture-converter/${name}-640.webp 640w, /images/picture-converter/${name}-960.webp 960w, /images/picture-converter/${name}-1440.webp 1440w"
     sizes="(max-width:760px) 100vw, 58vw" width="960" height="640" alt="${esc(alt)}"
     ${priority?'fetchpriority="high"':'loading="lazy"'} decoding="async">`;
 }
