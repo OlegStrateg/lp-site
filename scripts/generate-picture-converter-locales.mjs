@@ -70,8 +70,8 @@ function install(row, content, extra='') {
 }
 
 function img(name, alt, priority=false) {
-  return `<img src="/images/home/${name}-960.webp"
-    srcset="/images/home/${name}-320.webp 320w, /images/home/${name}-640.webp 640w, /images/home/${name}-960.webp 960w, /images/home/${name}-1440.webp 1440w"
+  return `<img src="/images/picture-converter/${name}-960.webp"
+    srcset="/images/home/${name}-320.webp 320w, /images/home/${name}-640.webp 640w, /images/picture-converter/${name}-960.webp 960w, /images/home/${name}-1440.webp 1440w"
     sizes="(max-width:760px) 100vw, 58vw" width="960" height="640" alt="${esc(alt)}"
     ${priority?'fetchpriority="high"':'loading="lazy"'} decoding="async">`;
 }
@@ -94,7 +94,7 @@ function main(row) {
     </div>
     <div class="product-proof">
       <div class="pc-photo-hero">
-        ${img('fashion-reference', rootText, true)}
+        ${img('webp-to-jpg-example', row.seoTitle, true)}
         <div class="pc-photo-overlay"><span>WEBP</span><b>→ JPG</b></div>
         <aside class="pc-mini-panel">
           <strong>${esc(rootText)}</strong>
@@ -118,7 +118,7 @@ function main(row) {
       <p>${esc(webCopy)}</p>
     </div>
     <div class="pc-scene">
-      <div class="pc-scene-photo">${img('travel-reference', webCopy)}</div>
+      <div class="pc-scene-photo">${img('website-image-converter', webCopy)}</div>
       <div class="section-copy">
         
         <h3>JPG · PNG · WebP · PDF · ICO</h3>
@@ -136,7 +136,7 @@ function main(row) {
         <p>${esc(localCopy)}</p>
       </div>
       <div class="pc-local-grid">
-        <div class="pc-local-photo">${img('workspace-reference', localCopy)}</div>
+        <div class="pc-local-photo">${img('heic-to-jpg-example', localCopy)}</div>
         <div class="pc-local-box">
           <strong>${esc(rootText)}</strong>
           <div class="pc-inputs"><span>WEBP</span><span>HEIC</span><span>AVIF</span><span>SVG</span><span>PNG</span><span>JPG</span></div>
@@ -151,7 +151,7 @@ function main(row) {
     <div class="pdf-grid">
       <div class="pdf-copy"><div class="section-number">03</div><h2>30 images → one PDF</h2><p>${esc(pdfCopy)}</p></div>
       <div class="pc-pdf-visual">
-        ${['fashion-reference','travel-reference','workspace-reference','fashion-board-reference'].map((n,i)=>`<div><span>${i+1}</span>${img(n,'')}</div>`).join('')}
+        ${['webp-to-jpg-example','website-image-converter','heic-to-jpg-example','images-to-pdf-example'].map((n,i)=>`<div><span>${i+1}</span>${img(n,'')}</div>`).join('')}
       </div>
     </div>
   </section>
@@ -181,7 +181,7 @@ function main(row) {
   </section>
 
   <section class="final">
-    <div class="pc-final-bg">${img('creative-workflow-reference','')}</div>
+    <div class="pc-final-bg">${img('picture-converter-chrome','')}</div>
     <div class="wrap pc-final-copy">
       <div class="eyebrow"><span class="mark">⇄</span> ${esc(rootText)} · Chrome</div>
       <h2>${esc(row.seoTitle)}</h2>
@@ -219,7 +219,7 @@ function structuredData(row) {
     '@context':'https://schema.org',
     '@graph':[
       {'@type':'Organization','@id':'https://layerporter.com/#org',name:'LayerPorter',url:'https://layerporter.com/'},
-      {'@type':'WebPage','@id':pictureConverterUrl(row)+'#webpage',url:pictureConverterUrl(row),name:row.seoTitle,description:row.meta,inLanguage:row.lang,publisher:{'@id':'https://layerporter.com/#org'},mainEntity:{'@id':pictureConverterUrl(row)+'#software'}},
+      {'@type':'WebPage','@id':pictureConverterUrl(row)+'#webpage',url:pictureConverterUrl(row),name:row.seoTitle,description:row.meta,inLanguage:row.lang,primaryImageOfPage:'https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp',publisher:{'@id':'https://layerporter.com/#org'},mainEntity:{'@id':pictureConverterUrl(row)+'#software'}},
       {'@type':'SoftwareApplication','@id':pictureConverterUrl(row)+'#software',name:row.root,applicationCategory:'BrowserApplication',operatingSystem:'Chrome',url:pictureConverterUrl(row),installUrl:PICTURE_CONVERTER_STORE_URL,description:row.storeSummary,inLanguage:row.lang,publisher:{'@id':'https://layerporter.com/#org'}}
     ]
   };
@@ -230,7 +230,7 @@ function render(row) {
   html = html.replace(/<html\s+lang="[^"]*"[^>]*>/i, `<html lang="${esc(row.lang)}"${row.dir==='rtl'?' dir="rtl"':''}>`);
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(row.seoTitle)}</title>`);
   html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?\s*>/i, `<meta name="description" content="${esc(row.meta)}">`);
-  html = html.replace(/<meta\s+name="robots"[^>]*>/i, '<meta name="robots" content="index,follow">');
+  html = html.replace(/<meta\s+name="robots"[^>]*>/i, '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">');
   html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/?\s*>/i, `<link rel="canonical" href="${pictureConverterUrl(row)}">`);
   html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?\s*>/i, `<meta property="og:title" content="${esc(row.seoTitle)}">`);
   html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?\s*>/i, `<meta property="og:description" content="${esc(row.meta)}">`);
@@ -241,9 +241,11 @@ function render(row) {
 
   html = html.replace('</head>', `<meta name="lp-locale" content="${esc(row.code)}">
 <meta property="og:locale" content="${esc(row.lang.replace('-','_'))}">
-<meta property="og:image" content="https://layerporter.com/images/home/fashion-reference-1440.webp">
+<meta property="og:image" content="https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp">
+<meta property="og:image:width" content="1440">
+<meta property="og:image:height" content="960">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://layerporter.com/images/home/fashion-reference-1440.webp">
+<meta name="twitter:image" content="https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp">
 ${allAlternates}
 ${extraCss}
 </head>`);
@@ -296,11 +298,11 @@ for (const row of PICTURE_CONVERTER_LOCALES) {
   if(!html.includes('hreflang="x-default"')) throw new Error('x-default '+row.code);
   if(!html.includes(PICTURE_CONVERTER_STORE_ID)) throw new Error('Store ID '+row.code);
   if(html.includes('ooiklbnjmhbcfnllkgjahadblibecgfj')) throw new Error('Stale store ID '+row.code);
-  if(!html.includes('meta name="robots" content="index,follow"')) throw new Error('Robots '+row.code);
+  if(!html.includes('meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1"')) throw new Error('Robots '+row.code);
   if(!html.includes(`data-pc-locale="${row.code}"`)) throw new Error('Main '+row.code);
   if(!html.includes(esc(row.seoTitle))) throw new Error('Visible exact SEO title '+row.code);
   if(!html.includes(esc(row.meta))) throw new Error('Visible exact meta copy '+row.code);
-  if(!html.includes('/images/home/fashion-reference-960.webp')) throw new Error('Local WebP '+row.code);
+  if(!html.includes('/images/picture-converter/webp-to-jpg-example-960.webp')) throw new Error('Local WebP '+row.code);
   if(html.includes('images.unsplash.com')) throw new Error('External image '+row.code);
 }
 if (allAlternates.includes('hreflang="es-419"')) throw new Error('Invalid Google hreflang es-419');
