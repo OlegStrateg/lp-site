@@ -15,8 +15,8 @@ const baseFile = path.join(dist, 'picture-converter', 'index.html');
 if (!fs.existsSync(baseFile)) {
   throw new Error('Missing built Picture Converter page: ' + baseFile);
 }
-if (PICTURE_CONVERTER_LOCALES.length !== 52) {
-  throw new Error('Expected 52 Picture Converter locales');
+if (PICTURE_CONVERTER_LOCALES.length !== 49) {
+  throw new Error('Expected 49 Picture Converter locales');
 }
 const titleSet = new Set();
 for (const row of PICTURE_CONVERTER_LOCALES) {
@@ -304,4 +304,4 @@ for (const row of PICTURE_CONVERTER_LOCALES) {
   if(html.includes('images.unsplash.com')) throw new Error('External image '+row.code);
 }
 if (allAlternates.includes('hreflang="es-419"')) throw new Error('Invalid Google hreflang es-419');
-console.log('Picture Converter locales PASS: 52/52');
+console.log('Picture Converter locales PASS: 49/49');
