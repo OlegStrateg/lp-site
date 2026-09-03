@@ -18,6 +18,16 @@ if (!fs.existsSync(baseFile)) {
 if (PICTURE_CONVERTER_LOCALES.length !== 52) {
   throw new Error('Expected 52 Picture Converter locales');
 }
+const titleSet = new Set();
+for (const row of PICTURE_CONVERTER_LOCALES) {
+  if (row.researchTier !== 'v10-final') throw new Error('Non-final SEO source: ' + row.code);
+  if (!row.seoTitle || !row.meta) throw new Error('Missing SEO title/meta: ' + row.code);
+  if (row.seoTitle.length > 90) throw new Error('SEO title too long: ' + row.code + ' ' + row.seoTitle.length);
+  if (row.meta.length > 160) throw new Error('Meta description too long: ' + row.code + ' ' + row.meta.length);
+  const k = row.lang + '|' + row.seoTitle + '|' + row.meta;
+  if (titleSet.has(k)) throw new Error('Duplicate locale SEO tuple: ' + row.code);
+  titleSet.add(k);
+}
 
 const base = fs.readFileSync(baseFile, 'utf8');
 const esc = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -69,7 +79,7 @@ function img(name, alt, priority=false) {
 function main(row) {
   const [webCopy, localCopy, pdfCopy, privacy] = row.copy;
   const rootText = row.root;
-  const seoH1 = row.code === 'en' ? 'Picture Converter for Chrome' : row.seoTitle;
+  const seoH1 = (row.seoTitle.split(/[:：፦]/)[0] || row.root).trim();
   return `<main data-pc-locale="${esc(row.code)}">
   <section class="wrap hero">
     <div class="hero-left">
@@ -96,21 +106,21 @@ function main(row) {
   </section>
 
   <section class="wrap pc-rail" aria-label="Picture Converter workflows">
-    <article><b>WEBP → JPG</b><span>WEB IMAGE</span></article>
-    <article><b>HEIC → JPG</b><span>LOCAL FILE</span></article>
-    <article><b>30 → PDF</b><span>DOCUMENT</span></article>
+    <article><b>WEBP → JPG</b></article>
+    <article><b>HEIC → JPG</b></article>
+    <article><b>30 → PDF</b></article>
   </section>
 
   <section class="wrap section" id="web">
-    <div class="section-number">01 · WEB IMAGE</div>
+    <div class="section-number">01</div>
     <div class="section-head">
-      <h2>${esc(rootText)}: WebP → JPG · WebP → PNG</h2>
+      <h2 class="pc-seo-heading">${esc(row.seoTitle)}</h2>
       <p>${esc(webCopy)}</p>
     </div>
     <div class="pc-scene">
-      <div class="pc-scene-photo">${img('travel-reference', webCopy)}<span>Selected image</span></div>
+      <div class="pc-scene-photo">${img('travel-reference', webCopy)}</div>
       <div class="section-copy">
-        <span class="num">ONE SELECTED IMAGE</span>
+        
         <h3>JPG · PNG · WebP · PDF · ICO</h3>
         <p>${esc(row.storeSummary)}</p>
         <ul><li>WebP → JPG <span>JPG</span></li><li>WebP → PNG <span>PNG</span></li><li>PNG → ICO <span>ICO</span></li></ul>
@@ -120,7 +130,7 @@ function main(row) {
 
   <div class="dark" id="local">
     <section class="wrap section">
-      <div class="section-number">02 · LOCAL FILE</div>
+      <div class="section-number">02</div>
       <div class="section-head">
         <h2>HEIC → JPG · AVIF → JPG · SVG → PNG</h2>
         <p>${esc(localCopy)}</p>
@@ -139,7 +149,7 @@ function main(row) {
 
   <section class="wrap pdf-section" id="pdf">
     <div class="pdf-grid">
-      <div class="pdf-copy"><div class="section-number">03 · PDF</div><h2>30 images → one PDF</h2><p>${esc(pdfCopy)}</p></div>
+      <div class="pdf-copy"><div class="section-number">03</div><h2>30 images → one PDF</h2><p>${esc(pdfCopy)}</p></div>
       <div class="pc-pdf-visual">
         ${['fashion-reference','travel-reference','workspace-reference','fashion-board-reference'].map((n,i)=>`<div><span>${i+1}</span>${img(n,'')}</div>`).join('')}
       </div>
@@ -147,7 +157,7 @@ function main(row) {
   </section>
 
   <section class="wrap format-section">
-    <div class="section-number">04 · OUTPUT</div>
+    <div class="section-number">04</div>
     <div class="section-head"><h2>JPG · PNG · WebP · PDF · ICO</h2><p>${esc(localCopy)}</p></div>
     <div class="format-grid">
       <div class="format-card"><b>JPG</b><small>WebP → JPG</small></div>
@@ -160,7 +170,7 @@ function main(row) {
 
   <section class="wrap faq" id="faq">
     <div class="faq-grid">
-      <div><div class="section-number">05 · FAQ</div><h2>${esc(rootText)}</h2></div>
+      <div><div class="section-number">05</div><h2>${esc(rootText)}</h2></div>
       <div>
         <details open><summary><span>01</span><b>WebP → JPG / PNG</b><i>+</i></summary><p>${esc(webCopy)}</p></details>
         <details><summary><span>02</span><b>HEIC → JPG</b><i>+</i></summary><p>${esc(localCopy)}</p></details>
@@ -194,7 +204,7 @@ const extraCss = `<style id="pc-lp049">
 .pc-mini-panel{position:absolute;right:18px;top:18px;z-index:4;width:286px;padding:16px;border-radius:16px;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);box-shadow:0 22px 55px rgba(28,20,48,.18)}
 .pc-mini-panel strong{font-size:12px}.pc-formats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:16px}.pc-formats span{padding:10px 4px;border:1px solid var(--line);border-radius:8px;text-align:center;font-size:8px;font-weight:900}.pc-formats .active{border-color:var(--violet);background:var(--violet-soft);color:var(--violet)}.pc-download{margin-top:12px;padding:13px;border-radius:9px;background:var(--violet);color:#fff;font-size:10px;font-weight:900;display:flex;justify-content:space-between}
 .pc-rail{display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:18px;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}.pc-rail article{padding:18px;border-right:1px solid var(--line)}.pc-rail article:last-child{border-right:0}.pc-rail b{display:block;font-size:12px}.pc-rail span{display:block;margin-top:4px;color:#85808a;font-size:9px}
-.pc-scene{margin-top:56px;display:grid;grid-template-columns:1.15fr .85fr;min-height:570px;border:1px solid #d9d3de;border-radius:18px;overflow:hidden;background:#fff}.pc-scene-photo{position:relative;min-height:570px;background:#ddd}.pc-scene-photo img{width:100%;height:100%;object-fit:cover}.pc-scene-photo>span{position:absolute;left:20px;bottom:20px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.92);font-size:9px;font-weight:900}
+.pc-seo-heading{font-size:clamp(36px,4.5vw,62px)}.pc-scene{margin-top:56px;display:grid;grid-template-columns:1.15fr .85fr;min-height:570px;border:1px solid #d9d3de;border-radius:18px;overflow:hidden;background:#fff}.pc-scene-photo{position:relative;min-height:570px;background:#ddd}.pc-scene-photo img{width:100%;height:100%;object-fit:cover}.pc-scene-photo>span{position:absolute;left:20px;bottom:20px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.92);font-size:9px;font-weight:900}
 .pc-local-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:56px}.pc-local-photo,.pc-local-box{min-height:430px;border-radius:18px;overflow:hidden}.pc-local-photo img{width:100%;height:100%;object-fit:cover}.pc-local-box{padding:32px;background:#fff;color:#17161a;display:flex;flex-direction:column;justify-content:center}.pc-inputs{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}.pc-inputs span{padding:8px 9px;border-radius:8px;background:#eeeaf1;font-size:9px;font-weight:900}.pc-arrow-flow{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-top:24px;padding:16px;border:1px solid var(--line);border-radius:12px}.pc-arrow-flow i{font-style:normal;color:var(--violet);font-size:20px}.pc-arrow-flow strong{color:var(--violet)}.pc-local-box small{margin-top:20px;color:#77717c}
 .pc-pdf-visual{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff}.pc-pdf-visual>div{position:relative;aspect-ratio:.72;border-radius:10px;overflow:hidden;background:#ddd}.pc-pdf-visual img{width:100%;height:100%;object-fit:cover}.pc-pdf-visual span{position:absolute;right:7px;top:7px;z-index:2;width:22px;height:22px;border-radius:7px;background:#fff;display:grid;place-items:center;font-size:8px;font-weight:900}
 .format-card{min-height:130px}.format-card p{display:none}.format-card small{margin-top:18px}
@@ -218,7 +228,7 @@ function structuredData(row) {
 function render(row) {
   let html = base;
   html = html.replace(/<html\s+lang="[^"]*"[^>]*>/i, `<html lang="${esc(row.lang)}"${row.dir==='rtl'?' dir="rtl"':''}>`);
-  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(row.seoTitle)} | LayerPorter</title>`);
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(row.seoTitle)}</title>`);
   html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?\s*>/i, `<meta name="description" content="${esc(row.meta)}">`);
   html = html.replace(/<meta\s+name="robots"[^>]*>/i, '<meta name="robots" content="index,follow">');
   html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/?\s*>/i, `<link rel="canonical" href="${pictureConverterUrl(row)}">`);
@@ -288,6 +298,8 @@ for (const row of PICTURE_CONVERTER_LOCALES) {
   if(html.includes('ooiklbnjmhbcfnllkgjahadblibecgfj')) throw new Error('Stale store ID '+row.code);
   if(!html.includes('meta name="robots" content="index,follow"')) throw new Error('Robots '+row.code);
   if(!html.includes(`data-pc-locale="${row.code}"`)) throw new Error('Main '+row.code);
+  if(!html.includes(esc(row.seoTitle))) throw new Error('Visible exact SEO title '+row.code);
+  if(!html.includes(esc(row.meta))) throw new Error('Visible exact meta copy '+row.code);
   if(!html.includes('/images/home/fashion-reference-960.webp')) throw new Error('Local WebP '+row.code);
   if(html.includes('images.unsplash.com')) throw new Error('External image '+row.code);
 }
