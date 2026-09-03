@@ -80,6 +80,22 @@ const jsonLd = {
     <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
   </Fragment>
 
+  <Fragment slot="headerExtra">
+    <details class="extensions-locale-menu">
+      <summary aria-label="Choose language">English <b>(EN)</b></summary>
+      <nav class="extensions-locale-options" aria-label="Languages">
+        <a href="/extensions/" lang="en" hreflang="en" aria-current="page">English <b>(EN)</b></a>
+        <a href="/ru/extensions/" lang="ru" hreflang="ru">Русский <b>(RU)</b></a>
+        <a href="/de/extensions/" lang="de" hreflang="de">Deutsch <b>(DE)</b></a>
+        <a href="/es/extensions/" lang="es" hreflang="es">Español <b>(ES)</b></a>
+        <a href="/fr/extensions/" lang="fr" hreflang="fr">Français <b>(FR)</b></a>
+        <a href="/pt-br/extensions/" lang="pt-BR" hreflang="pt-BR">Português <b>(PT)</b></a>
+        <a href="/ja/extensions/" lang="ja" hreflang="ja">日本語 <b>(JA)</b></a>
+        <a href="/zh-cn/extensions/" lang="zh-CN" hreflang="zh-CN">简体中文 <b>(ZH)</b></a>
+      </nav>
+    </details>
+  </Fragment>
+
   <div class="extensions-hub">
     <section class="extensions-hero">
       <span class="extensions-kicker">Browser extensions</span>
