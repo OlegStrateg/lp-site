@@ -79,7 +79,7 @@ function img(name, alt, priority=false) {
 function main(row) {
   const [webCopy, localCopy, pdfCopy, privacy] = row.copy;
   const rootText = row.root;
-  const seoH1 = (row.seoTitle.split(/[:：፦]/)[0] || row.root).trim();
+  const seoH1 = row.root;
   return `<main data-pc-locale="${esc(row.code)}">
   <section class="wrap hero">
     <div class="hero-left">
