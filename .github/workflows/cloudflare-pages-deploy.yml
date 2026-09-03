@@ -143,7 +143,7 @@ jobs:
               exit 1
             fi
 
-            grep -Fq 'meta name="robots" content="index,follow"' "$tmp"
+            grep -Fq 'meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1"' "$tmp"
             grep -Fq 'hreflang="x-default"' "$tmp"
             grep -Fq "nmpahchhmcdejmfcmkphnbhckmlhhnon" "$tmp"
             ok=$((ok+1))
@@ -288,7 +288,7 @@ jobs:
           grep -F 'src="/home-v3.js"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="en"' /tmp/layerporter-home-v3.html
           grep -F 'hreflang="x-default"' /tmp/layerporter-home-v3.html
-          grep -F '/images/home/fashion-reference-960.webp' /tmp/layerporter-home-v3.html
+          grep -F '/images/picture-converter/webp-to-jpg-example-960.webp' /tmp/layerporter-home-v3.html
           grep -F 'srcset="/images/home/fashion-reference-320.webp 320w' /tmp/layerporter-home-v3.html
 
           curl -fsSI --max-time 20 -A "Mozilla/5.0" "$URL" -o /tmp/layerporter-home-v3.headers
@@ -315,7 +315,7 @@ jobs:
           grep -F 'hreflang="x-default" href="https://layerporter.com/"' /tmp/layerporter-home-v3-ru.html
           grep -F 'Русский <b>(RU)</b>' /tmp/layerporter-home-v3-ru.html
           grep -F 'href="/ru/pinterest-downloader/"' /tmp/layerporter-home-v3-ru.html
-          grep -F '/images/home/fashion-reference-960.webp' /tmp/layerporter-home-v3-ru.html
+          grep -F '/images/picture-converter/webp-to-jpg-example-960.webp' /tmp/layerporter-home-v3-ru.html
           grep -F 'alt="Референс уличного модного образа"' /tmp/layerporter-home-v3-ru.html
           grep -F '<h1>Сохраняйте.<br>Меняйте формат.<br><span class="soft">Работайте дальше.</span></h1>' /tmp/layerporter-home-v3-ru.html
           if grep -Fq 'images.unsplash.com' /tmp/layerporter-home-v3-ru.html; then
@@ -475,7 +475,7 @@ jobs:
             grep -F 'hreflang="ja" href="https://layerporter.com/ja/"' "$html"
             grep -F 'hreflang="zh-CN" href="https://layerporter.com/zh-cn/"' "$html"
             grep -F 'hreflang="x-default" href="https://layerporter.com/"' "$html"
-            grep -F '/images/home/fashion-reference-960.webp' "$html"
+            grep -F '/images/picture-converter/webp-to-jpg-example-960.webp' "$html"
             grep -F 'srcset="/images/home/fashion-reference-320.webp 320w' "$html"
             if grep -Fq 'images.unsplash.com' "$html"; then
               echo "Home locale must not depend on Unsplash after LP-043"
@@ -805,10 +805,10 @@ jobs:
               exit 1
             fi
 
-            grep -Fq 'meta name="robots" content="index,follow"' "$tmp"
+            grep -Fq 'meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1"' "$tmp"
             grep -Fq 'hreflang="x-default"' "$tmp"
             grep -Fq "$STORE_ID" "$tmp"
-            grep -Fq "/images/home/fashion-reference-960.webp" "$tmp"
+            grep -Fq "/images/picture-converter/webp-to-jpg-example-960.webp" "$tmp"
             if grep -Fq 'images.unsplash.com' "$tmp"; then
               echo "External Unsplash image found in Picture Converter locale $code"
               exit 1
