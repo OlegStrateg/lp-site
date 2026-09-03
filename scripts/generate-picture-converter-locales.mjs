@@ -220,7 +220,7 @@ function structuredData(row) {
     '@graph':[
       {'@type':'Organization','@id':'https://layerporter.com/#org',name:'LayerPorter',url:'https://layerporter.com/'},
       {'@type':'WebPage','@id':pictureConverterUrl(row)+'#webpage',url:pictureConverterUrl(row),name:row.seoTitle,description:row.meta,inLanguage:row.lang,primaryImageOfPage:'https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp',publisher:{'@id':'https://layerporter.com/#org'},mainEntity:{'@id':pictureConverterUrl(row)+'#software'}},
-      {'@type':'SoftwareApplication','@id':pictureConverterUrl(row)+'#software',name:row.root,applicationCategory:'BrowserApplication',operatingSystem:'Chrome',url:pictureConverterUrl(row),installUrl:PICTURE_CONVERTER_STORE_URL,description:row.storeSummary,inLanguage:row.lang,publisher:{'@id':'https://layerporter.com/#org'}}
+      {'@type':'SoftwareApplication','@id':pictureConverterUrl(row)+'#software',name:row.root,applicationCategory:'BrowserApplication',operatingSystem:'Chrome',url:pictureConverterUrl(row),installUrl:PICTURE_CONVERTER_STORE_URL,description:row.storeSummary,inLanguage:row.lang,image:'https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp',publisher:{'@id':'https://layerporter.com/#org'}}
     ]
   };
 }
@@ -240,7 +240,11 @@ function render(row) {
     `<script type="application/ld+json" id="pc-jsonld">${json(structuredData(row))}</script>`);
 
   html = html.replace('</head>', `<meta name="lp-locale" content="${esc(row.code)}">
-<meta property="og:locale" content="${esc(row.lang.replace('-','_'))}">
+<link rel="preload" as="image"
+  href="/images/picture-converter/webp-to-jpg-example-960.webp"
+  imagesrcset="/images/picture-converter/webp-to-jpg-example-320.webp 320w, /images/picture-converter/webp-to-jpg-example-640.webp 640w, /images/picture-converter/webp-to-jpg-example-960.webp 960w, /images/picture-converter/webp-to-jpg-example-1440.webp 1440w"
+  imagesizes="(max-width:760px) 100vw, 58vw"
+  fetchpriority="high">
 <meta property="og:image" content="https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp">
 <meta property="og:image:width" content="1440">
 <meta property="og:image:height" content="960">
