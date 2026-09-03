@@ -487,6 +487,24 @@ jobs:
             fi
           done
 
+          grep -F '<a class="product red product-card-link" href="/pinterest-downloader/"' /tmp/layerporter-home-v3.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3.html
+          grep -F '<a class="product red product-card-link" href="/ru/pinterest-downloader/"' /tmp/layerporter-home-v3-ru.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-ru.html
+          grep -F '<a class="product red product-card-link" href="/de/pinterest-downloader/"' /tmp/layerporter-home-v3-de.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-de.html
+          grep -F '<a class="product red product-card-link" href="/es/pinterest-downloader/"' /tmp/layerporter-home-v3-es.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-es.html
+          grep -F '<a class="product red product-card-link" href="/fr/pinterest-downloader/"' /tmp/layerporter-home-v3-fr.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-fr.html
+          grep -F '<a class="product red product-card-link" href="/pt-br/pinterest-downloader/"' /tmp/layerporter-home-v3-pt.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-pt.html
+          grep -F '<a class="product red product-card-link" href="/ja/pinterest-downloader/"' /tmp/layerporter-home-v3-ja.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-ja.html
+          grep -F '<a class="product red product-card-link" href="/zh-cn/pinterest-downloader/"' /tmp/layerporter-home-v3-zh.html
+          grep -F '<a class="product dark product-card-link" href="/picture-converter/"' /tmp/layerporter-home-v3-zh.html
+
+          echo "LayerPorter Home clickable extension cards PASS"
           echo "LayerPorter Home V3 ALL 8 LOCALES PASS"
 
       - name: Verify Extensions CRO hub
