@@ -30,8 +30,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "አማርኛ",
     "dir": "ltr",
     "root": "የምስል መቀየሪያ",
-    "seoTitle": "የምስል መቀየሪያ",
-    "meta": "የተመረጠ የድር ጣቢያ ምስልን JPG ወይም PNG አድርገው ያስቀምጡ፣ የWebP እና HEIC ፋይሎችን ይቀይሩ እና እስከ 30 ምስሎችን በአንድ PDF ያጣምሩ",
+    "seoTitle": "የምስል መቀየሪያ፦ WebP ወደ JPG፣ HEIC ወደ JPG እና ምስል ወደ PDF",
+    "meta": "WebP ወደ JPG/PNG፣ HEIC ወደ JPG/PNG፣ ምስል ወደ PDF ይቀይሩ፤ ከድር ጣቢያ የመረጡትን ምስል ያስቀምጡ ወይም ያውርዱ።",
     "storeSummary": "የተመረጠ የድር ጣቢያ ምስልን JPG ወይም PNG አድርገው ያስቀምጡ፣ የWebP እና HEIC ፋይሎችን ይቀይሩ እና እስከ 30 ምስሎችን በአንድ PDF ያጣምሩ",
     "copy": [
       "ከድር ጣቢያ አንድ ምስል ይምረጡ እና እንደ JPG፣ PNG፣ WebP፣ PDF ወይም ICO ያስቀምጡ።",
@@ -39,7 +39,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "እስከ 30 ምስሎች ያክሉ፣ ቅደም ተከተላቸውን ይቀይሩ እና አንድ PDF ያውርዱ።",
       "ፋይሎች በመሣሪያዎ ላይ ይሰራሉ፤ ለመቀየር አይሰቀሉም።"
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "ar",
@@ -68,8 +68,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Български",
     "dir": "ltr",
     "root": "Конвертор на картинки",
-    "seoTitle": "Конвертор на картинки",
-    "meta": "Запазете избрано изображение като JPG или PNG, конвертирайте локални WebP и HEIC файлове и обединете до 30 изображения в един PDF",
+    "seoTitle": "Конвертор на изображения: WebP към JPG, HEIC към JPG и изображение в PDF",
+    "meta": "WebP към JPG, WebP към PNG, HEIC към JPG и HEIC към PNG. Запазете изображение от сайт или обединете до 30 изображения в един PDF.",
     "storeSummary": "Запазете избрано изображение като JPG или PNG, конвертирайте локални WebP и HEIC файлове и обединете до 30 изображения в един PDF",
     "copy": [
       "Изберете едно изображение от уебсайт и го запазете като JPG, PNG, WebP, PDF или ICO без отделен сайт за конвертиране.",
@@ -77,7 +77,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Добавете до 30 изображения, променете реда им и изтеглете един PDF. Другите формати се обработват по едно изображение.",
       "Обработката е локална на устройството и файловете не се качват за конвертиране."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "bn",
@@ -106,8 +106,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Català",
     "dir": "ltr",
     "root": "Conversor d'Imatges",
-    "seoTitle": "Conversor d'Imatges",
-    "meta": "Desa una imatge d’un lloc web com a JPG o PNG, converteix fitxers WebP i HEIC locals i combina fins a 30 imatges en un sol PDF",
+    "seoTitle": "Convertidor d'imatges: WebP a JPG, HEIC a JPG i imatge a PDF",
+    "meta": "WebP a JPG, WebP a PNG, HEIC a JPG i HEIC a PNG. Imatge a PDF, desar una imatge d'un lloc web i fins a 30 imatges en un PDF.",
     "storeSummary": "Desa una imatge d’un lloc web com a JPG o PNG, converteix fitxers WebP i HEIC locals i combina fins a 30 imatges en un sol PDF",
     "copy": [
       "Tria una sola imatge d’un lloc web i desa-la com a JPG, PNG, WebP, PDF o ICO sense obrir cap convertidor extern.",
@@ -115,7 +115,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Afegeix fins a 30 imatges, canvia’n l’ordre i descarrega un sol PDF. Els altres formats es processen d’una imatge en una.",
       "El processament es fa localment al dispositiu i els fitxers no es pugen per convertir-los."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "cs",
@@ -125,8 +125,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Čeština",
     "dir": "ltr",
     "root": "Převodník obrázků",
-    "seoTitle": "Převodník obrázků",
-    "meta": "Uložte vybraný obrázek z webu jako JPG nebo PNG, převádějte místní soubory WebP a HEIC a spojte až 30 obrázků do jednoho PDF",
+    "seoTitle": "Převodník obrázků: WebP na JPG, HEIC na JPG a obrázek do PDF",
+    "meta": "WebP na JPG, WebP na PNG, HEIC na JPG a HEIC na PNG. Obrázek do PDF, uložte obrázek z webu nebo spojte až 30 obrázků do PDF.",
     "storeSummary": "Uložte vybraný obrázek z webu jako JPG nebo PNG, převádějte místní soubory WebP a HEIC a spojte až 30 obrázků do jednoho PDF",
     "copy": [
       "Vyberte jeden obrázek na webu a uložte jej jako JPG, PNG, WebP, PDF nebo ICO bez otevírání dalšího konvertoru.",
@@ -134,7 +134,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Přidejte až 30 obrázků, změňte jejich pořadí a stáhněte jeden PDF. Ostatní formáty se zpracovávají po jednom obrázku.",
       "Zpracování probíhá lokálně v zařízení a soubory se kvůli převodu nenahrávají."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "da",
@@ -182,8 +182,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Ελληνικά",
     "dir": "ltr",
     "root": "Μετατροπέας Εικόνων",
-    "seoTitle": "Μετατροπέας Εικόνων",
-    "meta": "Αποθηκεύστε εικόνα από ιστότοπο ως JPG ή PNG, μετατρέψτε τοπικά αρχεία WebP και HEIC και ενώστε έως 30 εικόνες σε ένα PDF",
+    "seoTitle": "Μετατροπέας εικόνων: WebP σε JPG, HEIC σε JPG και εικόνα σε PDF",
+    "meta": "WebP σε JPG, WebP σε PNG, HEIC σε JPG και HEIC σε PNG. Εικόνα σε PDF, αποθήκευση εικόνας από ιστότοπο ή έως 30 εικόνες σε PDF.",
     "storeSummary": "Αποθηκεύστε εικόνα από ιστότοπο ως JPG ή PNG, μετατρέψτε τοπικά αρχεία WebP και HEIC και ενώστε έως 30 εικόνες σε ένα PDF",
     "copy": [
       "Επιλέξτε μία εικόνα από έναν ιστότοπο και αποθηκεύστε τη ως JPG, PNG, WebP, PDF ή ICO χωρίς ξεχωριστό online converter.",
@@ -191,7 +191,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Προσθέστε έως 30 εικόνες, αλλάξτε τη σειρά τους και κατεβάστε ένα PDF. Οι άλλες μορφές επεξεργάζονται μία εικόνα τη φορά.",
       "Η επεξεργασία γίνεται τοπικά στη συσκευή και τα αρχεία δεν μεταφορτώνονται για μετατροπή."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "es",
@@ -220,8 +220,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Español (Latinoamérica)",
     "dir": "ltr",
     "root": "Convertidor de Imágenes",
-    "seoTitle": "Convertidor de Imágenes",
-    "meta": "Guarda una imagen elegida de un sitio como JPG o PNG, convierte archivos WebP y HEIC locales y une hasta 30 imágenes en un PDF",
+    "seoTitle": "Convertidor de imágenes: archivos a JPG, PNG, WebP, PDF o ICO",
+    "meta": "Convierte archivos WebP, HEIC, AVIF, PNG o JPG en Chrome. Guarda una imagen del sitio web o une hasta 30 imágenes en un PDF.",
     "storeSummary": "Guarda una imagen elegida de un sitio como JPG o PNG, convierte archivos WebP y HEIC locales y une hasta 30 imágenes en un PDF",
     "copy": [
       "Selecciona una imagen de un sitio web y guárdala como JPG, PNG, WebP, PDF o ICO sin abrir otro convertidor.",
@@ -229,7 +229,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Agrega hasta 30 imágenes, cambia el orden de las páginas y descarga un solo PDF. Los demás formatos se procesan de uno en uno.",
       "El procesamiento se realiza localmente en tu dispositivo y los archivos no se suben para convertirlos."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "et",
@@ -239,8 +239,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Eesti",
     "dir": "ltr",
     "root": "Pildikonverter",
-    "seoTitle": "Pildikonverter",
-    "meta": "Salvesta valitud veebipilt JPG- või PNG-vormingus, konverteeri WebP- ja HEIC-failid ning ühenda kuni 30 pilti üheks PDF-iks",
+    "seoTitle": "Pildikonverter: WebP JPG-ks, HEIC JPG-ks ja pilt PDF-iks",
+    "meta": "WebP JPG-ks, WebP PNG-ks, HEIC JPG-ks ja HEIC PNG-ks. Pilt PDF-iks, salvesta pilt veebilehelt ja kuni 30 pilti ühes PDF-is.",
     "storeSummary": "Salvesta valitud veebipilt JPG- või PNG-vormingus, konverteeri WebP- ja HEIC-failid ning ühenda kuni 30 pilti üheks PDF-iks",
     "copy": [
       "Vali veebisaidilt üks pilt ja salvesta see JPG, PNG, WebP, PDF või ICO kujul ilma eraldi konverterit avamata.",
@@ -248,7 +248,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Lisa kuni 30 pilti, muuda nende järjekorda ja laadi alla üks PDF. Teisi väljundvorminguid töödeldakse ühe pildi kaupa.",
       "Töötlemine toimub seadmes kohapeal ja faile ei laadita teisendamiseks üles."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "fa",
@@ -258,8 +258,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "فارسی",
     "dir": "rtl",
     "root": "مبدل تصویر",
-    "seoTitle": "مبدل تصویر",
-    "meta": "تصویر انتخابی سایت را به‌صورت JPG یا PNG ذخیره کنید، فایل‌های محلی WebP و HEIC را تبدیل کنید و تا 30 تصویر را در یک PDF ادغام کنید",
+    "seoTitle": "مبدل تصویر: WebP به JPG، HEIC به JPG و تصویر به PDF",
+    "meta": "WebP به JPG و PNG، HEIC به JPG و PNG، تصویر به PDF، ذخیره و دانلود تصویر از وب‌سایت و ادغام تا ۳۰ تصویر در یک PDF.",
     "storeSummary": "تصویر انتخابی سایت را به‌صورت JPG یا PNG ذخیره کنید، فایل‌های محلی WebP و HEIC را تبدیل کنید و تا 30 تصویر را در یک PDF ادغام کنید",
     "copy": [
       "یک تصویر را از وب‌سایت انتخاب کنید و بدون باز کردن سایت مبدل جداگانه، آن را به JPG، PNG، WebP، PDF یا ICO ذخیره کنید.",
@@ -267,7 +267,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "تا ۳۰ تصویر اضافه کنید، ترتیب صفحات را تغییر دهید و یک PDF دانلود کنید. قالب‌های دیگر هر بار برای یک تصویر پردازش می‌شوند.",
       "پردازش به‌صورت محلی روی دستگاه انجام می‌شود و فایل‌ها برای تبدیل بارگذاری نمی‌شوند."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "fi",
@@ -334,8 +334,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "ગુજરાતી",
     "dir": "ltr",
     "root": "છબી કન્વર્ટર",
-    "seoTitle": "છબી કન્વર્ટર",
-    "meta": "વેબસાઇટની પસંદ કરેલી છબીને JPG અથવા PNG તરીકે સાચવો, સ્થાનિક WebP અને HEIC ફાઇલો કન્વર્ટ કરો અને 30 સુધીની છબીઓને એક PDFમાં જોડો",
+    "seoTitle": "ઇમેજ કન્વર્ટર: WebP થી JPG, HEIC થી JPG અને છબીને PDF માં",
+    "meta": "WebP થી JPG, WebP થી PNG, HEIC થી JPG, HEIC થી PNG કરો; છબીને PDF માં ફેરવો અને વેબસાઇટ પરથી છબી સાચવો અથવા ડાઉનલોડ કરો.",
     "storeSummary": "વેબસાઇટની પસંદ કરેલી છબીને JPG અથવા PNG તરીકે સાચવો, સ્થાનિક WebP અને HEIC ફાઇલો કન્વર્ટ કરો અને 30 સુધીની છબીઓને એક PDFમાં જોડો",
     "copy": [
       "વેબસાઇટ પરથી એક છબી પસંદ કરો અને અલગ કન્વર્ટર સાઇટ ખોલ્યા વગર તેને JPG, PNG, WebP, PDF અથવા ICO તરીકે સાચવો.",
@@ -343,7 +343,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 સુધીની છબીઓ ઉમેરો, પાનાંનો ક્રમ બદલો અને એક PDF ડાઉનલોડ કરો. અન્ય ફોર્મેટ માટે એક વખતે એક છબી પ્રક્રિયા થાય છે.",
       "પ્રક્રિયા ઉપકરણ પર સ્થાનિક રીતે થાય છે અને કન્વર્ઝન માટે ફાઇલો અપલોડ થતી નથી."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "he",
@@ -353,8 +353,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "עברית",
     "dir": "rtl",
     "root": "ממיר תמונה",
-    "seoTitle": "ממיר תמונה",
-    "meta": "שמרו תמונה שנבחרה מאתר כ-JPG או PNG, המירו קובצי WebP ו-HEIC מקומיים ושלבו עד 30 תמונות בקובץ PDF אחד",
+    "seoTitle": "ממיר תמונות: WebP ל-JPG, HEIC ל-JPG ותמונה ל-PDF",
+    "meta": "WebP ל-JPG, WebP ל-PNG, HEIC ל-JPG ו-HEIC ל-PNG. תמונה ל-PDF, שמירת תמונה מאתר או איחוד עד 30 תמונות בקובץ PDF.",
     "storeSummary": "שמרו תמונה שנבחרה מאתר כ-JPG או PNG, המירו קובצי WebP ו-HEIC מקומיים ושלבו עד 30 תמונות בקובץ PDF אחד",
     "copy": [
       "בחרו תמונה אחת מאתר ושמרו אותה כ-JPG, PNG, WebP, PDF או ICO בלי לפתוח אתר המרה נוסף.",
@@ -362,7 +362,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "הוסיפו עד 30 תמונות, שנו את סדר העמודים והורידו PDF אחד. פורמטים אחרים מעובדים תמונה אחת בכל פעם.",
       "העיבוד מתבצע מקומית במכשיר והקבצים אינם מועלים לצורך ההמרה."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "hi",
@@ -391,8 +391,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Hrvatski",
     "dir": "ltr",
     "root": "Pretvarač slika",
-    "seoTitle": "Pretvarač slika",
-    "meta": "Spremite odabranu sliku s weba kao JPG ili PNG, pretvorite lokalne WebP i HEIC datoteke te spojite do 30 slika u jedan PDF",
+    "seoTitle": "Pretvarač slika: WebP u JPG, HEIC u JPG i slika u PDF",
+    "meta": "WebP u JPG, WebP u PNG, HEIC u JPG i HEIC u PNG. Slika u PDF, spremanje slike s web-stranice i do 30 slika u jednom PDF-u.",
     "storeSummary": "Spremite odabranu sliku s weba kao JPG ili PNG, pretvorite lokalne WebP i HEIC datoteke te spojite do 30 slika u jedan PDF",
     "copy": [
       "Odaberite jednu sliku na web-stranici i spremite je kao JPG, PNG, WebP, PDF ili ICO bez otvaranja zasebnog konvertera.",
@@ -400,7 +400,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodajte do 30 slika, promijenite njihov redoslijed i preuzmite jedan PDF. Ostali se formati obrađuju po jedna slika.",
       "Obrada se odvija lokalno na uređaju i datoteke se ne prenose radi pretvorbe."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "hu",
@@ -410,8 +410,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Magyar",
     "dir": "ltr",
     "root": "Képkonverter",
-    "seoTitle": "Képkonverter",
-    "meta": "Ments el egy webes képet JPG vagy PNG formátumban, konvertálj helyi WebP- és HEIC-fájlokat, és egyesíts akár 30 képet egy PDF-be",
+    "seoTitle": "Képkonvertáló: WebP JPG, HEIC JPG és kép PDF átalakítás",
+    "meta": "WebP JPG átalakító, WebP PNG, HEIC JPG és HEIC PNG. Ments képet weboldalról, készíts kép PDF fájlt vagy egyesíts 30 képet PDF-be.",
     "storeSummary": "Ments el egy webes képet JPG vagy PNG formátumban, konvertálj helyi WebP- és HEIC-fájlokat, és egyesíts akár 30 képet egy PDF-be",
     "copy": [
       "Válassz ki egy képet egy weboldalon, és mentsd JPG, PNG, WebP, PDF vagy ICO formátumban külön konvertáló oldal nélkül.",
@@ -419,7 +419,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Adj hozzá legfeljebb 30 képet, rendezd át őket, majd tölts le egy PDF-et. Más kimeneti formátumok egyszerre egy képet dolgoznak fel.",
       "A feldolgozás helyben, az eszközön történik; a fájlokat nem tölti fel konvertáláshoz."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "id",
@@ -524,8 +524,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Lietuvių",
     "dir": "ltr",
     "root": "Paveikslėlių konverteris",
-    "seoTitle": "Paveikslėlių konverteris",
-    "meta": "Išsaugokite pasirinktą svetainės vaizdą kaip JPG ar PNG, konvertuokite WebP ir HEIC failus ir sujunkite iki 30 vaizdų į vieną PDF",
+    "seoTitle": "Vaizdų keitiklis: WebP į JPG, HEIC į JPG ir vaizdas į PDF",
+    "meta": "WebP į JPG, WebP į PNG, HEIC į JPG ir HEIC į PNG. Vaizdas į PDF, išsaugoti vaizdą iš svetainės ir iki 30 vaizdų viename PDF.",
     "storeSummary": "Išsaugokite pasirinktą svetainės vaizdą kaip JPG ar PNG, konvertuokite WebP ir HEIC failus ir sujunkite iki 30 vaizdų į vieną PDF",
     "copy": [
       "Pasirinkite vieną svetainės vaizdą ir išsaugokite jį kaip JPG, PNG, WebP, PDF ar ICO neatidarydami atskiro keitiklio.",
@@ -533,7 +533,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Pridėkite iki 30 vaizdų, pakeiskite jų tvarką ir atsisiųskite vieną PDF. Kiti formatai apdorojami po vieną vaizdą.",
       "Apdorojimas vyksta vietoje įrenginyje, o failai konvertuoti neįkeliami."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "lv",
@@ -543,8 +543,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Latviešu",
     "dir": "ltr",
     "root": "Attēlu konvertētājs",
-    "seoTitle": "Attēlu konvertētājs",
-    "meta": "Saglabājiet izvēlētu tīmekļa attēlu kā JPG vai PNG, konvertējiet WebP un HEIC failus un apvienojiet līdz 30 attēliem vienā PDF",
+    "seoTitle": "Attēlu pārveidotājs: WebP uz JPG, HEIC uz JPG un attēls uz PDF",
+    "meta": "WebP uz JPG, WebP uz PNG, HEIC uz JPG un HEIC uz PNG. Attēls uz PDF, saglabāt attēlu no tīmekļa vietnes un līdz 30 attēliem vienā PDF.",
     "storeSummary": "Saglabājiet izvēlētu tīmekļa attēlu kā JPG vai PNG, konvertējiet WebP un HEIC failus un apvienojiet līdz 30 attēliem vienā PDF",
     "copy": [
       "Izvēlieties vienu attēlu vietnē un saglabājiet to kā JPG, PNG, WebP, PDF vai ICO, neatverot atsevišķu konvertētāju.",
@@ -552,7 +552,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Pievienojiet līdz 30 attēliem, mainiet to secību un lejupielādējiet vienu PDF. Citi formāti tiek apstrādāti pa vienam attēlam.",
       "Apstrāde notiek lokāli ierīcē, un faili netiek augšupielādēti konvertēšanai."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "ml",
@@ -581,8 +581,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "मराठी",
     "dir": "ltr",
     "root": "प्रतिमा रूपांतरक",
-    "seoTitle": "प्रतिमा रूपांतरक",
-    "meta": "वेबसाइटवरील प्रतिमा JPG किंवा PNG म्हणून जतन करा, WebP व HEIC फाइल्स रूपांतरित करा आणि 30 प्रतिमा एका PDF मध्ये जोडा",
+    "seoTitle": "इमेज कनव्हर्टर: WebP ते JPG, HEIC ते JPG आणि प्रतिमा ते PDF",
+    "meta": "WebP ते JPG, WebP ते PNG, HEIC ते JPG, HEIC ते PNG करा; प्रतिमा ते PDF बनवा आणि वेबसाइटवरून चित्र जतन किंवा डाउनलोड करा.",
     "storeSummary": "वेबसाइटवरील प्रतिमा JPG किंवा PNG म्हणून जतन करा, WebP व HEIC फाइल्स रूपांतरित करा आणि 30 प्रतिमा एका PDF मध्ये जोडा",
     "copy": [
       "वेबसाइटवरून एक प्रतिमा निवडा आणि स्वतंत्र कन्वर्टर साइट न उघडता ती JPG, PNG, WebP, PDF किंवा ICO म्हणून जतन करा.",
@@ -590,7 +590,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 पर्यंत प्रतिमा जोडा, पानांचा क्रम बदला आणि एक PDF डाउनलोड करा. इतर फॉरमॅटमध्ये एका वेळी एक प्रतिमा प्रक्रिया होते.",
       "प्रक्रिया डिव्हाइसवर स्थानिकरीत्या होते आणि रूपांतरणासाठी फाइल अपलोड केली जात नाही."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "ms",
@@ -752,8 +752,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Slovenčina",
     "dir": "ltr",
     "root": "Konvertor obrázkov",
-    "seoTitle": "Konvertor obrázkov",
-    "meta": "Uložte vybraný obrázok z webu ako JPG alebo PNG, konvertujte lokálne súbory WebP a HEIC a spojte až 30 obrázkov do jedného PDF",
+    "seoTitle": "Konvertor obrázkov: WebP na JPG, HEIC na JPG a obrázok do PDF",
+    "meta": "WebP na JPG, WebP na PNG, HEIC na JPG a HEIC na PNG. Obrázok do PDF, uložte obrázok z webu alebo spojte až 30 obrázkov do PDF.",
     "storeSummary": "Uložte vybraný obrázok z webu ako JPG alebo PNG, konvertujte lokálne súbory WebP a HEIC a spojte až 30 obrázkov do jedného PDF",
     "copy": [
       "Vyberte jeden obrázok na webe a uložte ho ako JPG, PNG, WebP, PDF alebo ICO bez otvárania samostatného konvertora.",
@@ -761,7 +761,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Pridajte až 30 obrázkov, zmeňte ich poradie a stiahnite jeden PDF. Ostatné formáty sa spracúvajú po jednom obrázku.",
       "Spracovanie prebieha lokálne v zariadení a súbory sa na konverziu nenahrávajú."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "sl",
@@ -771,8 +771,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Slovenščina",
     "dir": "ltr",
     "root": "Pretvornik slik",
-    "seoTitle": "Pretvornik slik",
-    "meta": "Shranite izbrano spletno sliko kot JPG ali PNG, pretvorite lokalne datoteke WebP in HEIC ter združite do 30 slik v en PDF",
+    "seoTitle": "Pretvornik slik: WebP v JPG, HEIC v JPG in slika v PDF",
+    "meta": "WebP v JPG, WebP v PNG, HEIC v JPG in HEIC v PNG. Slika v PDF, shranjevanje slike s spletne strani in do 30 slik v enem PDF-ju.",
     "storeSummary": "Shranite izbrano spletno sliko kot JPG ali PNG, pretvorite lokalne datoteke WebP in HEIC ter združite do 30 slik v en PDF",
     "copy": [
       "Izberite eno sliko na spletni strani in jo shranite kot JPG, PNG, WebP, PDF ali ICO brez odpiranja ločenega pretvornika.",
@@ -780,7 +780,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodajte do 30 slik, spremenite vrstni red in prenesite en PDF. Druge izhodne oblike se obdelujejo po eno sliko.",
       "Obdelava poteka lokalno v napravi in datoteke se za pretvorbo ne nalagajo."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "sr",
@@ -790,8 +790,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Srpski",
     "dir": "ltr",
     "root": "Konverter slika",
-    "seoTitle": "Konverter slika",
-    "meta": "Sačuvajte izabranu sliku sa veb-sajta kao JPG ili PNG, konvertujte lokalne WebP i HEIC fajlove i spojite do 30 slika u jedan PDF",
+    "seoTitle": "Конвертер слика: WebP у JPG, HEIC у JPG и слика у PDF",
+    "meta": "WebP у JPG, WebP у PNG, HEIC у JPG и HEIC у PNG. Слика у PDF, чување слике са сајта и до 30 слика у једном PDF-у.",
     "storeSummary": "Sačuvajte izabranu sliku sa veb-sajta kao JPG ili PNG, konvertujte lokalne WebP i HEIC fajlove i spojite do 30 slika u jedan PDF",
     "copy": [
       "Izaberite jednu sliku na veb-sajtu i sačuvajte je kao JPG, PNG, WebP, PDF ili ICO bez otvaranja posebnog konvertera.",
@@ -799,7 +799,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodajte do 30 slika, promenite redosled i preuzmite jedan PDF. Ostali formati se obrađuju po jedna slika.",
       "Obrada se obavlja lokalno na uređaju i fajlovi se ne otpremaju radi konverzije."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "sv",
@@ -828,8 +828,8 @@ export const PICTURE_CONVERTER_LOCALES = [
     "name": "Kiswahili",
     "dir": "ltr",
     "root": "Kigeuzi cha Picha",
-    "seoTitle": "Kigeuzi cha Picha",
-    "meta": "Hifadhi picha ya tovuti kama JPG au PNG, badilisha faili za WebP na HEIC za ndani na unganisha hadi picha 30 katika PDF moja",
+    "seoTitle": "Kibadilishaji picha: WebP hadi JPG, HEIC hadi JPG na picha kuwa PDF",
+    "meta": "WebP hadi JPG, WebP hadi PNG, HEIC hadi JPG na HEIC hadi PNG. Picha kuwa PDF, hifadhi picha kutoka tovuti au unganisha picha 30.",
     "storeSummary": "Hifadhi picha ya tovuti kama JPG au PNG, badilisha faili za WebP na HEIC za ndani na unganisha hadi picha 30 katika PDF moja",
     "copy": [
       "Chagua picha moja kwenye tovuti na uihifadhi kama JPG, PNG, WebP, PDF au ICO bila kufungua tovuti nyingine ya kubadilisha.",
@@ -837,7 +837,7 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Ongeza hadi picha 30, badili mpangilio na upakue PDF moja. Miundo mingine huchakata picha moja kwa wakati.",
       "Uchakataji hufanyika ndani ya kifaa na faili hazipakwi kwenye seva kwa ajili ya kubadilishwa."
     ],
-    "researchTier": "cws-localized-baseline"
+    "researchTier": "v10-final"
   },
   {
     "code": "ta",
