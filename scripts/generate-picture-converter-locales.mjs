@@ -21,10 +21,10 @@ if (PICTURE_CONVERTER_LOCALES.length !== 49) {
 const titleSet = new Set();
 for (const row of PICTURE_CONVERTER_LOCALES) {
   if (row.researchTier !== 'v10-final') throw new Error('Non-final SEO source: ' + row.code);
-  if (!row.seoTitle || !row.meta) throw new Error('Missing SEO title/meta: ' + row.code);
-  if (row.seoTitle.length > 90) throw new Error('SEO title too long: ' + row.code + ' ' + row.seoTitle.length);
+  if (!row.seoTitle || !row.pageTitle || !row.meta) throw new Error('Missing SEO title/pageTitle/meta: ' + row.code);
+  if (row.pageTitle.length > 90) throw new Error('Page title too long: ' + row.code + ' ' + row.pageTitle.length);
   if (row.meta.length > 160) throw new Error('Meta description too long: ' + row.code + ' ' + row.meta.length);
-  const k = row.lang + '|' + row.seoTitle + '|' + row.meta;
+  const k = row.lang + '|' + row.pageTitle + '|' + row.meta;
   if (titleSet.has(k)) throw new Error('Duplicate locale SEO tuple: ' + row.code);
   titleSet.add(k);
 }
@@ -219,7 +219,7 @@ function structuredData(row) {
     '@context':'https://schema.org',
     '@graph':[
       {'@type':'Organization','@id':'https://layerporter.com/#org',name:'LayerPorter',url:'https://layerporter.com/'},
-      {'@type':'WebPage','@id':pictureConverterUrl(row)+'#webpage',url:pictureConverterUrl(row),name:row.seoTitle,description:row.meta,inLanguage:row.lang,primaryImageOfPage:'https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp',publisher:{'@id':'https://layerporter.com/#org'},mainEntity:{'@id':pictureConverterUrl(row)+'#software'}},
+      {'@type':'WebPage','@id':pictureConverterUrl(row)+'#webpage',url:pictureConverterUrl(row),name:row.pageTitle,description:row.meta,inLanguage:row.lang,primaryImageOfPage:'https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp',publisher:{'@id':'https://layerporter.com/#org'},mainEntity:{'@id':pictureConverterUrl(row)+'#software'}},
       {'@type':'SoftwareApplication','@id':pictureConverterUrl(row)+'#software',name:row.root,applicationCategory:'BrowserApplication',operatingSystem:'Chrome',url:pictureConverterUrl(row),installUrl:PICTURE_CONVERTER_STORE_URL,description:row.storeSummary,inLanguage:row.lang,image:'https://layerporter.com/images/picture-converter/webp-to-jpg-example-1440.webp',publisher:{'@id':'https://layerporter.com/#org'}}
     ]
   };
@@ -228,11 +228,11 @@ function structuredData(row) {
 function render(row) {
   let html = base;
   html = html.replace(/<html\s+lang="[^"]*"[^>]*>/i, `<html lang="${esc(row.lang)}"${row.dir==='rtl'?' dir="rtl"':''}>`);
-  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(row.seoTitle)}</title>`);
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(row.pageTitle)}</title>`);
   html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?\s*>/i, `<meta name="description" content="${esc(row.meta)}">`);
   html = html.replace(/<meta\s+name="robots"[^>]*>/i, '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">');
   html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/?\s*>/i, `<link rel="canonical" href="${pictureConverterUrl(row)}">`);
-  html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?\s*>/i, `<meta property="og:title" content="${esc(row.seoTitle)}">`);
+  html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?\s*>/i, `<meta property="og:title" content="${esc(row.pageTitle)}">`);
   html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?\s*>/i, `<meta property="og:description" content="${esc(row.meta)}">`);
   html = html.replace(/<meta\s+property="og:url"\s+content="[^"]*"\s*\/?\s*>/i, `<meta property="og:url" content="${pictureConverterUrl(row)}">`);
 
