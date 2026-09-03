@@ -1,5 +1,5 @@
-// LP-049 — Picture Converter multilingual SEO data.
-// SEO titles/meta use the strongest physically found v10 locale result where available.
+// LP-049 — Picture Converter multilingual SEO data — one canonical locale per language.
+// SEO titles/meta use the strongest physically found v10 locale result where available. Duplicate regional variants are intentionally excluded: es-419, pt-PT, zh-TW.
 // Other locales keep the current localized CWS title/summary as a conservative baseline.
 // Main supporting copy is Product-Truth-safe and intentionally avoids invented search volume.
 export const PICTURE_CONVERTER_LOCALES = [
@@ -209,25 +209,6 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Abre WebP, HEIC, AVIF, SVG, PNG o JPG desde tu equipo y crea el formato que necesita la siguiente aplicación.",
       "Añade hasta 30 imágenes, cambia el orden de las páginas y descarga un solo PDF. Los demás formatos se procesan de uno en uno.",
       "El procesamiento se realiza localmente en el dispositivo y los archivos no se suben para convertirlos."
-    ],
-    "researchTier": "v10-final"
-  },
-  {
-    "code": "es_419",
-    "route": "es-419",
-    "lang": "es",
-    "hreflang": "es",
-    "name": "Español (Latinoamérica)",
-    "dir": "ltr",
-    "root": "Convertidor de Imágenes",
-    "seoTitle": "Convertidor de imágenes: archivos a JPG, PNG, WebP, PDF o ICO",
-    "meta": "Convierte archivos WebP, HEIC, AVIF, PNG o JPG en Chrome. Guarda una imagen del sitio web o une hasta 30 imágenes en un PDF.",
-    "storeSummary": "Guarda una imagen elegida de un sitio como JPG o PNG, convierte archivos WebP y HEIC locales y une hasta 30 imágenes en un PDF",
-    "copy": [
-      "Selecciona una imagen de un sitio web y guárdala como JPG, PNG, WebP, PDF o ICO sin abrir otro convertidor.",
-      "Abre WebP, HEIC, AVIF, SVG, PNG o JPG desde tu computadora y crea el formato que necesita la siguiente aplicación.",
-      "Agrega hasta 30 imágenes, cambia el orden de las páginas y descarga un solo PDF. Los demás formatos se procesan de uno en uno.",
-      "El procesamiento se realiza localmente en tu dispositivo y los archivos no se suben para convertirlos."
     ],
     "researchTier": "v10-final"
   },
@@ -688,25 +669,6 @@ export const PICTURE_CONVERTER_LOCALES = [
     "researchTier": "v10-final"
   },
   {
-    "code": "pt_PT",
-    "route": "pt-pt",
-    "lang": "pt-PT",
-    "hreflang": "pt-PT",
-    "name": "Português (Portugal)",
-    "dir": "ltr",
-    "root": "Conversor de Imagens",
-    "seoTitle": "Conversor de imagens: converter ficheiros e guardar fotos de sites",
-    "meta": "Converta WebP, HEIC, AVIF, PNG e JPG para JPG, PNG, WebP, PDF ou ICO. Guarde uma imagem de um site, e junte até 30 fotos num só PDF.",
-    "storeSummary": "Guarde uma imagem escolhida de um site como JPG ou PNG, converta ficheiros WebP e HEIC locais e junte até 30 imagens num único PDF",
-    "copy": [
-      "Escolha uma imagem de um site e guarde-a como JPG, PNG, WebP, PDF ou ICO sem abrir outro conversor.",
-      "Abra WebP, HEIC, AVIF, SVG, PNG ou JPG do computador e crie o formato aceite pela aplicação seguinte.",
-      "Adicione até 30 imagens, altere a ordem das páginas e descarregue um único PDF. Os outros formatos são processados uma imagem de cada vez.",
-      "O processamento é feito localmente no dispositivo e os ficheiros não são enviados para conversão."
-    ],
-    "researchTier": "v10-final"
-  },
-  {
     "code": "ro",
     "route": "ro",
     "lang": "ro",
@@ -969,25 +931,6 @@ export const PICTURE_CONVERTER_LOCALES = [
       "从电脑打开 WebP、HEIC、AVIF、SVG、PNG 或 JPG，并转换为下一个应用可接受的格式。",
       "最多添加 30 张图片，调整页面顺序并下载一个 PDF。其他输出格式一次处理一张图片。",
       "转换在设备本地完成，文件不会为了转换而上传。"
-    ],
-    "researchTier": "v10-final"
-  },
-  {
-    "code": "zh_TW",
-    "route": "zh-tw",
-    "lang": "zh-TW",
-    "hreflang": "zh-TW",
-    "name": "繁體中文",
-    "dir": "ltr",
-    "root": "圖片轉換器",
-    "seoTitle": "圖片轉換器：WebP轉JPG、HEIC轉JPG、PNG轉JPG、圖片轉PDF",
-    "meta": "轉換圖片格式：WebP轉PNG、HEIC轉PNG、JPEG轉PNG、AVIF轉JPG、JPG轉PDF、PNG轉PDF，並儲存網頁上選取的一張圖片。",
-    "storeSummary": "將網站中選取的圖片儲存為 JPG 或 PNG，轉換本機 WebP 和 HEIC 檔案，並可將最多 30 張圖片合併成一個 PDF",
-    "copy": [
-      "從網站選擇一張圖片，不必開啟其他轉換網站，即可儲存為 JPG、PNG、WebP、PDF 或 ICO。",
-      "從電腦開啟 WebP、HEIC、AVIF、SVG、PNG 或 JPG，並轉換成下一個應用程式可接受的格式。",
-      "最多加入 30 張圖片、調整頁面順序並下載一個 PDF。其他輸出格式一次處理一張圖片。",
-      "轉換在裝置本機完成，檔案不會為了轉換而上傳。"
     ],
     "researchTier": "v10-final"
   }
