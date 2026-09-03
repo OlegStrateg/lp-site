@@ -20,7 +20,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Add up to 30 images, change their order and download one PDF. Other output formats are processed one image at a time.",
       "Processed locally. Nothing is uploaded for conversion."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Picture Converter: WebP to JPG, HEIC to JPG & PDF"
   },
   {
     "code": "am",
@@ -39,7 +40,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "እስከ 30 ምስሎች ያክሉ፣ ቅደም ተከተላቸውን ይቀይሩ እና አንድ PDF ያውርዱ።",
       "ፋይሎች በመሣሪያዎ ላይ ይሰራሉ፤ ለመቀየር አይሰቀሉም።"
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "የምስል መቀየሪያ፦ WebP ወደ JPG፣ HEIC ወደ JPG እና ምስል ወደ PDF"
   },
   {
     "code": "ar",
@@ -58,7 +60,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "أضف ما يصل إلى 30 صورة، غيّر ترتيب الصفحات ونزّل ملف PDF واحدًا. أما الصيغ الأخرى فتُعالج صورة واحدة في كل مرة.",
       "تتم المعالجة محليًا على جهازك ولا تُرفع الملفات للتحويل."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "محول الصور: تحويل الصيغ وتنزيل صورة من موقع ويب"
   },
   {
     "code": "bg",
@@ -77,7 +80,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Добавете до 30 изображения, променете реда им и изтеглете един PDF. Другите формати се обработват по едно изображение.",
       "Обработката е локална на устройството и файловете не се качват за конвертиране."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Конвертор на изображения: WebP към JPG, HEIC към JPG и изображение в PDF"
   },
   {
     "code": "bn",
@@ -96,7 +100,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "সর্বোচ্চ ৩০টি ছবি যোগ করুন, পৃষ্ঠার ক্রম বদলান এবং একটি PDF ডাউনলোড করুন। অন্য ফরম্যাটে একবারে একটি ছবি প্রসেস হয়।",
       "কনভার্সন ডিভাইসেই হয়; ফাইল আপলোড করা হয় না।"
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Image Converter: WebP to JPG, HEIC to JPG, Image to PDF | ইমেজ কনভার্টার"
   },
   {
     "code": "ca",
@@ -115,7 +120,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Afegeix fins a 30 imatges, canvia’n l’ordre i descarrega un sol PDF. Els altres formats es processen d’una imatge en una.",
       "El processament es fa localment al dispositiu i els fitxers no es pugen per convertir-los."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Convertidor d'imatges: WebP a JPG, HEIC a JPG i imatge a PDF"
   },
   {
     "code": "cs",
@@ -134,7 +140,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Přidejte až 30 obrázků, změňte jejich pořadí a stáhněte jeden PDF. Ostatní formáty se zpracovávají po jednom obrázku.",
       "Zpracování probíhá lokálně v zařízení a soubory se kvůli převodu nenahrávají."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Převodník obrázků: WebP na JPG, HEIC na JPG a obrázek do PDF"
   },
   {
     "code": "da",
@@ -153,7 +160,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Tilføj op til 30 billeder, ændr rækkefølgen, og download én PDF. Andre outputformater behandles ét billede ad gangen.",
       "Behandlingen sker lokalt på enheden, og filer uploades ikke til konvertering."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Billedkonverter: skift format og gem et billede fra en hjemmeside"
   },
   {
     "code": "de",
@@ -172,7 +180,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Füge bis zu 30 Bilder hinzu, ändere die Reihenfolge und lade eine PDF herunter. Andere Ausgabeformate werden einzeln verarbeitet.",
       "Die Verarbeitung erfolgt lokal auf dem Gerät; Dateien werden zur Konvertierung nicht hochgeladen."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Bildkonverter: WebP in JPG, HEIC in JPG & Bilder in PDF"
   },
   {
     "code": "el",
@@ -191,7 +200,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Προσθέστε έως 30 εικόνες, αλλάξτε τη σειρά τους και κατεβάστε ένα PDF. Οι άλλες μορφές επεξεργάζονται μία εικόνα τη φορά.",
       "Η επεξεργασία γίνεται τοπικά στη συσκευή και τα αρχεία δεν μεταφορτώνονται για μετατροπή."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Μετατροπέας εικόνων: WebP σε JPG, HEIC σε JPG και εικόνα σε PDF"
   },
   {
     "code": "es",
@@ -210,7 +220,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Añade hasta 30 imágenes, cambia el orden de las páginas y descarga un solo PDF. Los demás formatos se procesan de uno en uno.",
       "El procesamiento se realiza localmente en el dispositivo y los archivos no se suben para convertirlos."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Convertidor de imágenes: convierte archivos y guarda fotos de sitios web"
   },
   {
     "code": "et",
@@ -229,7 +240,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Lisa kuni 30 pilti, muuda nende järjekorda ja laadi alla üks PDF. Teisi väljundvorminguid töödeldakse ühe pildi kaupa.",
       "Töötlemine toimub seadmes kohapeal ja faile ei laadita teisendamiseks üles."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Pildikonverter: WebP JPG-ks, HEIC JPG-ks ja pilt PDF-iks"
   },
   {
     "code": "fa",
@@ -248,7 +260,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "تا ۳۰ تصویر اضافه کنید، ترتیب صفحات را تغییر دهید و یک PDF دانلود کنید. قالب‌های دیگر هر بار برای یک تصویر پردازش می‌شوند.",
       "پردازش به‌صورت محلی روی دستگاه انجام می‌شود و فایل‌ها برای تبدیل بارگذاری نمی‌شوند."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "مبدل تصویر: WebP به JPG، HEIC به JPG و تصویر به PDF"
   },
   {
     "code": "fi",
@@ -267,7 +280,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Lisää enintään 30 kuvaa, muuta sivujen järjestystä ja lataa yksi PDF. Muut muodot käsitellään kuva kerrallaan.",
       "Käsittely tapahtuu paikallisesti laitteella eikä tiedostoja ladata palvelimelle muunnosta varten."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Kuvamuunnin: muunna kuvia ja tallenna kuva verkkosivulta"
   },
   {
     "code": "fil",
@@ -286,7 +300,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Magdagdag ng hanggang 30 image, ayusin ang pagkakasunod-sunod at mag-download ng isang PDF. Isang image kada proseso para sa ibang output format.",
       "Lokal sa device ang pagproseso at hindi ina-upload ang mga file para sa conversion."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Image converter: mag-convert ng larawan at mag-save mula sa website"
   },
   {
     "code": "fr",
@@ -305,7 +320,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Ajoutez jusqu’à 30 images, modifiez l’ordre des pages et téléchargez un seul PDF. Les autres formats sont traités image par image.",
       "Le traitement se fait localement sur l’appareil et les fichiers ne sont pas envoyés pour la conversion."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Convertisseur d’images : WebP to JPG, HEIC to JPG & PDF"
   },
   {
     "code": "gu",
@@ -324,7 +340,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 સુધીની છબીઓ ઉમેરો, પાનાંનો ક્રમ બદલો અને એક PDF ડાઉનલોડ કરો. અન્ય ફોર્મેટ માટે એક વખતે એક છબી પ્રક્રિયા થાય છે.",
       "પ્રક્રિયા ઉપકરણ પર સ્થાનિક રીતે થાય છે અને કન્વર્ઝન માટે ફાઇલો અપલોડ થતી નથી."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "ઇમેજ કન્વર્ટર: WebP થી JPG, HEIC થી JPG અને છબીને PDF માં"
   },
   {
     "code": "he",
@@ -343,7 +360,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "הוסיפו עד 30 תמונות, שנו את סדר העמודים והורידו PDF אחד. פורמטים אחרים מעובדים תמונה אחת בכל פעם.",
       "העיבוד מתבצע מקומית במכשיר והקבצים אינם מועלים לצורך ההמרה."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "ממיר תמונות: WebP ל-JPG, HEIC ל-JPG ותמונה ל-PDF"
   },
   {
     "code": "hi",
@@ -362,7 +380,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "अधिकतम 30 इमेज जोड़ें, पेज का क्रम बदलें और एक PDF डाउनलोड करें। दूसरे आउटपुट फॉर्मेट एक बार में एक इमेज पर काम करते हैं।",
       "प्रोसेसिंग डिवाइस पर लोकल होती है और कन्वर्ज़न के लिए फाइल अपलोड नहीं की जाती।"
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Image Converter: WebP to JPG, HEIC to JPG, Image to PDF | इमेज कन्वर्टर"
   },
   {
     "code": "hr",
@@ -381,7 +400,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodajte do 30 slika, promijenite njihov redoslijed i preuzmite jedan PDF. Ostali se formati obrađuju po jedna slika.",
       "Obrada se odvija lokalno na uređaju i datoteke se ne prenose radi pretvorbe."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Pretvarač slika: WebP u JPG, HEIC u JPG i slika u PDF"
   },
   {
     "code": "hu",
@@ -400,7 +420,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Adj hozzá legfeljebb 30 képet, rendezd át őket, majd tölts le egy PDF-et. Más kimeneti formátumok egyszerre egy képet dolgoznak fel.",
       "A feldolgozás helyben, az eszközön történik; a fájlokat nem tölti fel konvertáláshoz."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Képkonvertáló: WebP JPG, HEIC JPG és kép PDF átalakítás"
   },
   {
     "code": "id",
@@ -419,7 +440,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Tambahkan hingga 30 gambar, ubah urutannya, lalu unduh satu PDF. Format keluaran lain diproses satu gambar per kali.",
       "Pemrosesan berlangsung secara lokal di perangkat dan file tidak diunggah untuk konversi."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Konverter Gambar: Ubah JPG ke PDF, PNG ke JPG & HEIC ke JPG"
   },
   {
     "code": "it",
@@ -438,7 +460,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Aggiungi fino a 30 immagini, cambia l’ordine delle pagine e scarica un unico PDF. Gli altri formati vengono elaborati un’immagine alla volta.",
       "L’elaborazione avviene localmente sul dispositivo e i file non vengono caricati per la conversione."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Convertitore di immagini: cambia formato e salva un’immagine dal web"
   },
   {
     "code": "ja",
@@ -457,7 +480,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "最大30枚の画像を追加し、ページ順を変更して1つのPDFとして保存できます。PDF以外は1枚ずつ変換します。",
       "変換処理は端末内で行われ、ファイルは変換のためにアップロードされません。"
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "画像変換：WebP to JPG・HEIC to JPG・画像 PDF 変換"
   },
   {
     "code": "kn",
@@ -476,7 +500,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 ಚಿತ್ರಗಳವರೆಗೆ ಸೇರಿಸಿ, ಪುಟಗಳ ಕ್ರಮ ಬದಲಿಸಿ ಮತ್ತು ಒಂದು PDF ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ. ಇತರ ಔಟ್‌ಪುಟ್ ಸ್ವರೂಪಗಳು ಒಂದೊಂದು ಚಿತ್ರವಾಗಿ ಪ್ರಕ್ರಿಯೆಯಾಗುತ್ತವೆ.",
       "ಪ್ರಕ್ರಿಯೆ ಸಾಧನದಲ್ಲೇ ಸ್ಥಳೀಯವಾಗಿ ನಡೆಯುತ್ತದೆ; ಪರಿವರ್ತನೆಗಾಗಿ ಫೈಲ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದಿಲ್ಲ."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "ಇಮೇಜ್ ಕನ್ವರ್ಟರ್: WebP to JPG, HEIC to JPG, PNG to JPG, Image to PDF"
   },
   {
     "code": "ko",
@@ -495,7 +520,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "최대 30장의 이미지를 추가하고 순서를 바꾼 뒤 하나의 PDF로 다운로드할 수 있습니다. 다른 출력 형식은 한 번에 한 장씩 처리됩니다.",
       "변환은 기기에서 로컬로 처리되며 파일을 변환 서버에 업로드하지 않습니다."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "이미지 변환기: WebP to JPG, HEIC to JPG, 이미지 PDF 변환"
   },
   {
     "code": "lt",
@@ -514,7 +540,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Pridėkite iki 30 vaizdų, pakeiskite jų tvarką ir atsisiųskite vieną PDF. Kiti formatai apdorojami po vieną vaizdą.",
       "Apdorojimas vyksta vietoje įrenginyje, o failai konvertuoti neįkeliami."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Vaizdų keitiklis: WebP į JPG, HEIC į JPG ir vaizdas į PDF"
   },
   {
     "code": "lv",
@@ -533,7 +560,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Pievienojiet līdz 30 attēliem, mainiet to secību un lejupielādējiet vienu PDF. Citi formāti tiek apstrādāti pa vienam attēlam.",
       "Apstrāde notiek lokāli ierīcē, un faili netiek augšupielādēti konvertēšanai."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Attēlu pārveidotājs: WebP uz JPG, HEIC uz JPG un attēls uz PDF"
   },
   {
     "code": "ml",
@@ -552,7 +580,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 ചിത്രങ്ങൾ വരെ ചേർക്കുക, പേജ് ക്രമം മാറ്റുക, ഒരു PDF ഡൗൺലോഡ് ചെയ്യുക. മറ്റ് ഫോർമാറ്റുകൾ ഓരോ ചിത്രമായി പ്രോസസ് ചെയ്യുന്നു.",
       "പ്രോസസ്സിംഗ് ഉപകരണത്തിൽ തന്നെ നടക്കുന്നു; പരിവർത്തനത്തിനായി ഫയലുകൾ അപ്‌ലോഡ് ചെയ്യില്ല."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "ഇമേജ് കൺവേർട്ടർ: WebP to JPG, HEIC to JPG, PNG to JPG, Image to PDF"
   },
   {
     "code": "mr",
@@ -571,7 +600,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 पर्यंत प्रतिमा जोडा, पानांचा क्रम बदला आणि एक PDF डाउनलोड करा. इतर फॉरमॅटमध्ये एका वेळी एक प्रतिमा प्रक्रिया होते.",
       "प्रक्रिया डिव्हाइसवर स्थानिकरीत्या होते आणि रूपांतरणासाठी फाइल अपलोड केली जात नाही."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "इमेज कनव्हर्टर: WebP ते JPG, HEIC ते JPG आणि प्रतिमा ते PDF"
   },
   {
     "code": "ms",
@@ -590,7 +620,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Tambah sehingga 30 imej, ubah susunannya dan muat turun satu PDF. Format output lain diproses satu imej pada satu masa.",
       "Pemprosesan berlaku secara setempat pada peranti dan fail tidak dimuat naik untuk penukaran."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Penukar Gambar: WebP ke JPG, HEIC ke JPG dan Image to PDF"
   },
   {
     "code": "nl",
@@ -609,7 +640,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Voeg maximaal 30 afbeeldingen toe, wijzig de volgorde en download één PDF. Andere uitvoerformaten worden per afbeelding verwerkt.",
       "De verwerking gebeurt lokaal op het apparaat en bestanden worden niet geüpload voor conversie."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Afbeeldingsconverter: afbeeldingen omzetten en één webafbeelding opslaan"
   },
   {
     "code": "no",
@@ -628,7 +660,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Legg til opptil 30 bilder, endre rekkefølgen og last ned én PDF. Andre utdataformater behandles ett bilde om gangen.",
       "Behandlingen skjer lokalt på enheten, og filer lastes ikke opp for konvertering."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Bildekonverter: konverter bilder, endre filformat og lagre fra nettsteder"
   },
   {
     "code": "pl",
@@ -647,7 +680,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodaj do 30 obrazów, zmień ich kolejność i pobierz jeden PDF. Inne formaty wyjściowe są przetwarzane po jednym obrazie.",
       "Przetwarzanie odbywa się lokalnie na urządzeniu, a pliki nie są przesyłane do konwersji."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Konwerter obrazów: WebP na JPG, HEIC na JPG i obraz do PDF"
   },
   {
     "code": "pt_BR",
@@ -666,7 +700,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Adicione até 30 imagens, mude a ordem das páginas e baixe um único PDF. Outros formatos são processados uma imagem por vez.",
       "O processamento acontece localmente no dispositivo e os arquivos não são enviados para conversão."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Conversor de imagens: converta arquivos e salve fotos de sites"
   },
   {
     "code": "ro",
@@ -685,7 +720,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Adăugați până la 30 de imagini, schimbați ordinea și descărcați un singur PDF. Celelalte formate se procesează imagine cu imagine.",
       "Procesarea are loc local pe dispozitiv, iar fișierele nu sunt încărcate pentru conversie."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Convertor imagini: WebP în JPG, HEIC în JPG și Image to PDF"
   },
   {
     "code": "ru",
@@ -704,7 +740,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Добавьте до 30 изображений, поменяйте порядок страниц и скачайте один PDF. В другие форматы изображения конвертируются по одному.",
       "Обработка идёт локально на устройстве: файлы не загружаются на сервер для конвертации."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Конвертер в JPG: фото, WebP, HEIC, PNG и изображения в PDF"
   },
   {
     "code": "sk",
@@ -723,7 +760,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Pridajte až 30 obrázkov, zmeňte ich poradie a stiahnite jeden PDF. Ostatné formáty sa spracúvajú po jednom obrázku.",
       "Spracovanie prebieha lokálne v zariadení a súbory sa na konverziu nenahrávajú."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Konvertor obrázkov: WebP na JPG, HEIC na JPG a obrázok do PDF"
   },
   {
     "code": "sl",
@@ -742,7 +780,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodajte do 30 slik, spremenite vrstni red in prenesite en PDF. Druge izhodne oblike se obdelujejo po eno sliko.",
       "Obdelava poteka lokalno v napravi in datoteke se za pretvorbo ne nalagajo."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Pretvornik slik: WebP v JPG, HEIC v JPG in slika v PDF"
   },
   {
     "code": "sr",
@@ -761,7 +800,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Dodajte do 30 slika, promenite redosled i preuzmite jedan PDF. Ostali formati se obrađuju po jedna slika.",
       "Obrada se obavlja lokalno na uređaju i fajlovi se ne otpremaju radi konverzije."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Конвертер слика: WebP у JPG, HEIC у JPG и слика у PDF"
   },
   {
     "code": "sv",
@@ -780,7 +820,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Lägg till upp till 30 bilder, ändra ordningen och ladda ner en PDF. Andra utdataformat behandlas en bild i taget.",
       "Bearbetningen sker lokalt på enheten och filer laddas inte upp för konvertering."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Bildkonverterare: ändra bildformat och spara en bild från webben"
   },
   {
     "code": "sw",
@@ -799,7 +840,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Ongeza hadi picha 30, badili mpangilio na upakue PDF moja. Miundo mingine huchakata picha moja kwa wakati.",
       "Uchakataji hufanyika ndani ya kifaa na faili hazipakwi kwenye seva kwa ajili ya kubadilishwa."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Kibadilishaji picha: WebP hadi JPG, HEIC hadi JPG na picha kuwa PDF"
   },
   {
     "code": "ta",
@@ -818,7 +860,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 படங்கள் வரை சேர்த்து, பக்க வரிசையை மாற்றி ஒரு PDF ஆக பதிவிறக்கலாம். மற்ற output format-கள் ஒரு படமாகவே செயலாக்கப்படும்.",
       "மாற்றும் செயல்முறை சாதனத்திலேயே நடக்கும்; conversion-க்காக கோப்புகள் upload செய்யப்படாது."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "இமேஜ் கன்வெர்ட்டர்: WebP to JPG, HEIC to JPG, PNG to JPG, Image to PDF"
   },
   {
     "code": "te",
@@ -837,7 +880,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 చిత్రాల వరకు జోడించి, పేజీల క్రమం మార్చి ఒక PDF డౌన్‌లోడ్ చేయండి. ఇతర output formatలు ఒక్కో చిత్రంగా ప్రాసెస్ అవుతాయి.",
       "ప్రాసెసింగ్ పరికరంలోనే స్థానికంగా జరుగుతుంది; conversion కోసం ఫైళ్లు upload చేయబడవు."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "ఇమేజ్ కన్వర్టర్: WebP to JPG, HEIC to JPG, PNG to JPG, Image to PDF"
   },
   {
     "code": "th",
@@ -856,7 +900,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "เพิ่มรูปได้สูงสุด 30 รูป จัดลำดับหน้าใหม่ แล้วดาวน์โหลดเป็น PDF เดียว ส่วนรูปแบบอื่นจะประมวลผลทีละรูป",
       "การประมวลผลเกิดขึ้นในอุปกรณ์ ไฟล์ไม่ถูกอัปโหลดเพื่อแปลงรูปแบบ"
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "ตัวแปลงรูปภาพ: WebP เป็น JPG, HEIC เป็น JPG และรูปภาพเป็น PDF"
   },
   {
     "code": "tr",
@@ -875,7 +920,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "30 görsele kadar ekleyin, sayfa sırasını değiştirin ve tek bir PDF indirin. Diğer çıktı biçimleri tek tek işlenir.",
       "İşleme cihazda yerel olarak yapılır; dosyalar dönüştürme için sunucuya yüklenmez."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Görsel Dönüştürücü: WebP to JPG, HEIC to JPG, Image to PDF"
   },
   {
     "code": "uk",
@@ -894,7 +940,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Додайте до 30 зображень, змініть порядок сторінок і завантажте один PDF. Інші формати обробляються по одному зображенню.",
       "Обробка відбувається локально на пристрої, а файли не завантажуються на сервер для конвертації."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Конвертер зображень: WebP в JPG, HEIC в JPG і зображення в PDF"
   },
   {
     "code": "vi",
@@ -913,7 +960,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "Thêm tối đa 30 ảnh, đổi thứ tự trang và tải xuống một PDF. Các định dạng đầu ra khác được xử lý từng ảnh một.",
       "Quá trình xử lý diễn ra cục bộ trên thiết bị và tệp không được tải lên để chuyển đổi."
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "Trình chuyển đổi hình ảnh: đổi định dạng, lưu ảnh web và tạo PDF"
   },
   {
     "code": "zh_CN",
@@ -932,7 +980,8 @@ export const PICTURE_CONVERTER_LOCALES = [
       "最多添加 30 张图片，调整页面顺序并下载一个 PDF。其他输出格式一次处理一张图片。",
       "转换在设备本地完成，文件不会为了转换而上传。"
     ],
-    "researchTier": "v10-final"
+    "researchTier": "v10-final",
+    "pageTitle": "图片转换器：WebP转JPG、HEIC转JPG、PNG转JPG、图片转PDF"
   }
 ];
 
