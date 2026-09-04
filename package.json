@@ -9,7 +9,7 @@
     "dev": "astro dev",
     "smoke": "node scripts/smoke-agpsd.mjs && node scripts/smoke-pptx.mjs && node scripts/smoke-pdf.mjs && node scripts/smoke-ico.mjs && node scripts/smoke-webp.mjs",
     "uniqueness": "node scripts/uniqueness-check.mjs",
-    "build": "npm run smoke && astro build && node scripts/generate-pinterest-locales.mjs && node scripts/verify-pinterest-attribution.mjs && node scripts/generate-picture-converter-locales.mjs && npm run uniqueness",
+    "build": "npm run smoke && astro build && node scripts/generate-pinterest-locales.mjs && node scripts/verify-pinterest-attribution.mjs && node scripts/generate-picture-converter-locales.mjs && node scripts/apply-picture-converter-faq.mjs && npm run uniqueness",
     "preview": "astro preview",
     "astro": "astro",
     "og:generate": "node scripts/generate-og-image.mjs"
