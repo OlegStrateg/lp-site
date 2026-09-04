@@ -2,23 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-// Demand order already validated in the project from Semrush:
-// JPG→PDF 246K, PDF→JPG 201K, favicon 12.1K, WebP→JPG 5.4K.
-// We use the numbers only to order links; we do not print volatile volumes on-page.
-const POPULAR_ORDER = [
-  'jpg-to-pdf',
-  'pdf-to-jpg',
-  'webp-to-jpg',
-  'favicon-generator',
-];
-
-const DESIGN_ORDER = [
-  'psd-to-png',
-  'psd-to-jpg',
-  'png-to-psd',
-  'jpg-to-psd',
-];
-
+const POPULAR_ORDER = ['jpg-to-pdf','pdf-to-jpg','webp-to-jpg','favicon-generator'];
+const DESIGN_ORDER = ['psd-to-png','psd-to-jpg','png-to-psd','jpg-to-psd'];
 const CHECKER_ORDER = ['canva-to-google-slides'];
 
 const CARD_LABEL_OVERRIDE: Record<string, string> = {
@@ -37,6 +22,13 @@ const PAIR: Record<string, [string, string]> = {
   'canva-to-google-slides': ['PPTX', 'SLD'],
 };
 
+const VISUAL: Record<string, { asset: string; alt: string }> = {
+  'jpg-to-pdf': { asset: 'images-to-pdf-example', alt: 'Photos ready to combine into one PDF' },
+  'pdf-to-jpg': { asset: 'website-image-converter', alt: 'Image preview for PDF to JPG conversion' },
+  'webp-to-jpg': { asset: 'webp-to-jpg-example', alt: 'WebP image ready to convert to JPG' },
+  'favicon-generator': { asset: 'heic-to-jpg-example', alt: 'Image preview for favicon creation' },
+};
+
 const all = await getCollection('converters');
 const byKey = new Map(all.map((item) => [item.data.key, item]));
 const pick = (keys: string[]) => keys.map((key) => byKey.get(key)).filter(
@@ -51,6 +43,7 @@ const listed = [...popular, ...design, ...checkers];
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
 const title = 'Free File Converter — JPG, PDF, WebP & PSD | LayerPorter';
 const description = 'Free file converters for JPG, PNG, PDF, WebP and PSD. Convert files in your browser with no uploads, no account and no server processing.';
+const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=convert_hub&utm_content=extension_block';
 
 const schema = {
   '@context': 'https://schema.org',
@@ -76,6 +69,13 @@ const schema = {
       url: `${site}/convert/${item.data.key}/`,
     })),
   },
+  hasPart: {
+    '@type': 'SoftwareApplication',
+    name: 'Picture Converter',
+    applicationCategory: 'BrowserApplication',
+    operatingSystem: 'Chrome',
+    url: `${site}/picture-converter/`,
+  },
 };
 ---
 
@@ -98,29 +98,41 @@ const schema = {
         </p>
         <div class="convert-actions">
           <a class="convert-primary-link" href="#popular">Choose a converter <span aria-hidden="true">↓</span></a>
-          <a class="convert-secondary-link" href="#privacy">Why local processing matters</a>
+          <a class="convert-secondary-link" href="#picture-converter">Convert images from any website</a>
         </div>
         <div class="convert-trust-row" aria-label="Key benefits">
-          <span>No uploads</span>
-          <span>No account</span>
-          <span>Runs on your device</span>
+          <a href="#privacy">No uploads</a>
+          <a href="#privacy">No account</a>
+          <a href="#privacy">Runs on your device</a>
         </div>
       </div>
 
-      <div class="convert-map" aria-label="Example file conversions">
-        <div class="convert-map-head"><b>LayerPorter Convert</b><span>LOCAL ENGINE</span></div>
-        <div class="convert-flow hot"><div class="convert-format">JPG</div><span class="convert-arrow">→</span><div class="convert-format">PDF</div></div>
-        <div class="convert-flow"><div class="convert-format">PDF</div><span class="convert-arrow">→</span><div class="convert-format">JPG</div></div>
-        <div class="convert-flow"><div class="convert-format">WEBP</div><span class="convert-arrow">→</span><div class="convert-format">JPG</div></div>
-        <div class="convert-flow"><div class="convert-format">PSD</div><span class="convert-arrow">→</span><div class="convert-format">PNG</div></div>
+      <div class="convert-map" aria-label="Choose a popular conversion">
+        <a class="convert-map-head" href="#popular"><b>LayerPorter Convert</b><span>CHOOSE A TOOL ↓</span></a>
+        <a class="convert-visual-flow hot" href="/convert/jpg-to-pdf/">
+          <img src="/images/picture-converter/images-to-pdf-example-640.webp" srcset="/images/picture-converter/images-to-pdf-example-320.webp 320w, /images/picture-converter/images-to-pdf-example-640.webp 640w" sizes="180px" width="640" height="427" alt="Photos ready to combine into a PDF" fetchpriority="high" />
+          <div><strong>JPG → PDF</strong><span>Combine photos into one PDF</span></div><i>↗</i>
+        </a>
+        <a class="convert-visual-flow" href="/convert/pdf-to-jpg/">
+          <img src="/images/picture-converter/website-image-converter-640.webp" srcset="/images/picture-converter/website-image-converter-320.webp 320w, /images/picture-converter/website-image-converter-640.webp 640w" sizes="180px" width="640" height="427" alt="Image preview for PDF to JPG conversion" loading="lazy" />
+          <div><strong>PDF → JPG</strong><span>Turn PDF pages into images</span></div><i>↗</i>
+        </a>
+        <a class="convert-visual-flow" href="/convert/webp-to-jpg/">
+          <img src="/images/picture-converter/webp-to-jpg-example-640.webp" srcset="/images/picture-converter/webp-to-jpg-example-320.webp 320w, /images/picture-converter/webp-to-jpg-example-640.webp 640w" sizes="180px" width="640" height="427" alt="WebP image ready to convert to JPG" loading="lazy" />
+          <div><strong>WebP → JPG</strong><span>Make WebP easier to use anywhere</span></div><i>↗</i>
+        </a>
+        <a class="convert-visual-flow" href="/convert/psd-to-png/">
+          <img src="/images/picture-converter/heic-to-jpg-example-640.webp" srcset="/images/picture-converter/heic-to-jpg-example-320.webp 320w, /images/picture-converter/heic-to-jpg-example-640.webp 640w" sizes="180px" width="640" height="427" alt="Image preview for PSD to PNG conversion" loading="lazy" />
+          <div><strong>PSD → PNG</strong><span>Flatten a PSD for sharing</span></div><i>↗</i>
+        </a>
         <div class="convert-map-foot"><strong>● Files stay here</strong><span>No server queue</span></div>
       </div>
     </section>
 
     <section class="convert-stats" aria-label="Convert hub facts">
-      <div class="convert-stat"><strong>8 converters</strong><span>Focused tools, not a fake “convert anything” promise.</span></div>
-      <div class="convert-stat"><strong>1 checker</strong><span>Canva → Google Slides import compatibility.</span></div>
-      <div class="convert-stat"><strong>0 uploads</strong><span>File processing stays in the browser.</span></div>
+      <a class="convert-stat" href="#popular"><strong>8 converters</strong><span>Open the converter list</span></a>
+      <a class="convert-stat" href="#checker"><strong>1 checker</strong><span>Check Canva → Slides compatibility</span></a>
+      <a class="convert-stat" href="#privacy"><strong>0 uploads</strong><span>See how local processing works</span></a>
     </section>
 
     <section class="convert-section" id="popular" aria-labelledby="popular-heading">
@@ -129,23 +141,48 @@ const schema = {
           <div class="convert-section-kicker">Most useful first</div>
           <h2 id="popular-heading">Popular file converters</h2>
         </div>
-        <p>Start with the conversion you need. Each link opens a dedicated tool with its own workflow, explanation and privacy details.</p>
+        <p>Choose the exact job. The whole card is clickable and opens the working converter.</p>
       </div>
 
-      <div class="convert-popular-grid">
+      <div class="convert-popular-grid convert-popular-grid-visual">
         {popular.map((item, index) => {
           const [from, to] = PAIR[item.data.key];
+          const visual = VISUAL[item.data.key];
           return (
-            <a class:list={['convert-tool-card', { featured: index < 2 }]} href={`/convert/${item.data.key}/`}>
-              <div class="convert-pair" aria-hidden="true"><span>{from}</span><i>→</i><span>{to}</span></div>
-              <div class="convert-card-copy">
-                <h3>{item.data.h1.split('—')[0].trim()}</h3>
-                <p>{item.data.cardBlurb}</p>
+            <a class:list={['convert-tool-card', 'convert-tool-card-visual', { featured: index < 2 }]} href={`/convert/${item.data.key}/`}>
+              <picture class="convert-card-image">
+                <source srcset={`/images/picture-converter/${visual.asset}-320.webp 320w, /images/picture-converter/${visual.asset}-640.webp 640w, /images/picture-converter/${visual.asset}-960.webp 960w`} sizes="(max-width:700px) 100vw, 42vw" />
+                <img src={`/images/picture-converter/${visual.asset}-640.webp`} width="640" height="427" alt={visual.alt} loading="lazy" />
+              </picture>
+              <div class="convert-card-body">
+                <div class="convert-pair" aria-hidden="true"><span>{from}</span><i>→</i><span>{to}</span></div>
+                <div class="convert-card-copy">
+                  <h3>{item.data.h1.split('—')[0].trim()}</h3>
+                  <p>{item.data.cardBlurb}</p>
+                  <b class="convert-open-label">Open converter <span aria-hidden="true">↗</span></b>
+                </div>
               </div>
-              <span class="convert-card-go" aria-hidden="true">↗</span>
             </a>
           );
         })}
+      </div>
+    </section>
+
+    <section class="convert-extension" id="picture-converter" aria-labelledby="picture-converter-heading">
+      <div class="convert-extension-visual">
+        <img src="/images/picture-converter/picture-converter-chrome-960.webp" srcset="/images/picture-converter/picture-converter-chrome-320.webp 320w, /images/picture-converter/picture-converter-chrome-640.webp 640w, /images/picture-converter/picture-converter-chrome-960.webp 960w" sizes="(max-width:800px) 100vw, 48vw" width="960" height="640" alt="Picture Converter workflow for images in Chrome" loading="lazy" />
+      </div>
+      <div class="convert-extension-copy">
+        <div class="convert-extension-brand">
+          <img src="/picture-converter/welcome/picture-converter-icon.png" width="48" height="48" alt="Picture Converter icon" loading="lazy" />
+          <div><span>CHROME EXTENSION</span><strong>Picture Converter</strong></div>
+        </div>
+        <h2 id="picture-converter-heading">Convert an image without leaving the page you found it on.</h2>
+        <p>Right-click an image on a website or open a local image file, then convert it to JPG, PNG, WebP, PDF or ICO. The conversion stays local in Chrome.</p>
+        <div class="convert-extension-actions">
+          <a class="convert-extension-store" href={pictureConverterStore}>Add to Chrome <span aria-hidden="true">↗</span></a>
+          <a class="convert-extension-details" href="/picture-converter/">See Picture Converter details</a>
+        </div>
       </div>
     </section>
 
@@ -155,7 +192,7 @@ const schema = {
           <div class="convert-section-kicker">Design workflows</div>
           <h2 id="design-heading">PSD and image conversion tools</h2>
         </div>
-        <p>Flatten PSD files for sharing, or place flat JPG and PNG images into PSD containers for the next editing step.</p>
+        <p>Every card below opens the actual tool. No dead decorative tiles.</p>
       </div>
 
       <div class="convert-tool-grid">
@@ -167,6 +204,7 @@ const schema = {
               <div class="convert-card-copy">
                 <h3>{item.data.h1.split('—')[0].trim()}</h3>
                 <p>{item.data.cardBlurb}</p>
+                <b class="convert-open-label">Open converter <span aria-hidden="true">↗</span></b>
               </div>
               <span class="convert-card-go" aria-hidden="true">↗</span>
             </a>
@@ -175,13 +213,13 @@ const schema = {
       </div>
     </section>
 
-    <section class="convert-section" aria-labelledby="checker-heading">
+    <section class="convert-section" id="checker" aria-labelledby="checker-heading">
       <div class="convert-section-head">
         <div>
           <div class="convert-section-kicker">Before you import</div>
           <h2 id="checker-heading">Compatibility checker</h2>
         </div>
-        <p>Not every file workflow is a conversion. This checker flags likely Canva → Google Slides import problems before you move the deck.</p>
+        <p>Check a Canva export before moving it to Google Slides.</p>
       </div>
 
       <div class="convert-category-grid">
@@ -197,6 +235,7 @@ const schema = {
                   <div class="convert-card-copy">
                     <h3>{CARD_LABEL_OVERRIDE[item.data.key] ?? item.data.h1.split('—')[0].trim()}</h3>
                     <p>{item.data.cardBlurb}</p>
+                    <b class="convert-open-label">Open checker <span aria-hidden="true">↗</span></b>
                   </div>
                   <span class="convert-card-go" aria-hidden="true">↗</span>
                 </a>
@@ -206,10 +245,16 @@ const schema = {
         </div>
 
         <div class="convert-category" aria-label="Supported format families">
-          <h3>Formats in this hub</h3>
-          <p>Current tools are intentionally focused. We only list conversions that are actually implemented.</p>
+          <h3>Jump by format</h3>
+          <p>Each format below opens a real tool that works with it.</p>
           <div class="convert-format-cloud" aria-label="Supported formats">
-            <span>JPG</span><span>PNG</span><span>PDF</span><span>WebP</span><span>PSD</span><span>ICO</span><span>PPTX</span>
+            <a href="/convert/jpg-to-pdf/">JPG</a>
+            <a href="/convert/png-to-psd/">PNG</a>
+            <a href="/convert/pdf-to-jpg/">PDF</a>
+            <a href="/convert/webp-to-jpg/">WebP</a>
+            <a href="/convert/psd-to-png/">PSD</a>
+            <a href="/convert/favicon-generator/">ICO</a>
+            <a href="/convert/canva-to-google-slides/">PPTX</a>
           </div>
         </div>
       </div>
