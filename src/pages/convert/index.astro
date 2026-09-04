@@ -2,72 +2,229 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-// Same order the homepage's tool grid uses, so a visitor bouncing between
-// "/" and "/convert/" sees a consistent list rather than a re-shuffled one.
-// canva-to-google-slides is split into its own "Checkers" group below — it's
-// a compatibility checker (report, no download), not a file converter.
-// Порядок = спрос (Semrush) + полезность: сначала частотные (jpg-to-pdf 246K,
-// pdf-to-jpg 201K, favicon 12.1K, webp 5.4K), затем PSD-семейство —
-// дифференциатор слоёв. Синхронизирован с «Popular tools» главной.
-const ORDER = [
+// Demand order already validated in the project from Semrush:
+// JPG→PDF 246K, PDF→JPG 201K, favicon 12.1K, WebP→JPG 5.4K.
+// We use the numbers only to order links; we do not print volatile volumes on-page.
+const POPULAR_ORDER = [
   'jpg-to-pdf',
   'pdf-to-jpg',
-  'favicon-generator',
   'webp-to-jpg',
+  'favicon-generator',
+];
+
+const DESIGN_ORDER = [
   'psd-to-png',
   'psd-to-jpg',
   'png-to-psd',
   'jpg-to-psd',
 ];
+
 const CHECKER_ORDER = ['canva-to-google-slides'];
-// Card label override: the page's own H1 (used for URL/SEO) stays untouched,
-// but the /convert/ hub card for the checker reads as a checker, not a converter.
+
 const CARD_LABEL_OVERRIDE: Record<string, string> = {
-  'canva-to-google-slides': 'Canva → Slides Import Checker',
+  'canva-to-google-slides': 'Canva to Google Slides Import Checker',
 };
+
+const PAIR: Record<string, [string, string]> = {
+  'jpg-to-pdf': ['JPG', 'PDF'],
+  'pdf-to-jpg': ['PDF', 'JPG'],
+  'webp-to-jpg': ['WEBP', 'JPG'],
+  'favicon-generator': ['IMG', 'ICO'],
+  'psd-to-png': ['PSD', 'PNG'],
+  'psd-to-jpg': ['PSD', 'JPG'],
+  'png-to-psd': ['PNG', 'PSD'],
+  'jpg-to-psd': ['JPG', 'PSD'],
+  'canva-to-google-slides': ['PPTX', 'SLD'],
+};
+
 const all = await getCollection('converters');
-const converters = ORDER.map((key) => all.find((c) => c.data.key === key)).filter(
-  (c): c is NonNullable<typeof c> => Boolean(c),
-);
-const checkers = CHECKER_ORDER.map((key) => all.find((c) => c.data.key === key)).filter(
-  (c): c is NonNullable<typeof c> => Boolean(c),
+const byKey = new Map(all.map((item) => [item.data.key, item]));
+const pick = (keys: string[]) => keys.map((key) => byKey.get(key)).filter(
+  (item): item is NonNullable<typeof item> => Boolean(item),
 );
 
+const popular = pick(POPULAR_ORDER);
+const design = pick(DESIGN_ORDER);
+const checkers = pick(CHECKER_ORDER);
+const listed = [...popular, ...design, ...checkers];
+
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+const title = 'Free File Converter — JPG, PDF, WebP & PSD | LayerPorter';
+const description = 'Free file converters for JPG, PNG, PDF, WebP and PSD. Convert files in your browser with no uploads, no account and no server processing.';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': `${site}/convert/#collection`,
+  url: `${site}/convert/`,
+  name: 'Free File Converter',
+  description,
+  isPartOf: {
+    '@type': 'WebSite',
+    '@id': `${site}/#website`,
+    name: 'LayerPorter',
+    url: `${site}/`,
+  },
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListOrder: 'https://schema.org/ItemListOrderAscending',
+    numberOfItems: listed.length,
+    itemListElement: listed.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: CARD_LABEL_OVERRIDE[item.data.key] ?? item.data.h1.split('—')[0].trim(),
+      url: `${site}/convert/${item.data.key}/`,
+    })),
+  },
+};
 ---
 
 <BaseLayout
-  title="Free File Converters — LayerPorter"
-  description="Browse LayerPorter's free, in-browser file converters. No uploads, no accounts."
+  title={title}
+  description={description}
   canonicalPath="/convert/"
   ogImage={`${site}/og/home.png`}
 >
-  <section class="hero">
-    <h1>File converters</h1>
-    <p class="answer-first">Every converter here runs on your device. No files are uploaded to a server.</p>
-  </section>
+  <link slot="head" rel="stylesheet" href="/convert-hub.css" />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema)}></script>
 
-  <section aria-labelledby="converters-heading">
-    <h2 id="converters-heading">Available converters</h2>
-    <div class="tool-cards">
-      {converters.map((c) => (
-        <a class="tool-card" href={`/convert/${c.data.key}/`}>
-          <h3>{c.data.h1.split('—')[0].trim()}</h3>
-          <p>{c.data.cardBlurb}</p>
-        </a>
-      ))}
-    </div>
-  </section>
+  <div class="convert-hub">
+    <section class="convert-hero" aria-labelledby="convert-h1">
+      <div>
+        <div class="convert-kicker">Private browser tools</div>
+        <h1 id="convert-h1"><span>Free File Converter</span><br />for the formats you actually use.</h1>
+        <p class="convert-lede">
+          Convert JPG, PNG, PDF, WebP and PSD files without uploading them. Pick the exact conversion below — the work runs locally in your browser, on this device.
+        </p>
+        <div class="convert-actions">
+          <a class="convert-primary-link" href="#popular">Choose a converter <span aria-hidden="true">↓</span></a>
+          <a class="convert-secondary-link" href="#privacy">Why local processing matters</a>
+        </div>
+        <div class="convert-trust-row" aria-label="Key benefits">
+          <span>No uploads</span>
+          <span>No account</span>
+          <span>Runs on your device</span>
+        </div>
+      </div>
 
-  <section aria-labelledby="checkers-heading">
-    <h2 id="checkers-heading">Checkers</h2>
-    <div class="tool-cards">
-      {checkers.map((c) => (
-        <a class="tool-card" href={`/convert/${c.data.key}/`}>
-          <h3>{CARD_LABEL_OVERRIDE[c.data.key] ?? c.data.h1.split('—')[0].trim()}</h3>
-          <p>{c.data.cardBlurb}</p>
-        </a>
-      ))}
-    </div>
-  </section>
+      <div class="convert-map" aria-label="Example file conversions">
+        <div class="convert-map-head"><b>LayerPorter Convert</b><span>LOCAL ENGINE</span></div>
+        <div class="convert-flow hot"><div class="convert-format">JPG</div><span class="convert-arrow">→</span><div class="convert-format">PDF</div></div>
+        <div class="convert-flow"><div class="convert-format">PDF</div><span class="convert-arrow">→</span><div class="convert-format">JPG</div></div>
+        <div class="convert-flow"><div class="convert-format">WEBP</div><span class="convert-arrow">→</span><div class="convert-format">JPG</div></div>
+        <div class="convert-flow"><div class="convert-format">PSD</div><span class="convert-arrow">→</span><div class="convert-format">PNG</div></div>
+        <div class="convert-map-foot"><strong>● Files stay here</strong><span>No server queue</span></div>
+      </div>
+    </section>
+
+    <section class="convert-stats" aria-label="Convert hub facts">
+      <div class="convert-stat"><strong>8 converters</strong><span>Focused tools, not a fake “convert anything” promise.</span></div>
+      <div class="convert-stat"><strong>1 checker</strong><span>Canva → Google Slides import compatibility.</span></div>
+      <div class="convert-stat"><strong>0 uploads</strong><span>File processing stays in the browser.</span></div>
+    </section>
+
+    <section class="convert-section" id="popular" aria-labelledby="popular-heading">
+      <div class="convert-section-head">
+        <div>
+          <div class="convert-section-kicker">Most useful first</div>
+          <h2 id="popular-heading">Popular file converters</h2>
+        </div>
+        <p>Start with the conversion you need. Each link opens a dedicated tool with its own workflow, explanation and privacy details.</p>
+      </div>
+
+      <div class="convert-popular-grid">
+        {popular.map((item, index) => {
+          const [from, to] = PAIR[item.data.key];
+          return (
+            <a class:list={['convert-tool-card', { featured: index < 2 }]} href={`/convert/${item.data.key}/`}>
+              <div class="convert-pair" aria-hidden="true"><span>{from}</span><i>→</i><span>{to}</span></div>
+              <div class="convert-card-copy">
+                <h3>{item.data.h1.split('—')[0].trim()}</h3>
+                <p>{item.data.cardBlurb}</p>
+              </div>
+              <span class="convert-card-go" aria-hidden="true">↗</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="convert-section" aria-labelledby="design-heading">
+      <div class="convert-section-head">
+        <div>
+          <div class="convert-section-kicker">Design workflows</div>
+          <h2 id="design-heading">PSD and image conversion tools</h2>
+        </div>
+        <p>Flatten PSD files for sharing, or place flat JPG and PNG images into PSD containers for the next editing step.</p>
+      </div>
+
+      <div class="convert-tool-grid">
+        {design.map((item) => {
+          const [from, to] = PAIR[item.data.key];
+          return (
+            <a class="convert-tool-card" href={`/convert/${item.data.key}/`}>
+              <div class="convert-pair" aria-hidden="true"><span>{from}</span><i>→</i><span>{to}</span></div>
+              <div class="convert-card-copy">
+                <h3>{item.data.h1.split('—')[0].trim()}</h3>
+                <p>{item.data.cardBlurb}</p>
+              </div>
+              <span class="convert-card-go" aria-hidden="true">↗</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="convert-section" aria-labelledby="checker-heading">
+      <div class="convert-section-head">
+        <div>
+          <div class="convert-section-kicker">Before you import</div>
+          <h2 id="checker-heading">Compatibility checker</h2>
+        </div>
+        <p>Not every file workflow is a conversion. This checker flags likely Canva → Google Slides import problems before you move the deck.</p>
+      </div>
+
+      <div class="convert-category-grid">
+        <div class="convert-category">
+          <h3>Canva → Google Slides</h3>
+          <p>Export from Canva as PPTX, inspect the file locally, then fix risky fonts and objects before importing to Slides.</p>
+          <div class="convert-tool-grid">
+            {checkers.map((item) => {
+              const [from, to] = PAIR[item.data.key];
+              return (
+                <a class="convert-tool-card" href={`/convert/${item.data.key}/`}>
+                  <div class="convert-pair" aria-hidden="true"><span>{from}</span><i>→</i><span>{to}</span></div>
+                  <div class="convert-card-copy">
+                    <h3>{CARD_LABEL_OVERRIDE[item.data.key] ?? item.data.h1.split('—')[0].trim()}</h3>
+                    <p>{item.data.cardBlurb}</p>
+                  </div>
+                  <span class="convert-card-go" aria-hidden="true">↗</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+
+        <div class="convert-category" aria-label="Supported format families">
+          <h3>Formats in this hub</h3>
+          <p>Current tools are intentionally focused. We only list conversions that are actually implemented.</p>
+          <div class="convert-format-cloud" aria-label="Supported formats">
+            <span>JPG</span><span>PNG</span><span>PDF</span><span>WebP</span><span>PSD</span><span>ICO</span><span>PPTX</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="convert-trust-panel" id="privacy" aria-labelledby="privacy-heading">
+      <div>
+        <div class="convert-section-kicker">Private by architecture</div>
+        <h2 id="privacy-heading">Your file does not need a trip to somebody else’s server.</h2>
+      </div>
+      <p>
+        LayerPorter converters run in the browser. The file you choose is processed on your device, which means there is no upload queue and no converted copy waiting on our server afterward. <strong>Choose the exact tool, convert, download, move on.</strong>
+      </p>
+    </section>
+
+    <p class="convert-footer-note">Free online file converters for common image, PDF and design workflows — built to stay local.</p>
+  </div>
 </BaseLayout>
