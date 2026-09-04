@@ -77,17 +77,19 @@ for (const row of PICTURE_CONVERTER_LOCALES) {
     if (!html.includes(esc(q))) throw new Error(`FAQ question missing in ${row.code}: ${q}`);
   }
 
-  if (html.includes('<b>WebP → JPG / PNG</b>') ||
-      html.includes('<b>HEIC → JPG</b>') ||
-      html.includes('<b>PDF · 30</b>') ||
-      html.includes('<b>LOCAL</b>')) {
-    throw new Error(`Legacy technical FAQ label remains in ${row.code}`);
+  const faqMatch = html.match(/<section class="wrap faq" id="faq">[\s\S]*?<\/section>/);
+  if (!faqMatch) throw new Error(`Rendered FAQ block missing in ${row.code}`);
+  const faqHtml = faqMatch[0];
+  if (faqHtml.includes('<b>WebP → JPG / PNG</b>') ||
+      faqHtml.includes('<b>HEIC → JPG</b>') ||
+      faqHtml.includes('<b>PDF · 30</b>') ||
+      faqHtml.includes('<b>LOCAL</b>')) {
+    throw new Error(`Legacy technical FAQ label remains inside FAQ in ${row.code}`);
   }
 
-  const detailCount = (html.match(/<details/g) || []).length;
-  if (detailCount < 8) {
-    // 7 FAQ items + language switcher details.
-    throw new Error(`Expected at least 8 <details> elements in ${row.code}, got ${detailCount}`);
+  const faqDetailCount = (faqHtml.match(/<details/g) || []).length;
+  if (faqDetailCount !== 7) {
+    throw new Error(`Expected exactly 7 FAQ items in ${row.code}, got ${faqDetailCount}`);
   }
 
   fs.writeFileSync(file, html);
