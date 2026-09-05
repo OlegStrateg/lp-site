@@ -16,6 +16,7 @@ const listed = ALL_ORDER.map((key) => byKey.get(key)).filter(
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
 const title = 'Free File Converter — JPG, PDF, WebP & PSD | LayerPorter';
 const description = 'Free file converters for JPG, PNG, PDF, WebP and PSD. Convert files in your browser with no uploads, no account and no server processing.';
+const preferredImage = `${site}/og/convert.png`;
 const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=convert_hub&utm_content=extension_block';
 
 const schema = {
@@ -25,6 +26,12 @@ const schema = {
   url: `${site}/convert/`,
   name: 'Free File Converter',
   description,
+  primaryImageOfPage: {
+    '@type': 'ImageObject',
+    url: preferredImage,
+    width: 1200,
+    height: 630,
+  },
   isPartOf: {
     '@type': 'WebSite',
     '@id': `${site}/#website`,
@@ -56,7 +63,7 @@ const schema = {
   title={title}
   description={description}
   canonicalPath="/convert/"
-  ogImage={`${site}/og/home.png`}
+  ogImage={preferredImage}
 >
   <link slot="head" rel="stylesheet" href="/convert-hub.css" />
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema)}></script>
