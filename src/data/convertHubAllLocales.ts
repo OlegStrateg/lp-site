@@ -4,7 +4,8 @@ import {
   type ConvertHubLocale,
 } from './convertHubLocales';
 
-const coreCodes = new Set(CORE_CONVERT_HUB_LOCALES.map((locale) => locale.code));
+const normalizeCode = (code: string) => code.toLowerCase().replaceAll('_', '-');
+const coreCodes = new Set(CORE_CONVERT_HUB_LOCALES.map((locale) => normalizeCode(locale.code)));
 
 function sourceBackedLocale(row: any): ConvertHubLocale {
   const localConversion = row.copy?.[1] || row.meta;
@@ -133,7 +134,7 @@ function sourceBackedLocale(row: any): ConvertHubLocale {
 }
 
 const SOURCE_BACKED_LOCALES = PICTURE_CONVERTER_LOCALES
-  .filter((row: any) => !coreCodes.has(row.code))
+  .filter((row: any) => !coreCodes.has(normalizeCode(row.code)))
   .map(sourceBackedLocale);
 
 export const ALL_CONVERT_HUB_LOCALES: ConvertHubLocale[] = [
