@@ -12,9 +12,9 @@ const coreH1 = new Map([
   ['de', 'Kostenlose Dateikonverter.'],
   ['es', 'Convertidores de archivos gratis.'],
   ['fr', 'Convertisseurs de fichiers gratuits.'],
-  ['pt-br', 'Conversores de arquivos grátis.'],
+  ['pt_BR', 'Conversores de arquivos grátis.'],
   ['ja', '無料ファイル変換ツール。'],
-  ['zh-cn', '免费文件转换器。'],
+  ['zh_CN', '免费文件转换器。'],
 ]);
 
 const canonicalPath = (row) => row.code === 'en' ? '/convert/' : `/${row.route}/convert/`;
