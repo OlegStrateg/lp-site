@@ -11,7 +11,7 @@ const required = [
   'Free file converters.',
   'Choose the exact route.',
   'Popular converters',
-  'Image &amp; design converters',
+  'Four PSD routes.',
   'Canva → Google Slides',
   'Picture Converter',
   'Add to Chrome',
