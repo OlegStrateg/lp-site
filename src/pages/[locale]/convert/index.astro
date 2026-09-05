@@ -1,0 +1,17 @@
+---
+import '../../../data/registerConvertHubLocales';
+import ConvertHubPage from '../../../components/ConvertHubPage.astro';
+import { ALL_CONVERT_HUB_LOCALES, ALL_CONVERT_HUB_BY_CODE } from '../../../data/convertHubAllLocales';
+
+export function getStaticPaths() {
+  return ALL_CONVERT_HUB_LOCALES
+    .filter((locale) => locale.code !== 'en')
+    .map((locale) => ({ params: { locale: locale.route }, props: { code: locale.code } }));
+}
+
+const { code } = Astro.props;
+const locale = ALL_CONVERT_HUB_BY_CODE.get(code);
+if (!locale) throw new Error(`Missing convert hub locale: ${code}`);
+---
+
+<ConvertHubPage locale={locale} />

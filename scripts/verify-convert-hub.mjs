@@ -1,104 +1,117 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { PICTURE_CONVERTER_LOCALES } from './picture-converter-locales-data.mjs';
 
-const file = path.join(process.cwd(), 'dist', 'convert', 'index.html');
-if (!fs.existsSync(file)) throw new Error('Missing dist/convert/index.html');
-
-const html = fs.readFileSync(file, 'utf8');
-
-const required = [
-  '<title>Free File Converter — JPG, PDF, WebP &amp; PSD | LayerPorter</title>',
-  'Free file converters.',
-  'Choose the exact route.',
-  'Popular converters',
-  'Four PSD routes.',
-  'Canva → Google Slides',
-  'Picture Converter',
-  'Add to Chrome',
-  'Need more image formats or conversion directly from a website?',
-  'oegpbmdpckfdgodnkdnoggedamfflfcl',
-  'href="/picture-converter/"',
-  'href="/convert/jpg-to-pdf/"',
-  'href="/convert/pdf-to-jpg/"',
-  'href="/convert/webp-to-jpg/"',
-  'href="/convert/favicon-generator/"',
-  'href="/convert/psd-to-png/"',
-  'href="/convert/psd-to-jpg/"',
-  'href="/convert/png-to-psd/"',
-  'href="/convert/jpg-to-psd/"',
-  'href="/convert/canva-to-google-slides/"',
-  'href="/convert-hub.css"',
-  '/images/picture-converter/images-to-pdf-example-640.webp',
-  '/images/picture-converter/webp-to-jpg-example-640.webp',
-  '/images/picture-converter/picture-converter-chrome-960.webp',
-  '/picture-converter/welcome/picture-converter-icon.png',
-  'https://schema.org',
-  'CollectionPage',
-  'ItemList',
-  'primaryImageOfPage',
-  'https://layerporter.com/og/convert.png',
-  '<meta property="og:image" content="https://layerporter.com/og/convert.png">',
-  '<meta property="og:image:width" content="1200">',
-  '<meta property="og:image:height" content="630">',
-  '<link rel="canonical" href="https://layerporter.com/convert/">',
-];
-
-for (const needle of required) {
-  if (!html.includes(needle)) throw new Error(`Convert hub missing required marker: ${needle}`);
+if (PICTURE_CONVERTER_LOCALES.length !== 49) {
+  throw new Error(`Expected 49 canonical locale sources, got ${PICTURE_CONVERTER_LOCALES.length}`);
 }
 
-for (const marker of [
-  '<h1>File converters</h1>',
-  '<h2 id="converters-heading">Available converters</h2>',
-  'Choose the exact job. The whole card is clickable',
-  'No dead decorative tiles',
-  'heic-to-jpg-example-640.webp',
-  'images.unsplash.com',
-]) {
-  if (html.includes(marker)) throw new Error(`Convert hub contains forbidden/legacy marker: ${marker}`);
-}
+const coreH1 = new Map([
+  ['en', 'Free file converters.'],
+  ['ru', 'Бесплатные конвертеры файлов.'],
+  ['de', 'Kostenlose Dateikonverter.'],
+  ['es', 'Convertidores de archivos gratis.'],
+  ['fr', 'Convertisseurs de fichiers gratuits.'],
+  ['pt_BR', 'Conversores de arquivos grátis.'],
+  ['ja', '無料ファイル変換ツール。'],
+  ['zh_CN', '免费文件转换器。'],
+]);
 
+const canonicalPath = (row) => row.code === 'en' ? '/convert/' : `/${row.route}/convert/`;
+const hreflangs = [...PICTURE_CONVERTER_LOCALES.map((row) => row.hreflang), 'x-default'];
 const routes = [
   'jpg-to-pdf','pdf-to-jpg','webp-to-jpg','favicon-generator',
   'psd-to-png','psd-to-jpg','png-to-psd','jpg-to-psd','canva-to-google-slides',
 ];
-for (const route of routes) {
-  const count = (html.match(new RegExp(`href="/convert/${route}/"`, 'g')) || []).length;
-  if (count < 1) throw new Error(`Missing clickable route: ${route}`);
+
+for (const locale of PICTURE_CONVERTER_LOCALES) {
+  const routeDir = locale.code === 'en' ? [] : [locale.route];
+  const file = path.join(process.cwd(), 'dist', ...routeDir, 'convert', 'index.html');
+  if (!fs.existsSync(file)) throw new Error(`[${locale.code}] Missing localized convert hub: ${file}`);
+  const html = fs.readFileSync(file, 'utf8');
+  const canonical = canonicalPath(locale);
+  const visibleRoot = coreH1.get(locale.code) || locale.root;
+
+  const required = [
+    visibleRoot,
+    `lang="${locale.lang}"`,
+    `<link rel="canonical" href="https://layerporter.com${canonical}">`,
+    'href="/convert-hub.css"',
+    'href="/convert-hub-i18n.css"',
+    'Picture Converter',
+    'oegpbmdpckfdgodnkdnoggedamfflfcl',
+    'href="/picture-converter/"',
+    '/images/picture-converter/images-to-pdf-example-640.webp',
+    '/images/picture-converter/webp-to-jpg-example-640.webp',
+    '/images/picture-converter/picture-converter-chrome-960.webp',
+    'https://schema.org',
+    'CollectionPage',
+    'ItemList',
+    'primaryImageOfPage',
+    `"inLanguage":"${locale.lang}"`,
+    'https://layerporter.com/og/convert.png',
+    '<meta property="og:image" content="https://layerporter.com/og/convert.png">',
+  ];
+  for (const needle of required) {
+    if (!html.includes(needle)) throw new Error(`[${locale.code}] Missing required marker: ${needle}`);
+  }
+
+  for (const hreflang of hreflangs) {
+    if (!html.includes(`hreflang="${hreflang}"`)) throw new Error(`[${locale.code}] Missing hreflang: ${hreflang}`);
+  }
+  if (!html.includes('hreflang="x-default" href="https://layerporter.com/convert/"')) {
+    throw new Error(`[${locale.code}] x-default does not point to English /convert/`);
+  }
+
+  for (const route of routes) {
+    const count = (html.match(new RegExp(`href="/convert/${route}/"`, 'g')) || []).length;
+    if (count < 1) throw new Error(`[${locale.code}] Missing clickable route: ${route}`);
+  }
+
+  const boardRoutes = (html.match(/class="hub-route" href="\/convert\//g) || []).length;
+  if (boardRoutes !== 8) throw new Error(`[${locale.code}] Expected 8 hero routes, got ${boardRoutes}`);
+  const toolCards = (html.match(/class="hub-tool-card" href="\/convert\//g) || []).length;
+  if (toolCards !== 4) throw new Error(`[${locale.code}] Expected 4 popular cards, got ${toolCards}`);
+  const designCards = (html.match(/class="hub-design-card" href="\/convert\//g) || []).length;
+  if (designCards !== 4) throw new Error(`[${locale.code}] Expected 4 design cards, got ${designCards}`);
+  const faqDetails = (html.match(/<details><summary><span>0[1-4]<\/span>/g) || []).length;
+  if (faqDetails !== 4) throw new Error(`[${locale.code}] Expected 4 FAQ accordions, got ${faqDetails}`);
+  const h1Count = (html.match(/<h1\b/g) || []).length;
+  if (h1Count !== 1) throw new Error(`[${locale.code}] Expected exactly one H1, got ${h1Count}`);
+
+  for (const marker of [
+    '<h1>File converters</h1>',
+    'Choose the exact job. The whole card is clickable',
+    'No dead decorative tiles',
+    'heic-to-jpg-example-640.webp',
+    'images.unsplash.com',
+  ]) {
+    if (html.includes(marker)) throw new Error(`[${locale.code}] Contains forbidden/legacy marker: ${marker}`);
+  }
 }
 
-const boardRoutes = (html.match(/class="hub-route" href="\/convert\//g) || []).length;
-if (boardRoutes !== 8) throw new Error(`Expected 8 converter routes in hero board, got ${boardRoutes}`);
-
-const toolCards = (html.match(/class="hub-tool-card" href="\/convert\//g) || []).length;
-if (toolCards !== 4) throw new Error(`Expected 4 popular converter cards, got ${toolCards}`);
-
-const designCards = (html.match(/class="hub-design-card" href="\/convert\//g) || []).length;
-if (designCards !== 4) throw new Error(`Expected 4 design converter cards, got ${designCards}`);
-
-const localImages = (html.match(/\/images\/picture-converter\//g) || []).length;
-if (localImages < 8) throw new Error(`Expected responsive local product imagery, got ${localImages} references`);
+for (const duplicate of ['es-419', 'pt-pt', 'zh-tw']) {
+  const file = path.join(process.cwd(), 'dist', duplicate, 'convert', 'index.html');
+  if (fs.existsSync(file)) throw new Error(`Regional duplicate convert hub must not exist: ${duplicate}`);
+}
 
 const preferredImageFile = path.join(process.cwd(), 'dist', 'og', 'convert.png');
 if (!fs.existsSync(preferredImageFile)) throw new Error('Missing dist/og/convert.png');
 const preferredImage = fs.readFileSync(preferredImageFile);
-const pngSignature = '89504e470d0a1a0a';
-if (preferredImage.subarray(0, 8).toString('hex') !== pngSignature) {
-  throw new Error('Preferred /convert/ image is not a valid PNG');
-}
+if (preferredImage.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Preferred /convert/ image is not a valid PNG');
 const preferredWidth = preferredImage.readUInt32BE(16);
 const preferredHeight = preferredImage.readUInt32BE(20);
-if (preferredWidth !== 1200 || preferredHeight !== 630) {
-  throw new Error(`Expected /og/convert.png to be 1200x630, got ${preferredWidth}x${preferredHeight}`);
+if (preferredWidth !== 1200 || preferredHeight !== 630) throw new Error(`Expected /og/convert.png 1200x630, got ${preferredWidth}x${preferredHeight}`);
+if (preferredImage.byteLength > 250_000) throw new Error(`Preferred /convert/ image is unexpectedly heavy: ${preferredImage.byteLength} bytes`);
+
+const sitemapFile = path.join(process.cwd(), 'dist', 'sitemap.xml');
+if (!fs.existsSync(sitemapFile)) throw new Error('Missing dist/sitemap.xml');
+const sitemap = fs.readFileSync(sitemapFile, 'utf8');
+for (const locale of PICTURE_CONVERTER_LOCALES) {
+  const canonical = canonicalPath(locale);
+  if (!sitemap.includes(`<loc>https://layerporter.com${canonical}</loc>`)) {
+    throw new Error(`[${locale.code}] Missing localized convert hub in sitemap`);
+  }
 }
-if (preferredImage.byteLength > 250_000) {
-  throw new Error(`Preferred /convert/ image is unexpectedly heavy: ${preferredImage.byteLength} bytes`);
-}
 
-const h1Count = (html.match(/<h1\b/g) || []).length;
-if (h1Count !== 1) throw new Error(`Expected exactly one H1, got ${h1Count}`);
-
-const detailsCount = (html.match(/<details>/g) || []).length;
-if (detailsCount !== 4) throw new Error(`Expected 4 useful-information accordions, got ${detailsCount}`);
-
-console.log(`Convert hub PASS: catalog + SEO image metadata + 1200x630 preferred PNG (${preferredImage.byteLength} bytes)`);
+console.log(`Convert hub i18n PASS: 49 canonical locales + reciprocal hreflang + no regional duplicates + sitemap + SEO image (${preferredImage.byteLength} bytes)`);

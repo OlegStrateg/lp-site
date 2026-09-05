@@ -1,6 +1,29 @@
 ---
 import '../styles/global.css';
 
+interface AlternateLink {
+  hreflang: string;
+  href: string;
+}
+
+interface HeaderLabels {
+  converters: string;
+  extensions: string;
+  learn: string;
+  mainAria?: string;
+  localEngine: string;
+  localTitle: string;
+}
+
+interface FooterLabels {
+  tagline: string;
+  about: string;
+  extensions: string;
+  privacy: string;
+  terms: string;
+  footerAria?: string;
+}
+
 interface Props {
   title: string;
   description: string;
@@ -9,7 +32,33 @@ interface Props {
   ogDescription?: string;
   ogImage?: string; // absolute URL
   robots?: string;
+  lang?: string;
+  dir?: 'ltr' | 'rtl';
+  homePath?: string;
+  extensionsPath?: string;
+  learnPath?: string;
+  headerLabels?: HeaderLabels;
+  footerLabels?: FooterLabels;
+  alternates?: AlternateLink[];
 }
+
+const defaultHeaderLabels: HeaderLabels = {
+  converters: 'Converters',
+  extensions: 'Extensions',
+  learn: 'Learn',
+  mainAria: 'Main',
+  localEngine: 'Local engine',
+  localTitle: 'All tools run on your device',
+};
+
+const defaultFooterLabels: FooterLabels = {
+  tagline: 'LayerPorter — free, in-browser file converters. No uploads.',
+  about: 'About',
+  extensions: 'Extensions',
+  privacy: 'Privacy',
+  terms: 'Terms',
+  footerAria: 'Footer',
+};
 
 const {
   title,
@@ -19,6 +68,14 @@ const {
   ogDescription = description,
   ogImage,
   robots = 'index, follow, max-image-preview:large, max-snippet:-1',
+  lang = 'en',
+  dir = 'ltr',
+  homePath = '/',
+  extensionsPath = '/extensions/',
+  learnPath = '/#learn',
+  headerLabels = defaultHeaderLabels,
+  footerLabels = defaultFooterLabels,
+  alternates = [],
 } = Astro.props;
 
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
@@ -27,13 +84,16 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang} dir={dir}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
+    {alternates.map((alternate) => (
+      <link rel="alternate" hreflang={alternate.hreflang} href={alternate.href} />
+    ))}
     <meta name="robots" content={robots} />
     <meta name="p:domain_verify" content="272122ef2e4a2ceeacbd8a6bc0b0e71f" />
 
@@ -57,17 +117,17 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
   <body>
     <header class="site-header">
       <div class="wrap">
-        <a class="brand" href="/">LayerPorter</a>
+        <a class="brand" href={homePath}>LayerPorter</a>
         <div class="site-header-right">
-          <nav class="site-nav" aria-label="Main">
-            <a href="/#tools">Converters</a>
-            <a href="/extensions/">Extensions</a>
-            <a href="/#learn">Learn</a>
+          <nav class="site-nav" aria-label={headerLabels.mainAria ?? 'Main'}>
+            <a href={`${homePath}#tools`}>{headerLabels.converters}</a>
+            <a href={extensionsPath}>{headerLabels.extensions}</a>
+            <a href={learnPath}>{headerLabels.learn}</a>
           </nav>
           <slot name="headerExtra" />
-          <span class="local-pill" title="All tools run on your device">
+          <span class="local-pill" title={headerLabels.localTitle}>
             <span class="local-pill-dot" aria-hidden="true"></span>
-            Local engine
+            {headerLabels.localEngine}
           </span>
         </div>
       </div>
@@ -77,15 +137,15 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
     </main>
     <footer class="site-footer">
       <div class="wrap">
-        <p>LayerPorter — free, in-browser file converters. No uploads.</p>
-        <nav class="footer-nav" aria-label="Footer">
-          <a href="/about/">About</a>
+        <p>{footerLabels.tagline}</p>
+        <nav class="footer-nav" aria-label={footerLabels.footerAria ?? 'Footer'}>
+          <a href="/about/">{footerLabels.about}</a>
           <span aria-hidden="true">·</span>
-          <a href="/extensions/">Extensions</a>
+          <a href={extensionsPath}>{footerLabels.extensions}</a>
           <span aria-hidden="true">·</span>
-          <a href="/privacy/">Privacy</a>
+          <a href="/privacy/">{footerLabels.privacy}</a>
           <span aria-hidden="true">·</span>
-          <a href="/terms/">Terms</a>
+          <a href="/terms/">{footerLabels.terms}</a>
         </nav>
       </div>
     </footer>
