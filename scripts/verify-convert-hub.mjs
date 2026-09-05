@@ -35,6 +35,11 @@ const required = [
   'https://schema.org',
   'CollectionPage',
   'ItemList',
+  'primaryImageOfPage',
+  'https://layerporter.com/og/convert.png',
+  '<meta property="og:image" content="https://layerporter.com/og/convert.png">',
+  '<meta property="og:image:width" content="1200">',
+  '<meta property="og:image:height" content="630">',
   '<link rel="canonical" href="https://layerporter.com/convert/">',
 ];
 
@@ -74,10 +79,26 @@ if (designCards !== 4) throw new Error(`Expected 4 design converter cards, got $
 const localImages = (html.match(/\/images\/picture-converter\//g) || []).length;
 if (localImages < 8) throw new Error(`Expected responsive local product imagery, got ${localImages} references`);
 
+const preferredImageFile = path.join(process.cwd(), 'dist', 'og', 'convert.png');
+if (!fs.existsSync(preferredImageFile)) throw new Error('Missing dist/og/convert.png');
+const preferredImage = fs.readFileSync(preferredImageFile);
+const pngSignature = '89504e470d0a1a0a';
+if (preferredImage.subarray(0, 8).toString('hex') !== pngSignature) {
+  throw new Error('Preferred /convert/ image is not a valid PNG');
+}
+const preferredWidth = preferredImage.readUInt32BE(16);
+const preferredHeight = preferredImage.readUInt32BE(20);
+if (preferredWidth !== 1200 || preferredHeight !== 630) {
+  throw new Error(`Expected /og/convert.png to be 1200x630, got ${preferredWidth}x${preferredHeight}`);
+}
+if (preferredImage.byteLength > 250_000) {
+  throw new Error(`Preferred /convert/ image is unexpectedly heavy: ${preferredImage.byteLength} bytes`);
+}
+
 const h1Count = (html.match(/<h1\b/g) || []).length;
 if (h1Count !== 1) throw new Error(`Expected exactly one H1, got ${h1Count}`);
 
 const detailsCount = (html.match(/<details>/g) || []).length;
 if (detailsCount !== 4) throw new Error(`Expected 4 useful-information accordions, got ${detailsCount}`);
 
-console.log('Convert hub PASS: complete catalog, 8 hero routes, 4 popular tools, 4 design tools, checker, extension, schema and one H1');
+console.log(`Convert hub PASS: catalog + SEO image metadata + 1200x630 preferred PNG (${preferredImage.byteLength} bytes)`);
