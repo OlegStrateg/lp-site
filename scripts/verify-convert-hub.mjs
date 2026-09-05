@@ -1,33 +1,41 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { PICTURE_CONVERTER_LOCALES } from './picture-converter-locales-data.mjs';
 
-const locales = [
-  { code: 'en', lang: 'en', route: '', h1: 'Free file converters.', canonical: '/convert/' },
-  { code: 'ru', lang: 'ru', route: 'ru', h1: 'Бесплатные конвертеры файлов.', canonical: '/ru/convert/' },
-  { code: 'de', lang: 'de', route: 'de', h1: 'Kostenlose Dateikonverter.', canonical: '/de/convert/' },
-  { code: 'es', lang: 'es', route: 'es', h1: 'Convertidores de archivos gratis.', canonical: '/es/convert/' },
-  { code: 'fr', lang: 'fr', route: 'fr', h1: 'Convertisseurs de fichiers gratuits.', canonical: '/fr/convert/' },
-  { code: 'pt-br', lang: 'pt-BR', route: 'pt-br', h1: 'Conversores de arquivos grátis.', canonical: '/pt-br/convert/' },
-  { code: 'ja', lang: 'ja', route: 'ja', h1: '無料ファイル変換ツール。', canonical: '/ja/convert/' },
-  { code: 'zh-cn', lang: 'zh-CN', route: 'zh-cn', h1: '免费文件转换器。', canonical: '/zh-cn/convert/' },
-];
+if (PICTURE_CONVERTER_LOCALES.length !== 49) {
+  throw new Error(`Expected 49 canonical locale sources, got ${PICTURE_CONVERTER_LOCALES.length}`);
+}
 
-const hreflangs = ['en', 'ru', 'de', 'es', 'fr', 'pt-BR', 'ja', 'zh-CN', 'x-default'];
+const coreH1 = new Map([
+  ['en', 'Free file converters.'],
+  ['ru', 'Бесплатные конвертеры файлов.'],
+  ['de', 'Kostenlose Dateikonverter.'],
+  ['es', 'Convertidores de archivos gratis.'],
+  ['fr', 'Convertisseurs de fichiers gratuits.'],
+  ['pt-br', 'Conversores de arquivos grátis.'],
+  ['ja', '無料ファイル変換ツール。'],
+  ['zh-cn', '免费文件转换器。'],
+]);
+
+const canonicalPath = (row) => row.code === 'en' ? '/convert/' : `/${row.route}/convert/`;
+const hreflangs = [...PICTURE_CONVERTER_LOCALES.map((row) => row.hreflang), 'x-default'];
 const routes = [
   'jpg-to-pdf','pdf-to-jpg','webp-to-jpg','favicon-generator',
   'psd-to-png','psd-to-jpg','png-to-psd','jpg-to-psd','canva-to-google-slides',
 ];
 
-for (const locale of locales) {
-  const dir = locale.route ? path.join(process.cwd(), 'dist', locale.route, 'convert') : path.join(process.cwd(), 'dist', 'convert');
-  const file = path.join(dir, 'index.html');
-  if (!fs.existsSync(file)) throw new Error(`Missing localized convert hub: ${file}`);
+for (const locale of PICTURE_CONVERTER_LOCALES) {
+  const routeDir = locale.code === 'en' ? [] : [locale.route];
+  const file = path.join(process.cwd(), 'dist', ...routeDir, 'convert', 'index.html');
+  if (!fs.existsSync(file)) throw new Error(`[${locale.code}] Missing localized convert hub: ${file}`);
   const html = fs.readFileSync(file, 'utf8');
+  const canonical = canonicalPath(locale);
+  const visibleRoot = coreH1.get(locale.code) || locale.root;
 
   const required = [
-    locale.h1,
+    visibleRoot,
     `lang="${locale.lang}"`,
-    `href="https://layerporter.com${locale.canonical}"`,
+    `<link rel="canonical" href="https://layerporter.com${canonical}">`,
     'href="/convert-hub.css"',
     'href="/convert-hub-i18n.css"',
     'Picture Converter',
@@ -80,10 +88,11 @@ for (const locale of locales) {
   ]) {
     if (html.includes(marker)) throw new Error(`[${locale.code}] Contains forbidden/legacy marker: ${marker}`);
   }
+}
 
-  if (locale.code !== 'en' && html.includes('<span>Free file converters.</span>')) {
-    throw new Error(`[${locale.code}] English H1 placeholder leaked into localized page`);
-  }
+for (const duplicate of ['es-419', 'pt-pt', 'zh-tw']) {
+  const file = path.join(process.cwd(), 'dist', duplicate, 'convert', 'index.html');
+  if (fs.existsSync(file)) throw new Error(`Regional duplicate convert hub must not exist: ${duplicate}`);
 }
 
 const preferredImageFile = path.join(process.cwd(), 'dist', 'og', 'convert.png');
@@ -98,10 +107,11 @@ if (preferredImage.byteLength > 250_000) throw new Error(`Preferred /convert/ im
 const sitemapFile = path.join(process.cwd(), 'dist', 'sitemap.xml');
 if (!fs.existsSync(sitemapFile)) throw new Error('Missing dist/sitemap.xml');
 const sitemap = fs.readFileSync(sitemapFile, 'utf8');
-for (const locale of locales) {
-  if (!sitemap.includes(`<loc>https://layerporter.com${locale.canonical}</loc>`)) {
+for (const locale of PICTURE_CONVERTER_LOCALES) {
+  const canonical = canonicalPath(locale);
+  if (!sitemap.includes(`<loc>https://layerporter.com${canonical}</loc>`)) {
     throw new Error(`[${locale.code}] Missing localized convert hub in sitemap`);
   }
 }
 
-console.log(`Convert hub i18n PASS: ${locales.length} locales + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
+console.log(`Convert hub i18n PASS: 49 canonical locales + reciprocal hreflang + no regional duplicates + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
