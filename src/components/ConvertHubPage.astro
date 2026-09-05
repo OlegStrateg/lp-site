@@ -1,0 +1,183 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  CONVERT_HUB_LOCALES,
+  convertHubPath,
+  localeExtensionsPath,
+  localeHomePath,
+  type ConvertHubLocale,
+} from '../data/convertHubLocales';
+
+interface Props { locale: ConvertHubLocale }
+const { locale } = Astro.props;
+const c = locale.copy;
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+const canonicalPath = convertHubPath(locale);
+const preferredImage = `${site}/og/convert.png`;
+const homePath = localeHomePath(locale);
+const extensionsPath = localeExtensionsPath(locale);
+const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=convert_hub&utm_content=extension_block';
+
+const alternates = [
+  ...CONVERT_HUB_LOCALES.map((item) => ({ hreflang: item.hreflang, href: `${site}${convertHubPath(item)}` })),
+  { hreflang: 'x-default', href: `${site}/convert/` },
+];
+
+const schemaItems = [
+  ['JPG to PDF', 'jpg-to-pdf'], ['PDF to JPG', 'pdf-to-jpg'], ['WebP to JPG', 'webp-to-jpg'],
+  ['Favicon Generator', 'favicon-generator'], ['PSD to PNG', 'psd-to-png'], ['PSD to JPG', 'psd-to-jpg'],
+  ['PNG to PSD', 'png-to-psd'], ['JPG to PSD', 'jpg-to-psd'], ['Canva to Google Slides', 'canva-to-google-slides'],
+];
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': `${site}${canonicalPath}#collection`,
+  url: `${site}${canonicalPath}`,
+  inLanguage: locale.lang,
+  name: locale.schemaName,
+  description: locale.description,
+  primaryImageOfPage: { '@type': 'ImageObject', url: preferredImage, width: 1200, height: 630 },
+  isPartOf: { '@type': 'WebSite', '@id': `${site}/#website`, name: 'LayerPorter', url: `${site}/` },
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListOrder: 'https://schema.org/ItemListOrderAscending',
+    numberOfItems: schemaItems.length,
+    itemListElement: schemaItems.map(([name, slug], index) => ({
+      '@type': 'ListItem', position: index + 1, name, url: `${site}/convert/${slug}/`,
+    })),
+  },
+  hasPart: {
+    '@type': 'SoftwareApplication', name: 'Picture Converter', applicationCategory: 'BrowserApplication',
+    operatingSystem: 'Chrome', url: `${site}/picture-converter/`,
+  },
+};
+---
+
+<BaseLayout
+  title={locale.title}
+  description={locale.description}
+  canonicalPath={canonicalPath}
+  ogImage={preferredImage}
+  lang={locale.lang}
+  dir={locale.dir}
+  homePath={homePath}
+  extensionsPath={extensionsPath}
+  learnPath={`${homePath}#learn`}
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={alternates}
+>
+  <link slot="head" rel="stylesheet" href="/convert-hub.css" />
+  <link slot="head" rel="stylesheet" href="/convert-hub-i18n.css" />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(schema)}></script>
+
+  <details slot="headerExtra" class="hub-lang-switch">
+    <summary aria-label={c.language}>{locale.name}<span aria-hidden="true">⌄</span></summary>
+    <div class="hub-lang-menu">
+      {CONVERT_HUB_LOCALES.map((item) => (
+        <a href={convertHubPath(item)} lang={item.lang} aria-current={item.code === locale.code ? 'page' : undefined}>{item.name}</a>
+      ))}
+    </div>
+  </details>
+
+  <div class="hub">
+    <section class="hub-hero" aria-labelledby="convert-h1">
+      <div class="hub-hero-copy">
+        <div class="hub-eyebrow"><span aria-hidden="true">↔</span> {c.heroEyebrow}</div>
+        <h1 id="convert-h1"><span>{c.heroA}</span><br />{c.heroB}</h1>
+        <p>{c.heroBody}</p>
+        <div class="hub-proof" aria-label={c.proofAria}>
+          <span><b>●</b> {c.proofConverters}</span>
+          <span><b>●</b> {c.proofChecker}</span>
+          <span><b>●</b> {c.proofLocal}</span>
+        </div>
+      </div>
+
+      <div class="hub-route-board" aria-label={c.routeAria}>
+        <div class="hub-route-head"><strong>{c.chooseConversion}</strong><span>{c.allCurrentTools}</span></div>
+        <div class="hub-route-columns">
+          <div class="hub-route-column">
+            <a class="hub-route" href="/convert/jpg-to-pdf/"><span class="hub-code">JPG</span><i>→</i><span class="hub-code out">PDF</span><span class="hub-route-copy"><b>JPG → PDF</b><small>{c.jpgPdfShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href="/convert/pdf-to-jpg/"><span class="hub-code">PDF</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>PDF → JPG</b><small>{c.pdfJpgShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href="/convert/webp-to-jpg/"><span class="hub-code">WEBP</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>WebP → JPG</b><small>{c.webpJpgShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href="/convert/favicon-generator/"><span class="hub-code">IMG</span><i>→</i><span class="hub-code out">ICO</span><span class="hub-route-copy"><b>Favicon Generator</b><small>{c.faviconShort}</small></span><em>↗</em></a>
+          </div>
+          <div class="hub-route-column">
+            <a class="hub-route" href="/convert/psd-to-png/"><span class="hub-code">PSD</span><i>→</i><span class="hub-code out">PNG</span><span class="hub-route-copy"><b>PSD → PNG</b><small>{c.psdPngShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href="/convert/psd-to-jpg/"><span class="hub-code">PSD</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>PSD → JPG</b><small>{c.psdJpgShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href="/convert/png-to-psd/"><span class="hub-code">PNG</span><i>→</i><span class="hub-code out">PSD</span><span class="hub-route-copy"><b>PNG → PSD</b><small>{c.pngPsdShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href="/convert/jpg-to-psd/"><span class="hub-code">JPG</span><i>→</i><span class="hub-code out">PSD</span><span class="hub-route-copy"><b>JPG → PSD</b><small>{c.jpgPsdShort}</small></span><em>↗</em></a>
+          </div>
+        </div>
+        <div class="hub-route-foot"><strong>● {c.filesStay}</strong><a href="#checker">{c.checkerJump}</a></div>
+      </div>
+    </section>
+
+    <section class="hub-section" id="popular" aria-labelledby="popular-heading">
+      <div class="hub-section-label">{c.popularLabel}</div>
+      <div class="hub-section-head"><h2 id="popular-heading">{c.popularHeading}</h2><p>{c.popularIntro}</p></div>
+      <div class="hub-popular-grid">
+        <a class="hub-tool-card" href="/convert/jpg-to-pdf/">
+          <picture class="hub-tool-image">
+            <source srcset="/images/picture-converter/images-to-pdf-example-320.webp 320w, /images/picture-converter/images-to-pdf-example-640.webp 640w, /images/picture-converter/images-to-pdf-example-960.webp 960w" sizes="(max-width:760px) 100vw, 48vw" />
+            <img src="/images/picture-converter/images-to-pdf-example-640.webp" width="640" height="427" alt={c.jpgPdfAlt} loading="lazy" />
+          </picture>
+          <div class="hub-tool-body"><div class="hub-pair"><span>JPG</span><i>→</i><span>PDF</span></div><h3>JPG → PDF</h3><p>{c.jpgPdfDesc}</p><b class="hub-open">{c.openConverter} <span>↗</span></b></div>
+        </a>
+        <a class="hub-tool-card" href="/convert/pdf-to-jpg/">
+          <div class="hub-pdf-visual" aria-hidden="true"><div class="hub-pdf-sheet"><div></div><i></i><i class="medium"></i><i class="short"></i></div><span class="hub-big-arrow">→</span><div class="hub-jpg-stack"><i></i><i></i><i><b>JPG</b></i></div></div>
+          <div class="hub-tool-body"><div class="hub-pair"><span>PDF</span><i>→</i><span>JPG</span></div><h3>PDF → JPG</h3><p>{c.pdfJpgDesc}</p><b class="hub-open">{c.openConverter} <span>↗</span></b></div>
+        </a>
+        <a class="hub-tool-card" href="/convert/webp-to-jpg/">
+          <picture class="hub-tool-image">
+            <source srcset="/images/picture-converter/webp-to-jpg-example-320.webp 320w, /images/picture-converter/webp-to-jpg-example-640.webp 640w, /images/picture-converter/webp-to-jpg-example-960.webp 960w" sizes="(max-width:760px) 100vw, 48vw" />
+            <img src="/images/picture-converter/webp-to-jpg-example-640.webp" width="640" height="427" alt={c.webpJpgAlt} loading="lazy" />
+          </picture>
+          <div class="hub-tool-body"><div class="hub-pair"><span>WEBP</span><i>→</i><span>JPG</span></div><h3>WebP → JPG</h3><p>{c.webpJpgDesc}</p><b class="hub-open">{c.openConverter} <span>↗</span></b></div>
+        </a>
+        <a class="hub-tool-card" href="/convert/favicon-generator/">
+          <div class="hub-favicon-visual" aria-hidden="true"><div class="hub-favicon-main">LP</div><div class="hub-icon-sizes"><span><i></i><b>16</b></span><span><i></i><b>32</b></span><span><i></i><b>48</b></span><span><i></i><b>180</b></span><span><i></i><b>256</b></span><span><i></i><b>512</b></span></div></div>
+          <div class="hub-tool-body"><div class="hub-pair"><span>IMG</span><i>→</i><span>ICO</span></div><h3>Favicon Generator</h3><p>{c.faviconDesc}</p><b class="hub-open">{c.openTool} <span>↗</span></b></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="hub-section hub-section-alt" id="design" aria-labelledby="design-heading">
+      <div class="hub-section-label">{c.designLabel}</div>
+      <div class="hub-section-head"><h2 id="design-heading">{c.designHeading}</h2><p>{c.designIntro}</p></div>
+      <div class="hub-design-grid">
+        <a class="hub-design-card" href="/convert/psd-to-png/"><div><div class="hub-pair"><span>PSD</span><i>→</i><span>PNG</span></div><h3>PSD → PNG</h3><p>{c.psdPngDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-layer-stack"><i></i><i></i><i></i></span><em>→</em><span class="hub-output png">PNG</span></div></div></a>
+        <a class="hub-design-card" href="/convert/psd-to-jpg/"><div><div class="hub-pair"><span>PSD</span><i>→</i><span>JPG</span></div><h3>PSD → JPG</h3><p>{c.psdJpgDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-layer-stack"><i></i><i></i><i></i></span><em>→</em><span class="hub-output jpg">JPG</span></div></div></a>
+        <a class="hub-design-card" href="/convert/png-to-psd/"><div><div class="hub-pair"><span>PNG</span><i>→</i><span>PSD</span></div><h3>PNG → PSD</h3><p>{c.pngPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output png">PNG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
+        <a class="hub-design-card" href="/convert/jpg-to-psd/"><div><div class="hub-pair"><span>JPG</span><i>→</i><span>PSD</span></div><h3>JPG → PSD</h3><p>{c.jpgPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output jpg">JPG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
+      </div>
+
+      <a class="hub-checker" id="checker" href="/convert/canva-to-google-slides/">
+        <div class="hub-checker-copy"><span>{c.compatibilityChecker}</span><h3>Canva → Google Slides</h3><p>{c.checkerDesc}</p><b>{c.openChecker} <i>↗</i></b></div>
+        <div class="hub-checker-visual" aria-hidden="true"><div class="hub-checker-window"><div class="hub-checker-top"><b>presentation.pptx</b><span>{c.analysis}</span></div><div class="hub-checker-content"><div class="hub-slide-list"><i></i><i></i><i></i></div><div class="hub-results"><div><span>Aa</span><p><b>{c.fontCompatibility}</b><small>{c.fontResult}</small></p><em class="warn">{c.check}</em></div><div><span>▣</span><p><b>{c.groupedObjects}</b><small>{c.groupedResult}</small></p><em>{c.ok}</em></div><div><span>✦</span><p><b>{c.effects}</b><small>{c.effectsResult}</small></p><em class="warn">{c.check}</em></div></div></div></div></div>
+      </a>
+    </section>
+
+    <section class="hub-extension" id="picture-converter" aria-labelledby="picture-converter-heading">
+      <div class="hub-extension-visual"><img src="/images/picture-converter/picture-converter-chrome-960.webp" srcset="/images/picture-converter/picture-converter-chrome-320.webp 320w, /images/picture-converter/picture-converter-chrome-640.webp 640w, /images/picture-converter/picture-converter-chrome-960.webp 960w" sizes="(max-width:800px) 100vw, 58vw" width="960" height="640" alt={c.pictureAlt} loading="lazy" /></div>
+      <div class="hub-extension-copy"><div class="hub-extension-brand"><img src="/picture-converter/welcome/picture-converter-icon.png" width="46" height="46" alt={c.pictureIconAlt} loading="lazy" /><div><strong>Picture Converter</strong><small>{c.chromeExtension}</small></div></div><h2 id="picture-converter-heading">{c.extensionHeading}</h2><p>{c.extensionBody}</p><div class="hub-extension-actions"><a class="store" href={pictureConverterStore}>{c.addChrome}</a><a class="details" href="/picture-converter/">{c.seePicture}</a></div></div>
+    </section>
+
+    <section class="hub-section" id="privacy" aria-labelledby="trust-heading">
+      <div class="hub-section-label">{c.trustLabel}</div>
+      <h2 class="hub-trust-heading" id="trust-heading">{c.trustHeading}</h2>
+      <div class="hub-trust-grid"><div><span>✓</span><strong>{c.noUploads}</strong><p>{c.noUploadsDesc}</p></div><div><span>→</span><strong>{c.noAccount}</strong><p>{c.noAccountDesc}</p></div><div><span>1</span><strong>{c.oneJob}</strong><p>{c.oneJobDesc}</p></div></div>
+    </section>
+
+    <section class="hub-section hub-faq" aria-labelledby="faq-heading">
+      <div><div class="hub-section-label">{c.faqLabel}</div><h2 id="faq-heading">{c.faqHeading}</h2></div>
+      <div class="hub-faq-list">
+        <details><summary><span>01</span>{c.faq1q}<i>+</i></summary><p>{c.faq1a}</p></details>
+        <details><summary><span>02</span>{c.faq2q}<i>+</i></summary><p>{c.faq2a}</p></details>
+        <details><summary><span>03</span>{c.faq3q}<i>+</i></summary><p>{c.faq3a}</p></details>
+        <details><summary><span>04</span>{c.faq4q}<i>+</i></summary><p>{c.faq4a}</p></details>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
