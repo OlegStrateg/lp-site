@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { PICTURE_CONVERTER_LOCALES, pictureConverterPath } from '../../scripts/picture-converter-locales-data.mjs';
+import '../data/registerConvertHubLocales';
 import { CONVERT_HUB_LOCALES, convertHubPath } from '../data/convertHubLocales';
 
 // Deliberately hand-rolled instead of @astrojs/sitemap for explicit control of
