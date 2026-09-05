@@ -1,0 +1,16 @@
+---
+import ConvertHubPage from '../../../components/ConvertHubPage.astro';
+import { CONVERT_HUB_LOCALES, CONVERT_HUB_BY_CODE } from '../../../data/convertHubLocales';
+
+export function getStaticPaths() {
+  return CONVERT_HUB_LOCALES
+    .filter((locale) => locale.code !== 'en')
+    .map((locale) => ({ params: { locale: locale.route }, props: { code: locale.code } }));
+}
+
+const { code } = Astro.props;
+const locale = CONVERT_HUB_BY_CODE.get(code);
+if (!locale) throw new Error(`Missing convert hub locale: ${code}`);
+---
+
+<ConvertHubPage locale={locale} />
