@@ -160,7 +160,7 @@ async function siteStatsForDays(env, days = 7) {
   const bounded = Math.max(1, Math.min(90, Number(days) || 7));
   const events = {};
   const pages = {};
-  const sessions = new Set();
+  const pageInstances = new Set();
   const now = Date.now();
 
   for (let i = 0; i < bounded; i += 1) {
@@ -172,7 +172,7 @@ async function siteStatsForDays(env, days = 7) {
       const route = decodeURIComponent(parts[3] || '%2Fother%2F');
       const iid = parts[4] || '';
       events[event] = (events[event] || 0) + 1;
-      if (iid) sessions.add(iid);
+      if (iid) pageInstances.add(iid);
       if (!pages[route]) pages[route] = { page_view: 0, tool_view: 0, convert_success: 0, extension_store_click: 0 };
       if (Object.prototype.hasOwnProperty.call(pages[route], event)) pages[route][event] += 1;
     }
@@ -183,7 +183,7 @@ async function siteStatsForDays(env, days = 7) {
     .slice(0, 50)
     .map(([route, counts]) => ({ route, ...counts }));
 
-  return { days: bounded, sessions: sessions.size, events, pages: topPages };
+  return { days: bounded, page_instances: pageInstances.size, events, pages: topPages };
 }
 
 async function processEvent(request, env, raw) {
@@ -191,8 +191,8 @@ async function processEvent(request, env, raw) {
   let isTest = owner.isTest;
   const country = owner.country;
 
-  // Extension installation ids stay test-marked across network changes. Site session
-  // ids are intentionally ephemeral and are not persisted as owner identifiers.
+  // Extension installation ids stay test-marked across network changes. Site page ids
+  // are intentionally ephemeral and are not persisted as owner identifiers.
   if (raw.p !== 'site') {
     if (isTest) await rememberOwnerTestIid(env, raw.iid);
     else isTest = await isOwnerTestIid(env, raw.iid);
