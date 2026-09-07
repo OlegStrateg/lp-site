@@ -27,10 +27,10 @@ interface FooterLabels {
 interface Props {
   title: string;
   description: string;
-  canonicalPath: string; // e.g. "/" or "/convert/png-to-psd/"
+  canonicalPath: string;
   ogTitle?: string;
   ogDescription?: string;
-  ogImage?: string; // absolute URL
+  ogImage?: string;
   robots?: string;
   lang?: string;
   dir?: 'ltr' | 'rtl';
@@ -125,10 +125,12 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
             <a href={learnPath}>{headerLabels.learn}</a>
           </nav>
           <slot name="headerExtra" />
-          <span class="local-pill" title={headerLabels.localTitle}>
-            <span class="local-pill-dot" aria-hidden="true"></span>
-            {headerLabels.localEngine}
-          </span>
+          {headerLabels.localEngine && (
+            <span class="local-pill" title={headerLabels.localTitle}>
+              <span class="local-pill-dot" aria-hidden="true"></span>
+              {headerLabels.localEngine}
+            </span>
+          )}
         </div>
       </div>
     </header>
