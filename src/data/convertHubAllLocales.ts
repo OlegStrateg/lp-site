@@ -60,7 +60,7 @@ function sourceBackedLocale(row: any): ConvertHubLocale {
     },
     copy: {
       language: row.name,
-      heroEyebrow: ui.fileConverters,
+      heroEyebrow: '',
       heroA: ui.fileConverters,
       heroB: '',
       heroBody: `${ui.choose}: JPG → PDF · PDF → JPG · WebP → JPG · PSD → PNG · PSD → JPG.`,
@@ -71,7 +71,7 @@ function sourceBackedLocale(row: any): ConvertHubLocale {
       chooseConversion: ui.choose,
       allCurrentTools: '',
       routeAria: ui.choose,
-      filesStay: localPrivacy,
+      filesStay: ui.local,
       checkerJump: 'Canva → Google Slides ↓',
 
       // The route board already names the exact job. Avoid secondary filler text.
@@ -84,7 +84,7 @@ function sourceBackedLocale(row: any): ConvertHubLocale {
       pngPsdShort: '',
       jpgPsdShort: '',
 
-      popularLabel: '01',
+      popularLabel: '',
       popularHeading: ui.popular,
       popularIntro: '',
       jpgPdfDesc: core?.copy?.jpgPdfDesc || localPdf,
@@ -96,7 +96,7 @@ function sourceBackedLocale(row: any): ConvertHubLocale {
       jpgPdfAlt: 'JPG → PDF',
       webpJpgAlt: 'WebP → JPG',
 
-      designLabel: '02 · PSD · PNG · JPG',
+      designLabel: '',
       designHeading: 'PSD → PNG · PSD → JPG · PNG → PSD · JPG → PSD',
       designIntro: '',
       psdPngDesc: core?.copy?.psdPngDesc || '',
@@ -128,7 +128,7 @@ function sourceBackedLocale(row: any): ConvertHubLocale {
       // LP-050: only EN-US question intent is directly volume-grounded in the
       // saved Semrush export; other languages are localized equivalents and make
       // no local-volume claim.
-      faqLabel: '04',
+      faqLabel: '',
       faqHeading: ui.faq,
       faq1q: questions[2] || '',
       faq1a: localPdf,
