@@ -12,7 +12,7 @@ const analytics = read('src/lib/analytics.ts');
 const collector = read('functions/api/collect.js');
 const baseLayout = read('src/layouts/BaseLayout.astro');
 const home = read('src/pages/index.astro');
-const productEntry = read('src/pages/__product-analytics-entry.astro');
+const productEntry = read('src/pages/internal-product-analytics-entry.astro');
 const productInjector = read('scripts/inject-product-landing-analytics.mjs');
 const robots = read('public/robots.txt');
 const sitemap = read('src/pages/sitemap.xml.ts');
@@ -83,6 +83,7 @@ assert(productInjector.includes('lp-product-analytics:v1'), 'product analytics i
 assert(productInjector.includes('picture-converter-locales.json'), 'Picture Converter manifest injection missing');
 assert(productInjector.includes('pinterest-locales.json'), 'Pinterest manifest injection missing');
 assert(productInjector.includes('targets.length'), 'product analytics target verification missing');
+assert(productInjector.includes('Internal analytics entry leaked into dist'), 'internal entry cleanup gate missing');
 
 // Indexing invariants.
 assert(robots.includes('User-agent: *'), 'robots wildcard missing');
