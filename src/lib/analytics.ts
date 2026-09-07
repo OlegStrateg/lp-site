@@ -1,6 +1,6 @@
-// Abstract analytics adapter. The rest of the codebase only ever calls track(name, props).
-// Swapping the backend (Plausible / Umami / none) means editing only this file.
-// Pilot default: console/no-op adapter — no external script is loaded.
+// First-party site analytics adapter. All existing UI code calls track(name, props).
+// Events are sent only to the same-origin Cloudflare Pages collector; no third-party
+// analytics script is required for the core funnel and CSP can stay self-only.
 export type TrackProps = Record<string, string | number | boolean | undefined>;
 export type TrackOpts = Record<string, unknown>; // e.g. { interactive: false }
 
@@ -10,46 +10,112 @@ declare global {
   }
 }
 
-// Collector endpoint — leave null until a first-party receiver exists. CSP's
-// connect-src is 'self' only (see public/_headers), so this must stay a
-// same-origin path (e.g. '/api/events') when it's filled in, never a
-// third-party domain — pointing it off-origin would be silently blocked by
-// the browser anyway and would require reopening the CSP to "fix".
-// TODO(owner): fill in with the collector URL once it's deployed.
-const ANALYTICS_ENDPOINT: string | null = null;
-
-// Measurement Protocol secrets must never live in client code.
-// Website events stay behind this adapter until a same-origin collector is wired in.
-// The project already has Cloudflare Pages Functions under /api; reuse that backend
-// rather than adding another analytics stack when the site-event schema is ready.
-
+const ANALYTICS_ENDPOINT = '/api/collect';
+const SITE_PRODUCT = 'site';
+const SESSION_KEY = 'lp_site_sid';
 const DEBUG = typeof window !== 'undefined' && window.location.search.includes('debugAnalytics');
+
+const FORBIDDEN_PROP_KEYS = new Set([
+  'url', 'href', 'text', 'page', 'pageurl', 'path', 'content', 'html', 'email', 'name', 'title_full',
+]);
+
+function uuidV4(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function sessionId(): string {
+  try {
+    const existing = sessionStorage.getItem(SESSION_KEY);
+    if (existing) return existing;
+    const id = uuidV4();
+    sessionStorage.setItem(SESSION_KEY, id);
+    return id;
+  } catch {
+    return uuidV4();
+  }
+}
+
+function routeBucket(pathname: string): string {
+  const path = String(pathname || '/').split('?')[0].split('#')[0];
+  if (path === '/') return '/';
+
+  // Only retain public LayerPorter route shapes. Unknown/ad-hoc paths are bucketed
+  // instead of being recorded verbatim, so pasted URLs cannot leak arbitrary text.
+  const known = /^\/(?:[a-z]{2}(?:-[a-z]{2,4})?\/)?(?:
+    extensions|convert(?:\/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:\/[a-z0-9-]+)?|guides(?:\/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall
+  )\/$/x;
+  // JavaScript has no /x flag; keep the readable source above mirrored below.
+  const compact = /^\/(?:[a-z]{2}(?:-[a-z]{2,4})?\/)?(?:extensions|convert(?:\/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:\/[a-z0-9-]+)?|guides(?:\/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)\/$/i;
+  if (compact.test(path)) return path.toLowerCase();
+  if (/^\/[a-z]{2}(?:-[a-z]{2,4})?\/$/i.test(path)) return path.toLowerCase();
+  return '/other/';
+}
+
+function cleanProps(props: TrackProps): TrackProps {
+  const clean: TrackProps = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (FORBIDDEN_PROP_KEYS.has(key.toLowerCase())) continue;
+    if (!/^[a-z0-9_]{1,40}$/i.test(key)) continue;
+    if (typeof value === 'string') clean[key] = value.slice(0, 120);
+    else if (typeof value === 'number' || typeof value === 'boolean') clean[key] = value;
+  }
+  return clean;
+}
 
 export function track(name: string, props: TrackProps = {}, opts: TrackOpts = {}): void {
   if (typeof window === 'undefined') return;
 
-  // Adapter point: once Plausible (or another backend) is approved and installed,
-  // forward events here. Until then this is a no-op besides optional debug logging.
+  const safeName = String(name || '').trim();
+  if (!/^[a-z0-9_]{1,64}$/i.test(safeName)) return;
+
+  const clean = cleanProps(props);
+  clean.route = routeBucket(window.location.pathname);
+
+  // Optional adapter point retained for experiments. The first-party collector is
+  // authoritative; Plausible is never required for events to be recorded.
   if (typeof window.plausible === 'function') {
-    window.plausible(name, { props, ...opts });
+    window.plausible(safeName, { props: clean, ...opts });
   }
 
-  // Same-origin collector, fire-and-forget. No-op while ANALYTICS_ENDPOINT is
-  // null (the pilot default) — nothing is sent anywhere.
-  if (ANALYTICS_ENDPOINT) {
-    fetch(ANALYTICS_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, props, opts, ts: Date.now() }),
-      keepalive: true,
-    }).catch(() => {
-      /* analytics must never break the page */
-    });
+  const payload = JSON.stringify({
+    p: SITE_PRODUCT,
+    e: safeName,
+    iid: sessionId(),
+    ts: Date.now(),
+    l: document.documentElement.lang || 'en',
+    v: 'web',
+    props: clean,
+  });
+
+  try {
+    if (navigator.sendBeacon) {
+      const sent = navigator.sendBeacon(
+        ANALYTICS_ENDPOINT,
+        new Blob([payload], { type: 'application/json' }),
+      );
+      if (sent) {
+        if (DEBUG) console.log('[track]', safeName, clean, opts);
+        return;
+      }
+    }
+  } catch {
+    /* fall back to fetch */
   }
 
+  fetch(ANALYTICS_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {
+    /* analytics must never break the page */
+  });
 
-  if (DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log('[track]', name, props, opts);
-  }
+  if (DEBUG) console.log('[track]', safeName, clean, opts);
 }
