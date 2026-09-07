@@ -116,9 +116,11 @@ function safeSiteRoute(value) {
   const route = String(value || '');
   if (route === '/') return '/';
   if (route === '/other/') return '/other/';
-  const knownRoute = /^\/(?:[a-z]{2}(?:-[a-z]{2,4})?\/)?(?:extensions|convert(?:\/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:\/[a-z0-9-]+)?|guides(?:\/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)\/$/i;
-  if (knownRoute.test(route)) return route.toLowerCase();
-  if (/^\/[a-z]{2}(?:-[a-z]{2,4})?\/$/i.test(route)) return route.toLowerCase();
+  const locale = '[a-z]{2,3}(?:-[a-z0-9]{2,4})?';
+  const page = '(?:extensions|convert(?:/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:/[a-z0-9-]+)?|guides(?:/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)';
+  const knownRoute = new RegExp(`^/(?:${locale}/)?${page}/$`, 'i');
+  const localeHome = new RegExp(`^/${locale}/$`, 'i');
+  if (knownRoute.test(route) || localeHome.test(route)) return route.toLowerCase();
   return '/other/';
 }
 
