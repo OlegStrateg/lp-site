@@ -12,7 +12,6 @@ declare global {
 
 const ANALYTICS_ENDPOINT = '/api/collect';
 const SITE_PRODUCT = 'site';
-const SESSION_KEY = 'lp_site_sid';
 const DEBUG = typeof window !== 'undefined' && window.location.search.includes('debugAnalytics');
 
 const FORBIDDEN_PROP_KEYS = new Set([
@@ -39,17 +38,11 @@ function uuidV4(): string {
   });
 }
 
-function sessionId(): string {
-  try {
-    const existing = sessionStorage.getItem(SESSION_KEY);
-    if (existing) return existing;
-    const id = uuidV4();
-    sessionStorage.setItem(SESSION_KEY, id);
-    return id;
-  } catch {
-    return uuidV4();
-  }
-}
+// One random id for the lifetime of this rendered page only. It is intentionally
+// kept in memory and never written to cookies, localStorage or sessionStorage.
+// Navigation creates a new id, so the core site analytics cannot build a browsing
+// history for the same browser across pages.
+const PAGE_ID = typeof window !== 'undefined' ? uuidV4() : '';
 
 function routeBucket(pathname: string): string {
   const path = String(pathname || '/').split('?')[0].split('#')[0];
@@ -94,7 +87,7 @@ export function track(name: string, props: TrackProps = {}, opts: TrackOpts = {}
   const payload = JSON.stringify({
     p: SITE_PRODUCT,
     e: safeName,
-    iid: sessionId(),
+    iid: PAGE_ID || uuidV4(),
     ts: Date.now(),
     l: document.documentElement.lang || 'en',
     v: 'web',

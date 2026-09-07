@@ -23,6 +23,17 @@ assert(analytics.includes('navigator.sendBeacon'), 'sendBeacon transport missing
 assert(analytics.includes("clean.route = routeBucket(window.location.pathname)"), 'route bucketing missing');
 assert(!analytics.includes('ANALYTICS_ENDPOINT: string | null = null'), 'analytics regressed to no-op');
 
+// Core site analytics must not call browser-persistence APIs. Match actual member
+// access, not documentation text such as "sessionStorage." at the end of a sentence.
+for (const [label, pattern] of [
+  ['sessionStorage', /\bsessionStorage\s*\.\s*(?:getItem|setItem|removeItem|clear|key|length)\b/],
+  ['localStorage', /\blocalStorage\s*\.\s*(?:getItem|setItem|removeItem|clear|key|length)\b/],
+  ['document.cookie', /\bdocument\s*\.\s*cookie\s*=/],
+]) {
+  assert(!pattern.test(analytics), `core analytics uses forbidden browser storage: ${label}`);
+}
+assert(analytics.includes("const PAGE_ID = typeof window !== 'undefined' ? uuidV4() : ''"), 'page-scoped id missing');
+
 // Privacy guardrails: arbitrary URL/text/file content must not be accepted as properties.
 for (const forbidden of ['url', 'href', 'text', 'path', 'content', 'html', 'email']) {
   assert(analytics.includes(`'${forbidden}'`), `client forbidden property ${forbidden} missing`);
@@ -47,6 +58,7 @@ for (const event of [
 assert(collector.includes('saveSiteEvent'), 'site persistence missing');
 assert(collector.includes('siteStatsForDays'), 'site stats aggregation missing');
 assert(collector.includes('raw.p !== \'site\''), 'extension owner-test isolation missing');
+assert(collector.includes('page_instances'), 'page-scoped metric naming missing');
 
 // Existing page instrumentation must remain connected.
 assert(baseLayout.includes("track('page_view'"), 'BaseLayout page_view missing');
