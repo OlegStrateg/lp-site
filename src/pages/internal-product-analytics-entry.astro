@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Internal analytics entry</title>
+</head>
+<body>
+<script>
+  import { track } from '../lib/analytics';
+
+  const path = window.location.pathname.toLowerCase();
+  const isPictureConverter = path.includes('/picture-converter/');
+  const isPinterestDownloader = path.includes('/pinterest-downloader/');
+
+  const product = isPictureConverter
+    ? 'picture_converter'
+    : isPinterestDownloader
+      ? 'pinterest_downloader'
+      : '';
+
+  const storeId = isPictureConverter
+    ? 'oegpbmdpckfdgodnkdnoggedamfflfcl'
+    : isPinterestDownloader
+      ? 'nmpahchhmcdejmfcmkphnbhckmlhhnon'
+      : '';
+
+  const allowedPlacements = new Set([
+    'header',
+    'hero',
+    'final',
+    'mobile',
+    'mobile_sticky',
+    'footer',
+  ]);
+
+  if (product && storeId) {
+    track('page_view', { product });
+
+    document
+      .querySelectorAll<HTMLAnchorElement>(`a[href*="chromewebstore.google.com"][href*="${storeId}"]`)
+      .forEach((link) => {
+        link.addEventListener('click', () => {
+          let placement = 'other';
+          try {
+            const candidate = new URL(link.href).searchParams.get('utm_content') || '';
+            if (allowedPlacements.has(candidate)) placement = candidate;
+          } catch {
+            /* malformed href: keep the safe fallback */
+          }
+          track('extension_store_click', { product, placement });
+        });
+      });
+  }
+</script>
+</body>
+</html>

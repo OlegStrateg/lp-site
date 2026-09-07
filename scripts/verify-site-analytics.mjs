@@ -12,6 +12,8 @@ const analytics = read('src/lib/analytics.ts');
 const collector = read('functions/api/collect.js');
 const baseLayout = read('src/layouts/BaseLayout.astro');
 const home = read('src/pages/index.astro');
+const productEntry = read('src/pages/internal-product-analytics-entry.astro');
+const productInjector = read('scripts/inject-product-landing-analytics.mjs');
 const robots = read('public/robots.txt');
 const sitemap = read('src/pages/sitemap.xml.ts');
 const headers = read('public/_headers');
@@ -31,6 +33,7 @@ for (const [label, pattern] of [
   ['document.cookie', /\bdocument\s*\.\s*cookie\s*=/],
 ]) {
   assert(!pattern.test(analytics), `core analytics uses forbidden browser storage: ${label}`);
+  assert(!pattern.test(productEntry), `product analytics uses forbidden browser storage: ${label}`);
 }
 assert(analytics.includes("const PAGE_ID = typeof window !== 'undefined' ? uuidV4() : ''"), 'page-scoped id missing');
 
@@ -64,6 +67,23 @@ assert(collector.includes('page_instances'), 'page-scoped metric naming missing'
 assert(baseLayout.includes("track('page_view'"), 'BaseLayout page_view missing');
 assert(home.includes("track('page_view'"), 'home page_view missing');
 assert(home.includes("track('path_card_click'"), 'home path click event missing');
+
+// Product landings use the same shared track() transport. The build-only entry is
+// injected after the two locale generators and then removed as a public route.
+assert(productEntry.includes("import { track } from '../lib/analytics'"), 'product landing does not reuse shared track()');
+assert(productEntry.includes("track('page_view'"), 'product landing page_view missing');
+assert(productEntry.includes("track('extension_store_click'"), 'product landing Store click missing');
+assert(productEntry.includes("'picture_converter'"), 'Picture Converter product code missing');
+assert(productEntry.includes("'pinterest_downloader'"), 'Pinterest Downloader product code missing');
+assert(productEntry.includes('oegpbmdpckfdgodnkdnoggedamfflfcl'), 'Picture Converter Store ID missing');
+assert(productEntry.includes('nmpahchhmcdejmfcmkphnbhckmlhhnon'), 'Pinterest Store ID missing');
+assert(!productEntry.includes('fetch('), 'product entry duplicates analytics fetch transport');
+assert(!productEntry.includes('sendBeacon'), 'product entry duplicates beacon transport');
+assert(productInjector.includes('lp-product-analytics:v1'), 'product analytics injection marker missing');
+assert(productInjector.includes('picture-converter-locales.json'), 'Picture Converter manifest injection missing');
+assert(productInjector.includes('pinterest-locales.json'), 'Pinterest manifest injection missing');
+assert(productInjector.includes('targets.length'), 'product analytics target verification missing');
+assert(productInjector.includes('Internal analytics entry leaked into dist'), 'internal entry cleanup gate missing');
 
 // Indexing invariants.
 assert(robots.includes('User-agent: *'), 'robots wildcard missing');
