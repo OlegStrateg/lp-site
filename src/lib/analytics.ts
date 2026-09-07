@@ -47,12 +47,8 @@ function routeBucket(pathname: string): string {
 
   // Only retain public LayerPorter route shapes. Unknown/ad-hoc paths are bucketed
   // instead of being recorded verbatim, so pasted URLs cannot leak arbitrary text.
-  const known = /^\/(?:[a-z]{2}(?:-[a-z]{2,4})?\/)?(?:
-    extensions|convert(?:\/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:\/[a-z0-9-]+)?|guides(?:\/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall
-  )\/$/x;
-  // JavaScript has no /x flag; keep the readable source above mirrored below.
-  const compact = /^\/(?:[a-z]{2}(?:-[a-z]{2,4})?\/)?(?:extensions|convert(?:\/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:\/[a-z0-9-]+)?|guides(?:\/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)\/$/i;
-  if (compact.test(path)) return path.toLowerCase();
+  const knownRoute = /^\/(?:[a-z]{2}(?:-[a-z]{2,4})?\/)?(?:extensions|convert(?:\/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:\/[a-z0-9-]+)?|guides(?:\/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)\/$/i;
+  if (knownRoute.test(path)) return path.toLowerCase();
   if (/^\/[a-z]{2}(?:-[a-z]{2,4})?\/$/i.test(path)) return path.toLowerCase();
   return '/other/';
 }
