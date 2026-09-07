@@ -23,11 +23,11 @@ assert(analytics.includes('navigator.sendBeacon'), 'sendBeacon transport missing
 assert(analytics.includes("clean.route = routeBucket(window.location.pathname)"), 'route bucketing missing');
 assert(!analytics.includes('ANALYTICS_ENDPOINT: string | null = null'), 'analytics regressed to no-op');
 
-// Core site analytics must not call browser-persistence APIs. Match actual API usage,
-// not comments that document the rule.
+// Core site analytics must not call browser-persistence APIs. Match actual member
+// access, not documentation text such as "sessionStorage." at the end of a sentence.
 for (const [label, pattern] of [
-  ['sessionStorage', /\bsessionStorage\s*\./],
-  ['localStorage', /\blocalStorage\s*\./],
+  ['sessionStorage', /\bsessionStorage\s*\.\s*(?:getItem|setItem|removeItem|clear|key|length)\b/],
+  ['localStorage', /\blocalStorage\s*\.\s*(?:getItem|setItem|removeItem|clear|key|length)\b/],
   ['document.cookie', /\bdocument\s*\.\s*cookie\s*=/],
 ]) {
   assert(!pattern.test(analytics), `core analytics uses forbidden browser storage: ${label}`);
