@@ -23,6 +23,12 @@ assert(analytics.includes('navigator.sendBeacon'), 'sendBeacon transport missing
 assert(analytics.includes("clean.route = routeBucket(window.location.pathname)"), 'route bucketing missing');
 assert(!analytics.includes('ANALYTICS_ENDPOINT: string | null = null'), 'analytics regressed to no-op');
 
+// Core site analytics must not create browser-stored identifiers.
+for (const forbiddenStorage of ['sessionStorage', 'localStorage', 'document.cookie']) {
+  assert(!analytics.includes(forbiddenStorage), `core analytics uses forbidden browser storage: ${forbiddenStorage}`);
+}
+assert(analytics.includes("const PAGE_ID = typeof window !== 'undefined' ? uuidV4() : ''"), 'page-scoped id missing');
+
 // Privacy guardrails: arbitrary URL/text/file content must not be accepted as properties.
 for (const forbidden of ['url', 'href', 'text', 'path', 'content', 'html', 'email']) {
   assert(analytics.includes(`'${forbidden}'`), `client forbidden property ${forbidden} missing`);
