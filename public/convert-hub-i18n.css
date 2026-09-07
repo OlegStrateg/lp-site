@@ -3,27 +3,56 @@
 .hub-lang-switch summary::-webkit-details-marker{display:none}
 .hub-lang-switch summary span{font-size:10px;color:#817a86;transition:transform .16s ease}
 .hub-lang-switch[open] summary span{transform:rotate(180deg)}
-.hub-lang-menu{position:absolute;right:0;top:calc(100% + 8px);width:190px;padding:7px;border:1px solid #ddd8e2;border-radius:12px;background:#fff;box-shadow:0 18px 45px rgba(35,27,57,.13)}
-.hub-lang-menu a{display:block;padding:9px 10px;border-radius:8px;color:#5c5661;font-size:12px;font-weight:750;line-height:1.2}
+.hub-lang-menu{position:absolute;right:0;top:calc(100% + 8px);width:210px;max-height:min(640px,70vh);overflow:auto;padding:7px;border:1px solid #ddd8e2;border-radius:12px;background:#fff;box-shadow:0 18px 45px rgba(35,27,57,.13)}
+.hub-lang-menu a{display:block;padding:9px 10px;border-radius:8px;color:#5c5661;font-size:12px;font-weight:750;line-height:1.25}
 .hub-lang-menu a:hover{background:#f5f2fb;color:#4a32cb}
 .hub-lang-menu a[aria-current="page"]{background:#ece8ff;color:#4a32cb}
 
-.hub h1,.hub h2,.hub h3,.hub p,.hub small,.hub-route-copy,.hub-checker-copy{overflow-wrap:anywhere}
-.hub-route-copy{min-width:0}
-.hub-route-copy b,.hub-route-copy small{white-space:normal}
-.hub-section-head h2,.hub-design-card h3,.hub-extension-copy h2{hyphens:auto}
-html[lang="de"] .hub-route,html[lang="fr"] .hub-route,html[lang="pt-BR"] .hub-route,html[lang="ru"] .hub-route{min-height:78px}
-html[lang="ja"] .hub,html[lang="zh-CN"] .hub{line-break:strict;word-break:normal}
-html[lang="ja"] .hub h1,html[lang="zh-CN"] .hub h1{letter-spacing:-.045em;line-height:.98}
-html[lang="ja"] .hub-section-head h2,html[lang="zh-CN"] .hub-section-head h2{letter-spacing:-.035em;line-height:1.08}
-html[lang="ja"] .hub-extension-copy h2,html[lang="zh-CN"] .hub-extension-copy h2{letter-spacing:-.03em;line-height:1.1}
+/* Locale-safe typography: do not split words merely to make a large heading fit. */
+.hub h1,.hub h2,.hub h3,.hub p,.hub b,.hub small{overflow-wrap:normal;word-break:normal}
+.hub-hero h1{max-width:820px;font-size:clamp(3rem,5.15vw,4.8rem);line-height:.96;letter-spacing:-.052em;hyphens:auto}
+.hub-hero-copy>p{max-width:680px;font-size:clamp(1rem,1.35vw,1.12rem)}
+.hub-route>b{min-width:0;font-size:.68rem;line-height:1.25;direction:ltr;unicode-bidi:isolate}
+.hub-route,.hub-pair,.hub-format-heading,.hub-checker-file{direction:ltr;unicode-bidi:isolate}
+.hub-format-heading{max-width:980px;margin:0 0 2.4rem;font-size:clamp(2.25rem,4.2vw,3.6rem);line-height:1.02;letter-spacing:-.045em}
+.hub-design-card h3,.hub-extension-copy h2{hyphens:auto}
 
+/* The Canva block is a link to a real checker, not a fabricated results dashboard. */
+.hub-checker-simple{grid-template-columns:minmax(240px,.9fr) minmax(250px,1fr) auto;align-items:center;gap:0}
+.hub-checker-simple .hub-checker-copy{padding:1.8rem 2rem}
+.hub-checker-simple .hub-checker-copy>span{display:block;color:#96909b;font-size:.58rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.hub-checker-simple .hub-checker-copy h3{margin:.8rem 0 .35rem;font-size:clamp(1.65rem,2.7vw,2.25rem);line-height:1.03}
+.hub-checker-simple .hub-checker-copy p{margin:0;color:#8b8590;font-size:.7rem}
+.hub-checker-file{min-height:150px;margin:1.1rem;padding:1rem 1.2rem;border:1px solid #d8d2dd;border-radius:15px;background:#f3f0f5;display:flex;align-items:center;justify-content:center;gap:1rem}
+.hub-checker-file span,.hub-checker-file strong{padding:.9rem 1rem;border:1px solid #d8d2dd;border-radius:10px;background:#fff;font-size:.78rem;font-weight:900;box-shadow:0 8px 18px rgba(30,22,42,.05)}
+.hub-checker-file i{font-style:normal;color:#4a32cb;font-size:1.2rem;font-weight:950}
+.hub-checker-go{align-self:stretch;min-width:190px;padding:1.4rem;border-left:1px solid #ebe7ef;display:flex;align-items:center;justify-content:center;color:#4a32cb;font-size:.72rem;line-height:1.35;text-align:center}
+
+html[dir="rtl"] .hub-hero-copy,html[dir="rtl"] .hub-extension-copy{text-align:right}
+html[dir="rtl"] .hub-lang-menu{left:0;right:auto}
+html[dir="rtl"] .hub-checker-go{border-left:0;border-right:1px solid #ebe7ef}
+html[lang="ja"] .hub,html[lang="zh-CN"] .hub{line-break:strict;word-break:normal}
+html[lang="ja"] .hub-hero h1,html[lang="zh-CN"] .hub-hero h1{letter-spacing:-.035em;line-height:1.04}
+html[lang="ja"] .hub-extension-copy h2,html[lang="zh-CN"] .hub-extension-copy h2{letter-spacing:-.025em;line-height:1.08}
+
+@media(max-width:1050px){
+  .hub-hero h1{font-size:clamp(2.85rem,7vw,4.6rem)}
+  .hub-checker-simple{grid-template-columns:1fr 1fr}
+  .hub-checker-go{grid-column:1/-1;min-height:54px;border-left:0;border-right:0;border-top:1px solid #ebe7ef}
+}
 @media(max-width:900px){
   .hub-lang-switch{margin-left:auto}
-  .hub-lang-menu{right:0}
+  .hub-lang-menu{right:0;left:auto}
+  html[dir="rtl"] .hub-lang-menu{left:0;right:auto}
+}
+@media(max-width:700px){
+  .hub-hero h1{font-size:clamp(2.45rem,11vw,3.65rem);line-height:1}
+  .hub-format-heading{font-size:clamp(1.85rem,8vw,2.7rem);margin-bottom:1.7rem}
+  .hub-checker-simple{grid-template-columns:1fr}
+  .hub-checker-file{margin:0 1rem 1rem;min-height:120px}
+  .hub-checker-go{grid-column:auto}
 }
 @media(max-width:620px){
   .hub-lang-switch summary{max-width:128px;overflow:hidden;text-overflow:ellipsis}
-  .hub-lang-menu{position:fixed;left:14px;right:14px;top:66px;width:auto;max-height:calc(100vh - 90px);overflow:auto}
-  html[lang="de"] .hub-route,html[lang="fr"] .hub-route,html[lang="pt-BR"] .hub-route,html[lang="ru"] .hub-route{min-height:72px}
+  .hub-lang-menu{position:fixed;left:14px!important;right:14px!important;top:66px;width:auto;max-height:calc(100vh - 90px);overflow:auto}
 }
