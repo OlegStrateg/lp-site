@@ -26,8 +26,8 @@ function inject(file, scriptBlock) {
 }
 
 const entryFile = existingFile([
-  path.join(DIST, '__product-analytics-entry', 'index.html'),
-  path.join(DIST, '__product-analytics-entry.html'),
+  path.join(DIST, 'internal-product-analytics-entry', 'index.html'),
+  path.join(DIST, 'internal-product-analytics-entry.html'),
 ]);
 const entryHtml = fs.readFileSync(entryFile, 'utf8');
 const scripts = entryHtml.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
@@ -68,5 +68,11 @@ if (entryFile.endsWith(`${path.sep}index.html`)) {
 } else {
   fs.rmSync(entryFile, { force: true });
 }
+
+const leftoverEntry = [
+  path.join(DIST, 'internal-product-analytics-entry', 'index.html'),
+  path.join(DIST, 'internal-product-analytics-entry.html'),
+].find((file) => fs.existsSync(file));
+if (leftoverEntry) throw new Error(`Internal analytics entry leaked into dist: ${leftoverEntry}`);
 
 console.log(`Product landing analytics PASS: ${targets.length}/101 pages`);
