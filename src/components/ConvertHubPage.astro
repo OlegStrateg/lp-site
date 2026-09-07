@@ -11,6 +11,7 @@ import {
 interface Props { locale: ConvertHubLocale }
 const { locale } = Astro.props;
 const c = locale.copy;
+const faqLabel = c.faqLabel.replace(/^05(\s*·)/, '04$1');
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
 const canonicalPath = convertHubPath(locale);
 const preferredImage = `${site}/og/convert.png`;
@@ -164,14 +165,8 @@ const schema = {
       <div class="hub-extension-copy"><div class="hub-extension-brand"><img src="/picture-converter/welcome/picture-converter-icon.png" width="46" height="46" alt={c.pictureIconAlt} loading="lazy" /><div><strong>Picture Converter</strong><small>{c.chromeExtension}</small></div></div><h2 id="picture-converter-heading">{c.extensionHeading}</h2><p>{c.extensionBody}</p><div class="hub-extension-actions"><a class="store" href={pictureConverterStore}>{c.addChrome}</a><a class="details" href="/picture-converter/">{c.seePicture}</a></div></div>
     </section>
 
-    <section class="hub-section" id="privacy" aria-labelledby="trust-heading">
-      <div class="hub-section-label">{c.trustLabel}</div>
-      <h2 class="hub-trust-heading" id="trust-heading">{c.trustHeading}</h2>
-      <div class="hub-trust-grid"><div><span>✓</span><strong>{c.noUploads}</strong><p>{c.noUploadsDesc}</p></div><div><span>→</span><strong>{c.noAccount}</strong><p>{c.noAccountDesc}</p></div><div><span>1</span><strong>{c.oneJob}</strong><p>{c.oneJobDesc}</p></div></div>
-    </section>
-
     <section class="hub-section hub-faq" aria-labelledby="faq-heading">
-      <div><div class="hub-section-label">{c.faqLabel}</div><h2 id="faq-heading">{c.faqHeading}</h2></div>
+      <div><div class="hub-section-label">{faqLabel}</div><h2 id="faq-heading">{c.faqHeading}</h2></div>
       <div class="hub-faq-list">
         <details><summary><span>01</span>{c.faq1q}<i>+</i></summary><p>{c.faq1a}</p></details>
         <details><summary><span>02</span>{c.faq2q}<i>+</i></summary><p>{c.faq2a}</p></details>
