@@ -1,0 +1,74 @@
+name: Verify Product Landing Analytics Live
+
+on:
+  workflow_run:
+    workflows:
+      - Deploy LayerPorter to Cloudflare Pages
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify product analytics on production
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="https://layerporter.com"
+          VERIFY="${{ github.run_id }}-${{ github.run_attempt }}"
+
+          check_page() {
+            local path="$1"
+            local tmp="$2"
+            local expected_product="$3"
+
+            curl -fsS --max-time 20 -A "Mozilla/5.0" "$BASE$path?verify=$VERIFY" -o "$tmp"
+            grep -Fq 'lp-product-analytics:v1' "$tmp"
+
+            local asset
+            asset="$(node - "$tmp" <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync(process.argv[2], 'utf8');
+          const marker = html.indexOf('lp-product-analytics:v1');
+          if (marker < 0) process.exit(2);
+          const after = html.slice(marker);
+          const match = after.match(/<script\b[^>]*\bsrc="([^"]+)"[^>]*><\/script>/i);
+          if (!match) process.exit(3);
+          process.stdout.write(match[1]);
+          NODE
+            )"
+
+            if [[ "$asset" == http* ]]; then
+              asset_url="$asset"
+            else
+              asset_url="$BASE$asset"
+            fi
+
+            curl -fsS --max-time 20 -A "Mozilla/5.0" "$asset_url?verify=$VERIFY" -o /tmp/product-analytics-asset.js
+            grep -Fq 'extension_store_click' /tmp/product-analytics-asset.js
+            grep -Fq "$expected_product" /tmp/product-analytics-asset.js
+
+            echo "PASS $path -> $asset"
+          }
+
+          check_page "/picture-converter/" /tmp/pc-en.html "picture_converter"
+          check_page "/de/picture-converter/" /tmp/pc-de.html "picture_converter"
+          check_page "/pinterest-downloader/" /tmp/pd-en.html "pinterest_downloader"
+          check_page "/es/pinterest-downloader/" /tmp/pd-es.html "pinterest_downloader"
+
+          STATUS="$(curl -sS -o /tmp/internal-product-entry.html -w "%{http_code}" --max-time 20 -A "Mozilla/5.0" "$BASE/internal-product-analytics-entry/?verify=$VERIFY")"
+          if [ "$STATUS" = "200" ]; then
+            echo "Internal build-only analytics entry leaked to production"
+            exit 1
+          fi
+
+          echo "PASS internal build-only route is not public: HTTP $STATUS"
+          echo "PRODUCT ANALYTICS LIVE GATE: PASS"
