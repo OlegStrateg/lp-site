@@ -1,0 +1,16 @@
+.hub-section-head.is-single{grid-template-columns:minmax(0,1fr);gap:0}
+.hub-section-head.is-single h2{max-width:980px}
+.hub h1,.hub h2,.hub h3{overflow-wrap:normal;word-break:normal;hyphens:auto}
+.hub-route-copy b{overflow-wrap:normal;word-break:normal}
+.hub-checker-simple{grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr)}
+.hub-checker-simple-visual{min-height:230px;padding:2rem;background:#e9e5ec;display:grid;place-items:center;align-content:center;gap:1.6rem}
+.hub-checker-flow{display:flex;align-items:center;justify-content:center;gap:.8rem;flex-wrap:wrap}
+.hub-checker-flow span{min-width:96px;padding:1rem .9rem;border:1px solid #d5cfda;border-radius:12px;background:#fff;text-align:center;font-size:.72rem;font-weight:950;letter-spacing:.03em;box-shadow:0 9px 22px rgba(30,22,42,.06)}
+.hub-checker-flow i{font-style:normal;color:var(--hub-violet);font-size:1.1rem;font-weight:950}
+.hub-checker-chips{display:flex;justify-content:center;gap:.65rem}
+.hub-checker-chips span{width:42px;height:42px;border-radius:11px;background:var(--hub-violet-soft);color:var(--hub-violet);display:grid;place-items:center;font-size:.72rem;font-weight:950}
+.hub-tool-body:not(:has(p)) .hub-open{margin-top:1.35rem}
+.hub-design-card>div:first-child:not(:has(p))>b{margin-top:1.25rem}
+@media(max-width:1050px){.hub-checker-simple{grid-template-columns:1fr}}
+@media(max-width:800px){.hub-checker-simple-visual{min-height:180px;padding:1.35rem}.hub-checker-flow span{min-width:82px;padding:.8rem .65rem}.hub-section-head.is-single h2{font-size:clamp(2.25rem,10vw,3rem)}}
+@media(max-width:560px){.hub-checker-flow{gap:.5rem}.hub-checker-flow span{min-width:70px;font-size:.62rem}.hub-checker-flow i{font-size:.9rem}.hub-checker-chips span{width:36px;height:36px}.hub-hero h1{letter-spacing:-.052em;line-height:.96}}
