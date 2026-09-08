@@ -1,0 +1,71 @@
+name: Site Quality Observatory
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build production output
+        run: npm run build
+
+      - name: Static site quality report
+        run: node scripts/site-quality-report.mjs
+
+      - name: Start local preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4321 > /tmp/layerporter-preview.log 2>&1 &
+          echo $! > /tmp/layerporter-preview.pid
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:4321/ >/dev/null; then
+              echo "Preview ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/layerporter-preview.log
+          exit 1
+
+      - name: Lighthouse CI baseline (report only)
+        continue-on-error: true
+        run: npx --yes @lhci/cli@0.15.1 autorun --config=.lighthouserc.cjs
+
+      - name: Pa11y WCAG 2 AA baseline (report only)
+        continue-on-error: true
+        run: |
+          mkdir -p quality-reports
+          npx --yes pa11y-ci@4.1.1 --config .pa11yci.json > quality-reports/pa11y.txt 2>&1
+
+      - name: Save preview diagnostics
+        if: always()
+        run: |
+          mkdir -p quality-reports
+          cp /tmp/layerporter-preview.log quality-reports/preview.log 2>/dev/null || true
+
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-quality-${{ github.run_id }}
+          path: quality-reports/
+          if-no-files-found: error
+          retention-days: 30
