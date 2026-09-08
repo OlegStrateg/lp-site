@@ -11,7 +11,17 @@ function assert(condition, message) {
 const analytics = read('src/lib/analytics.ts');
 const collector = read('functions/api/collect.js');
 const baseLayout = read('src/layouts/BaseLayout.astro');
-const home = read('src/pages/index.astro');
+const homePaths = [
+  'src/pages/index.astro',
+  'src/pages/ru/index.astro',
+  'src/pages/de/index.astro',
+  'src/pages/es/index.astro',
+  'src/pages/fr/index.astro',
+  'src/pages/pt-br/index.astro',
+  'src/pages/ja/index.astro',
+  'src/pages/zh-cn/index.astro',
+];
+const homes = homePaths.map((path) => [path, read(path)]);
 const productEntry = read('src/pages/internal-product-analytics-entry.astro');
 const productInjector = read('scripts/inject-product-landing-analytics.mjs');
 const robots = read('public/robots.txt');
@@ -52,7 +62,7 @@ for (const product of ['ic', 'h2f', 'pex', 's2c', 'ds', 'pd', 'site']) {
   assert(collector.includes(`'${product}'`), `collector product ${product} missing`);
 }
 for (const event of [
-  'page_view', 'tool_view', 'upload_start', 'convert_success', 'convert_error',
+  'page_view', 'path_card_click', 'tool_view', 'upload_start', 'convert_success', 'convert_error',
   'download_click', 'cross_sell_click', 'universal_drop', 'universal_route_click',
   'extension_cta_click', 'extension_store_click',
 ]) {
@@ -63,10 +73,26 @@ assert(collector.includes('siteStatsForDays'), 'site stats aggregation missing')
 assert(collector.includes('raw.p !== \'site\''), 'extension owner-test isolation missing');
 assert(collector.includes('page_instances'), 'page-scoped metric naming missing');
 
-// Existing page instrumentation must remain connected.
-assert(baseLayout.includes("track('page_view'"), 'BaseLayout page_view missing');
-assert(home.includes("track('page_view'"), 'home page_view missing');
-assert(home.includes("track('path_card_click'"), 'home path click event missing');
+// Home EN + 7 locale pages keep one existing inline event path, while the shared
+// adapter fills only the two historical gaps: localized /extensions/ and Picture Converter.
+for (const [path, source] of homes) {
+  assert(source.includes("track('page_view'"), `${path}: page_view missing`);
+  assert(source.includes("track('path_card_click'"), `${path}: path click event missing`);
+}
+for (const target of [
+  'home_extensions',
+  'home_pinterest_downloader',
+  'home_picture_converter',
+  'home_web_tools',
+]) {
+  assert(analytics.includes(`'${target}'`), `home funnel target ${target} missing`);
+}
+assert(analytics.includes('classifyHomeDestination'), 'home destination classifier missing');
+assert(analytics.includes('installMissingHomeClickCoverage'), 'home missing-click coverage missing');
+assert(analytics.includes('LOCALIZED_EXTENSIONS_ROUTE.test(path)'), 'localized extension coverage missing');
+assert(analytics.includes("target === 'home_picture_converter'"), 'Picture Converter coverage missing');
+assert(analytics.includes("typeof props.href === 'string'"), 'existing Home href classifier bridge missing');
+assert(analytics.includes('cleanProps(normalizedProps)'), 'classified Home props do not pass through sanitizer');
 
 // Product landings use the same shared track() transport. The build-only entry is
 // injected after the two locale generators and then removed as a public route.

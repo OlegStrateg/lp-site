@@ -18,6 +18,16 @@ const FORBIDDEN_PROP_KEYS = new Set([
   'url', 'href', 'text', 'page', 'pageurl', 'path', 'content', 'html', 'email', 'name', 'title_full',
 ]);
 
+const CORE_HOME_LOCALES = '(?:ru|de|es|fr|pt-br|ja|zh-cn)';
+const CORE_HOME_ROUTE = new RegExp(`^/(?:${CORE_HOME_LOCALES}/)?$`, 'i');
+const LOCALIZED_EXTENSIONS_ROUTE = new RegExp(`^/${CORE_HOME_LOCALES}/extensions/$`, 'i');
+const HOME_DESTINATIONS = [
+  { pattern: new RegExp(`^/(?:${CORE_HOME_LOCALES}/)?extensions/$`, 'i'), target: 'home_extensions' },
+  { pattern: new RegExp(`^/(?:${CORE_HOME_LOCALES}/)?pinterest-downloader/$`, 'i'), target: 'home_pinterest_downloader' },
+  { pattern: new RegExp(`^/(?:${CORE_HOME_LOCALES}/)?picture-converter/$`, 'i'), target: 'home_picture_converter' },
+  { pattern: new RegExp(`^/(?:${CORE_HOME_LOCALES}/)?convert(?:/[a-z0-9-]+)?/$`, 'i'), target: 'home_web_tools' },
+] as const;
+
 function uuidV4(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
 
@@ -58,6 +68,26 @@ function routeBucket(pathname: string): string {
   return '/other/';
 }
 
+function sameOriginPath(rawHref: string): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const parsed = new URL(rawHref, window.location.origin);
+    if (parsed.origin !== window.location.origin) return '';
+    return parsed.pathname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+function classifyHomeDestination(rawHref: string): string | null {
+  const path = sameOriginPath(rawHref);
+  if (!path) return null;
+  for (const destination of HOME_DESTINATIONS) {
+    if (destination.pattern.test(path)) return destination.target;
+  }
+  return null;
+}
+
 function cleanProps(props: TrackProps): TrackProps {
   const clean: TrackProps = {};
   for (const [key, value] of Object.entries(props)) {
@@ -75,7 +105,15 @@ export function track(name: string, props: TrackProps = {}, opts: TrackOpts = {}
   const safeName = String(name || '').trim();
   if (!/^[a-z0-9_]{1,64}$/i.test(safeName)) return;
 
-  const clean = cleanProps(props);
+  // Home pages historically pass href only to classify navigation. Use it locally
+  // to produce a stable funnel target, then let cleanProps drop href before transport.
+  let normalizedProps = props;
+  if (safeName === 'path_card_click' && typeof props.href === 'string') {
+    const target = classifyHomeDestination(props.href);
+    if (target) normalizedProps = { ...props, target };
+  }
+
+  const clean = cleanProps(normalizedProps);
   clean.route = routeBucket(window.location.pathname);
 
   // Optional adapter point retained for experiments. The first-party collector is
@@ -120,3 +158,32 @@ export function track(name: string, props: TrackProps = {}, opts: TrackOpts = {}
 
   if (DEBUG) console.log('[track]', safeName, clean, opts);
 }
+
+function installMissingHomeClickCoverage(): void {
+  if (typeof window === 'undefined' || !CORE_HOME_ROUTE.test(window.location.pathname)) return;
+
+  document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest('a[href]');
+    if (!link) return;
+
+    const rawHref = link.getAttribute('href') || '';
+    const path = sameOriginPath(rawHref);
+    if (!path) return;
+
+    // Existing inline Home instrumentation already covers EN /extensions/,
+    // Pinterest Downloader and /convert/. Fill only the two historical gaps so
+    // one user click still produces exactly one path_card_click event.
+    if (LOCALIZED_EXTENSIONS_ROUTE.test(path)) {
+      track('path_card_click', { target: 'home_extensions' });
+      return;
+    }
+
+    const target = classifyHomeDestination(rawHref);
+    if (target === 'home_picture_converter') {
+      track('path_card_click', { target });
+    }
+  }, { capture: true });
+}
+
+if (typeof window !== 'undefined') installMissingHomeClickCoverage();
