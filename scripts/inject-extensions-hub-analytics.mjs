@@ -29,15 +29,6 @@ const scripts = entryHtml.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
 if (!scripts.length) throw new Error('Shared Extensions Hub analytics entry produced no client script');
 const scriptBlock = scripts.join('\n');
 
-for (const required of [
-  'nmpahchhmcdejmfcmkphnbhckmlhhnon',
-  'oegpbmdpckfdgodnkdnoggedamfflfcl',
-  'extension_store_click',
-  'extensions_hub',
-]) {
-  if (!scriptBlock.includes(required)) throw new Error(`Extensions analytics bundle lost required marker: ${required}`);
-}
-
 const targets = [
   path.join(DIST, 'extensions', 'index.html'),
   ...LOCALES.map((locale) => path.join(DIST, locale, 'extensions', 'index.html')),
@@ -54,11 +45,9 @@ for (const file of targets) {
   }
 }
 
-// EN already gets page_view from BaseLayout. The injected bundle itself explicitly
-// emits page_view only for the seven standalone localized hubs.
-if (!scriptBlock.includes('if (localizedHub)')) throw new Error('Localized-only page_view guard missing');
-if (scriptBlock.includes("if (englishHub) track('page_view'")) throw new Error('EN page_view duplication guard regressed');
-
+// Runtime behavior is source-gated by verify-site-analytics.mjs. At build time Astro
+// externalizes the entry JavaScript into /_astro, so the generated <script> tag does
+// not contain the source literals and must not be inspected as if it were inline JS.
 if (entryFile.endsWith(`${path.sep}index.html`)) {
   fs.rmSync(path.dirname(entryFile), { recursive: true, force: true });
 } else {
