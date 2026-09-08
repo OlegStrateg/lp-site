@@ -29,6 +29,97 @@ const coreH1 = new Map([
   ['zh-cn', '免费文件转换器。'],
 ]);
 
+// LP-070 deliberately freezes SEO-sensitive title/meta/H1 while improving only
+// the user-facing explanatory copy below the hero.
+const coreSeo = new Map([
+  ['en', {
+    title: 'Free File Converter — JPG, PDF, WebP & PSD | LayerPorter',
+    description: 'Free file converters for JPG, PNG, PDF, WebP and PSD. Convert files in your browser with no uploads, no account and no server processing.',
+  }],
+  ['ru', {
+    title: 'Бесплатный конвертер файлов — JPG, PDF, WebP и PSD | LayerPorter',
+    description: 'Бесплатный конвертер файлов JPG, PNG, PDF, WebP и PSD. Конвертируйте файлы в браузере без загрузки на сервер и без регистрации.',
+  }],
+  ['de', {
+    title: 'Kostenloser Dateikonverter — JPG, PDF, WebP & PSD | LayerPorter',
+    description: 'Kostenloser Dateikonverter für JPG, PNG, PDF, WebP und PSD. Dateien direkt im Browser konvertieren — ohne Upload, Konto oder Serververarbeitung.',
+  }],
+  ['es', {
+    title: 'Convertidor de archivos gratis — JPG, PDF, WebP y PSD | LayerPorter',
+    description: 'Convertidor de archivos gratis para JPG, PNG, PDF, WebP y PSD. Convierte archivos en el navegador sin subirlos, sin cuenta y sin procesamiento en servidor.',
+  }],
+  ['fr', {
+    title: 'Convertisseur de fichiers gratuit — JPG, PDF, WebP et PSD | LayerPorter',
+    description: 'Convertisseur de fichiers gratuit pour JPG, PNG, PDF, WebP et PSD. Convertissez dans le navigateur sans téléversement, sans compte et sans traitement serveur.',
+  }],
+  ['pt-br', {
+    title: 'Conversor de arquivos grátis — JPG, PDF, WebP e PSD | LayerPorter',
+    description: 'Conversor de arquivos grátis para JPG, PNG, PDF, WebP e PSD. Converta arquivos no navegador sem upload, sem conta e sem processamento no servidor.',
+  }],
+  ['ja', {
+    title: '無料ファイル変換 — JPG・PDF・WebP・PSD | LayerPorter',
+    description: 'JPG、PNG、PDF、WebP、PSDに対応した無料ファイル変換ツール。アップロードやアカウント登録なしで、ブラウザ上でファイルを変換できます。',
+  }],
+  ['zh-cn', {
+    title: '免费文件转换器 — JPG、PDF、WebP 和 PSD | LayerPorter',
+    description: '免费文件转换器，支持 JPG、PNG、PDF、WebP 和 PSD。无需上传文件、无需注册账号，直接在浏览器中完成转换。',
+  }],
+]);
+
+const coreCopy = new Map([
+  ['en', {
+    popular: 'Choose the conversion that matches the file you have and the result you need.',
+    design: 'Convert PSD files to PNG or JPG, or move PNG and JPG into a PSD document.',
+  }],
+  ['ru', {
+    popular: 'Выберите конвертацию под исходный файл и нужный результат.',
+    design: 'Конвертируйте PSD в PNG или JPG либо переносите PNG и JPG в PSD-документ.',
+  }],
+  ['de', {
+    popular: 'Wähle die Konvertierung passend zu deiner Ausgangsdatei und dem gewünschten Ergebnis.',
+    design: 'PSD in PNG oder JPG umwandeln oder PNG und JPG in ein PSD-Dokument übernehmen.',
+  }],
+  ['es', {
+    popular: 'Elige la conversión según el archivo que tienes y el resultado que necesitas.',
+    design: 'Convierte PSD a PNG o JPG, o pasa PNG y JPG a un documento PSD.',
+  }],
+  ['fr', {
+    popular: 'Choisissez la conversion adaptée à votre fichier de départ et au résultat recherché.',
+    design: 'Convertissez un PSD en PNG ou JPG, ou placez un PNG ou un JPG dans un document PSD.',
+  }],
+  ['pt-br', {
+    popular: 'Escolha a conversão de acordo com o arquivo que você tem e o resultado que precisa.',
+    design: 'Converta PSD para PNG ou JPG, ou leve PNG e JPG para um documento PSD.',
+  }],
+  ['ja', {
+    popular: '元のファイルと必要な結果に合う変換を選べます。',
+    design: 'PSDをPNGやJPGに変換し、PNGやJPGをPSDドキュメントに移せます。',
+  }],
+  ['zh-cn', {
+    popular: '根据现有文件和需要的结果，直接选择对应的转换。',
+    design: '将 PSD 转为 PNG 或 JPG，也可以把 PNG 和 JPG 放入 PSD 文档。',
+  }],
+]);
+
+const forbiddenDesignRationale = [
+  'Real product imagery where it explains the task.',
+  'Four PSD routes. One consistent visual system.',
+  'Реальные изображения продукта там, где они помогают понять задачу.',
+  'Четыре направления PSD. Единая визуальная система.',
+  'Echte Produktbilder, wenn sie die Aufgabe erklären.',
+  'Vier PSD-Wege. Ein einheitliches visuelles System.',
+  'Imágenes reales del producto cuando ayudan a entender la tarea.',
+  'Cuatro rutas PSD. Un sistema visual coherente.',
+  'Des visuels produit réels lorsqu’ils expliquent la tâche.',
+  'Quatre parcours PSD. Un seul système visuel.',
+  'Imagens reais do produto quando ajudam a explicar a tarefa.',
+  'Quatro rotas PSD. Um sistema visual consistente.',
+  '作業内容の理解に役立つ場所では実際の製品画像を使い',
+  '4つのPSDルートを、統一した見た目で。',
+  '能帮助理解任务时使用真实产品图片',
+  '四种 PSD 转换路径，一套一致的视觉系统。',
+];
+
 const canonicalPath = (row) => row.code === 'en' ? '/convert/' : `/${row.route}/convert/`;
 const homePath = (row) => row.code === 'en' ? '/' : `/${row.route}/`;
 const pictureConverterPath = (row) => row.code === 'en' ? '/picture-converter/' : `/${row.route}/picture-converter/`;
@@ -39,17 +130,25 @@ const routes = [
 ];
 
 for (const locale of publishedLocales) {
+  const code = normalizeCode(locale.code);
   const routeDir = locale.code === 'en' ? [] : [locale.route];
   const file = path.join(process.cwd(), 'dist', ...routeDir, 'convert', 'index.html');
   if (!fs.existsSync(file)) throw new Error(`[${locale.code}] Missing published convert hub: ${file}`);
   const html = fs.readFileSync(file, 'utf8');
   const canonical = canonicalPath(locale);
-  const visibleRoot = coreH1.get(normalizeCode(locale.code));
+  const visibleRoot = coreH1.get(code);
+  const seo = coreSeo.get(code);
+  const copy = coreCopy.get(code);
   const localHome = homePath(locale);
   const localPicture = pictureConverterPath(locale);
+  if (!seo || !copy) throw new Error(`[${locale.code}] Missing LP-070 core SEO/copy baseline`);
 
   const required = [
     visibleRoot,
+    `<title>${seo.title}</title>`,
+    `<meta name="description" content="${seo.description}">`,
+    copy.popular,
+    copy.design,
     `lang="${locale.lang}"`,
     `<link rel="canonical" href="https://layerporter.com${canonical}">`,
     'href="/convert-hub.css"',
@@ -72,6 +171,10 @@ for (const locale of publishedLocales) {
   ];
   for (const needle of required) {
     if (!html.includes(needle)) throw new Error(`[${locale.code}] Missing required marker: ${needle}`);
+  }
+
+  for (const stale of forbiddenDesignRationale) {
+    if (html.includes(stale)) throw new Error(`[${locale.code}] Internal design rationale leaked into user copy: ${stale}`);
   }
 
   if (html.includes(`href="${localHome}#learn"`)) {
@@ -156,4 +259,4 @@ for (const locale of holdLocales) {
   }
 }
 
-console.log(`Convert hub i18n PASS: 8 published locales + locale-aware navigation + 41 HOLD locales excluded + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
+console.log(`Convert hub i18n PASS: 8 published locales + LP-070 copy gate + frozen SEO title/meta/H1 + locale-aware navigation + 41 HOLD locales excluded + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
