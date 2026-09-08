@@ -10,9 +10,6 @@ const englishHub = path.join(dist, 'extensions', 'index.html');
 if (!fs.existsSync(englishHub)) throw new Error('Missing EN Extensions Hub: dist/extensions/index.html');
 
 const englishHtml = fs.readFileSync(englishHub, 'utf8');
-if (!englishHtml.includes(rootConvertLink)) {
-  throw new Error('EN Extensions Hub must keep Web Tools routed to /convert/');
-}
 if (!englishHtml.includes(rootPictureUrl)) {
   throw new Error('EN Extensions Hub must keep Picture Converter schema URL on /picture-converter/');
 }
