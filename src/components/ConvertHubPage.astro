@@ -17,6 +17,8 @@ const canonicalPath = convertHubPath(locale);
 const preferredImage = `${site}/og/convert.png`;
 const homePath = localeHomePath(locale);
 const extensionsPath = localeExtensionsPath(locale);
+const learnPath = `${homePath}#workflows`;
+const pictureConverterPath = locale.code === 'en' ? '/picture-converter/' : `/${locale.route}/picture-converter/`;
 const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=convert_hub&utm_content=extension_block';
 
 const alternates = [
@@ -50,7 +52,7 @@ const schema = {
   },
   hasPart: {
     '@type': 'SoftwareApplication', name: 'Picture Converter', applicationCategory: 'BrowserApplication',
-    operatingSystem: 'Chrome', url: `${site}/picture-converter/`,
+    operatingSystem: 'Chrome', url: `${site}${pictureConverterPath}`,
   },
 };
 ---
@@ -64,7 +66,7 @@ const schema = {
   dir={locale.dir}
   homePath={homePath}
   extensionsPath={extensionsPath}
-  learnPath={`${homePath}#learn`}
+  learnPath={learnPath}
   headerLabels={locale.nav}
   footerLabels={locale.footer}
   alternates={alternates}
@@ -162,7 +164,7 @@ const schema = {
 
     <section class="hub-extension" id="picture-converter" aria-labelledby="picture-converter-heading">
       <div class="hub-extension-visual"><img src="/images/picture-converter/picture-converter-chrome-960.webp" srcset="/images/picture-converter/picture-converter-chrome-320.webp 320w, /images/picture-converter/picture-converter-chrome-640.webp 640w, /images/picture-converter/picture-converter-chrome-960.webp 960w" sizes="(max-width:800px) 100vw, 58vw" width="960" height="640" alt={c.pictureAlt} loading="lazy" /></div>
-      <div class="hub-extension-copy"><div class="hub-extension-brand"><img src="/picture-converter/welcome/picture-converter-icon.png" width="46" height="46" alt={c.pictureIconAlt} loading="lazy" /><div><strong>Picture Converter</strong><small>{c.chromeExtension}</small></div></div><h2 id="picture-converter-heading">{c.extensionHeading}</h2><p>{c.extensionBody}</p><div class="hub-extension-actions"><a class="store" href={pictureConverterStore}>{c.addChrome}</a><a class="details" href="/picture-converter/">{c.seePicture}</a></div></div>
+      <div class="hub-extension-copy"><div class="hub-extension-brand"><img src="/picture-converter/welcome/picture-converter-icon.png" width="46" height="46" alt={c.pictureIconAlt} loading="lazy" /><div><strong>Picture Converter</strong><small>{c.chromeExtension}</small></div></div><h2 id="picture-converter-heading">{c.extensionHeading}</h2><p>{c.extensionBody}</p><div class="hub-extension-actions"><a class="store" href={pictureConverterStore}>{c.addChrome}</a><a class="details" href={pictureConverterPath}>{c.seePicture}</a></div></div>
     </section>
 
     <section class="hub-section hub-faq" aria-labelledby="faq-heading">
