@@ -7,6 +7,11 @@ if (PICTURE_CONVERTER_LOCALES.length !== 49) {
 }
 
 const normalizeCode = (code) => String(code).toLowerCase().replaceAll('_', '-');
+const escapeHtml = (value) => String(value)
+  .replaceAll('&', '&amp;')
+  .replaceAll('"', '&quot;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;');
 const publishedCodes = new Set(['en', 'ru', 'de', 'es', 'fr', 'pt-br', 'ja', 'zh-cn']);
 const publishedLocales = PICTURE_CONVERTER_LOCALES.filter((row) => publishedCodes.has(normalizeCode(row.code)));
 const holdLocales = PICTURE_CONVERTER_LOCALES.filter((row) => !publishedCodes.has(normalizeCode(row.code)));
@@ -145,8 +150,8 @@ for (const locale of publishedLocales) {
 
   const required = [
     visibleRoot,
-    `<title>${seo.title}</title>`,
-    `<meta name="description" content="${seo.description}">`,
+    `<title>${escapeHtml(seo.title)}</title>`,
+    `<meta name="description" content="${escapeHtml(seo.description)}">`,
     copy.popular,
     copy.design,
     `lang="${locale.lang}"`,
