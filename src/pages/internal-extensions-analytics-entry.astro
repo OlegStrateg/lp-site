@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Internal extensions analytics entry</title>
+</head>
+<body>
+<script>
+  import { track } from '../lib/analytics';
+
+  const path = window.location.pathname.toLowerCase();
+  const localizedHub = /^\/(?:ru|de|es|fr|pt-br|ja|zh-cn)\/extensions\/$/.test(path);
+  const englishHub = path === '/extensions/';
+
+  const stores = [
+    { id: 'nmpahchhmcdejmfcmkphnbhckmlhhnon', product: 'pinterest_downloader' },
+    { id: 'oegpbmdpckfdgodnkdnoggedamfflfcl', product: 'picture_converter' },
+  ];
+
+  if (localizedHub) track('page_view', { surface: 'extensions_hub' });
+
+  if (englishHub || localizedHub) {
+    for (const { id, product } of stores) {
+      document
+        .querySelectorAll<HTMLAnchorElement>(`a[href*="chromewebstore.google.com"][href*="${id}"]`)
+        .forEach((link) => {
+          link.addEventListener('click', () => {
+            track('extension_store_click', { product, placement: 'extensions_hub' });
+          });
+        });
+    }
+  }
+</script>
+</body>
+</html>

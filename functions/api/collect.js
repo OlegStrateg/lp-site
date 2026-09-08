@@ -81,6 +81,7 @@ const FORBIDDEN_PROP_KEYS = new Set([
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_BATCH = 50;
 const SITE_STATS_TTL = 180 * 24 * 3600;
+const SITE_STORE_PRODUCTS = new Set(['picture_converter', 'pinterest_downloader']);
 
 function originHeaders(request) {
   const origin = request.headers.get('origin') || '';
@@ -124,6 +125,12 @@ function safeSiteRoute(value) {
   return '/other/';
 }
 
+function safeSiteStoreProduct(event, props) {
+  if (event !== 'extension_store_click') return '';
+  const product = typeof props?.product === 'string' ? props.product : '';
+  return SITE_STORE_PRODUCTS.has(product) ? product : '';
+}
+
 function validate(raw) {
   if (!raw || typeof raw !== 'object') return 'bad_envelope';
   if (!PRODUCTS.has(raw.p)) return 'unknown_product';
@@ -140,7 +147,9 @@ async function saveSiteEvent(env, raw, props) {
   const date = dayKey(raw.ts, env);
   const routeKey = encodeURIComponent(route);
   const ts = Math.max(0, Math.trunc(raw.ts));
-  const key = `site:${date}:${raw.e}:${routeKey}:${raw.iid}:${ts}`;
+  const storeProduct = safeSiteStoreProduct(raw.e, props);
+  const productSuffix = storeProduct ? `:${storeProduct}` : '';
+  const key = `site:${date}:${raw.e}:${routeKey}:${raw.iid}:${ts}${productSuffix}`;
   await env.FEEDBACK_KV.put(key, '1', { expirationTtl: SITE_STATS_TTL });
 }
 
@@ -161,6 +170,7 @@ async function siteStatsForDays(env, days = 7) {
   const events = {};
   const pages = {};
   const pageInstances = new Set();
+  const storeClicksByProduct = { picture_converter: 0, pinterest_downloader: 0, unknown: 0 };
   const now = Date.now();
 
   for (let i = 0; i < bounded; i += 1) {
@@ -171,10 +181,15 @@ async function siteStatsForDays(env, days = 7) {
       const event = parts[2] || '';
       const route = decodeURIComponent(parts[3] || '%2Fother%2F');
       const iid = parts[4] || '';
+      const storeProduct = parts[6] || '';
       events[event] = (events[event] || 0) + 1;
       if (iid) pageInstances.add(iid);
       if (!pages[route]) pages[route] = { page_view: 0, tool_view: 0, convert_success: 0, extension_store_click: 0 };
       if (Object.prototype.hasOwnProperty.call(pages[route], event)) pages[route][event] += 1;
+      if (event === 'extension_store_click') {
+        const key = SITE_STORE_PRODUCTS.has(storeProduct) ? storeProduct : 'unknown';
+        storeClicksByProduct[key] += 1;
+      }
     }
   }
 
@@ -183,7 +198,13 @@ async function siteStatsForDays(env, days = 7) {
     .slice(0, 50)
     .map(([route, counts]) => ({ route, ...counts }));
 
-  return { days: bounded, page_instances: pageInstances.size, events, pages: topPages };
+  return {
+    days: bounded,
+    page_instances: pageInstances.size,
+    events,
+    pages: topPages,
+    extension_store_click_by_product: storeClicksByProduct,
+  };
 }
 
 async function processEvent(request, env, raw) {

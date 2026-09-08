@@ -24,6 +24,8 @@ const homePaths = [
 const homes = homePaths.map((path) => [path, read(path)]);
 const productEntry = read('src/pages/internal-product-analytics-entry.astro');
 const productInjector = read('scripts/inject-product-landing-analytics.mjs');
+const extensionsEntry = read('src/pages/internal-extensions-analytics-entry.astro');
+const extensionsInjector = read('scripts/inject-extensions-hub-analytics.mjs');
 const robots = read('public/robots.txt');
 const sitemap = read('src/pages/sitemap.xml.ts');
 const headers = read('public/_headers');
@@ -44,6 +46,7 @@ for (const [label, pattern] of [
 ]) {
   assert(!pattern.test(analytics), `core analytics uses forbidden browser storage: ${label}`);
   assert(!pattern.test(productEntry), `product analytics uses forbidden browser storage: ${label}`);
+  assert(!pattern.test(extensionsEntry), `extensions analytics uses forbidden browser storage: ${label}`);
 }
 assert(analytics.includes("const PAGE_ID = typeof window !== 'undefined' ? uuidV4() : ''"), 'page-scoped id missing');
 
@@ -72,6 +75,14 @@ assert(collector.includes('saveSiteEvent'), 'site persistence missing');
 assert(collector.includes('siteStatsForDays'), 'site stats aggregation missing');
 assert(collector.includes('raw.p !== \'site\''), 'extension owner-test isolation missing');
 assert(collector.includes('page_instances'), 'page-scoped metric naming missing');
+
+// extension_store_click keeps a safe product dimension so two CWS buttons on the
+// same Extensions Hub route can be compared without storing URL/text.
+assert(collector.includes("SITE_STORE_PRODUCTS = new Set(['picture_converter', 'pinterest_downloader'])"), 'Store product allow-list missing');
+assert(collector.includes('safeSiteStoreProduct'), 'safe Store product classifier missing');
+assert(collector.includes('productSuffix'), 'Store product dimension is not persisted');
+assert(collector.includes('extension_store_click_by_product'), 'Store product stats breakdown missing');
+assert(collector.includes("unknown: 0"), 'legacy/unknown Store clicks are not kept backward-compatible');
 
 // Home EN + 7 locale pages keep one existing inline event path, while the shared
 // adapter fills only the two historical gaps: localized /extensions/ and Picture Converter.
@@ -110,6 +121,22 @@ assert(productInjector.includes('picture-converter-locales.json'), 'Picture Conv
 assert(productInjector.includes('pinterest-locales.json'), 'Pinterest manifest injection missing');
 assert(productInjector.includes('targets.length'), 'product analytics target verification missing');
 assert(productInjector.includes('Internal analytics entry leaked into dist'), 'internal entry cleanup gate missing');
+
+// Extensions Hub EN + 7 reuse the shared track() transport. EN already receives
+// page_view from BaseLayout; only standalone localized hubs emit an injected page_view.
+assert(extensionsEntry.includes("import { track } from '../lib/analytics'"), 'Extensions Hub does not reuse shared track()');
+assert(extensionsEntry.includes("if (localizedHub) track('page_view'"), 'localized Extensions page_view missing');
+assert(!extensionsEntry.includes("if (englishHub) track('page_view'"), 'EN Extensions page_view would be duplicated');
+assert(extensionsEntry.includes("track('extension_store_click'"), 'Extensions Hub Store click missing');
+assert(extensionsEntry.includes("product: 'pinterest_downloader'"), 'Pinterest Hub product code missing');
+assert(extensionsEntry.includes("product: 'picture_converter'"), 'Picture Hub product code missing');
+assert(extensionsEntry.includes('nmpahchhmcdejmfcmkphnbhckmlhhnon'), 'Pinterest Hub Store ID missing');
+assert(extensionsEntry.includes('oegpbmdpckfdgodnkdnoggedamfflfcl'), 'Picture Hub Store ID missing');
+assert(!extensionsEntry.includes('fetch('), 'Extensions entry duplicates analytics fetch transport');
+assert(!extensionsEntry.includes('sendBeacon'), 'Extensions entry duplicates beacon transport');
+assert(extensionsInjector.includes('lp-extensions-analytics:v1'), 'Extensions analytics injection marker missing');
+assert(extensionsInjector.includes('targets.length}/8'), 'Extensions analytics target count gate missing');
+assert(extensionsInjector.includes('Internal Extensions analytics entry leaked into dist'), 'Extensions internal entry cleanup gate missing');
 
 // Indexing invariants.
 assert(robots.includes('User-agent: *'), 'robots wildcard missing');
