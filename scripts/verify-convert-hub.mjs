@@ -30,6 +30,8 @@ const coreH1 = new Map([
 ]);
 
 const canonicalPath = (row) => row.code === 'en' ? '/convert/' : `/${row.route}/convert/`;
+const homePath = (row) => row.code === 'en' ? '/' : `/${row.route}/`;
+const pictureConverterPath = (row) => row.code === 'en' ? '/picture-converter/' : `/${row.route}/picture-converter/`;
 const hreflangs = [...publishedLocales.map((row) => row.hreflang), 'x-default'];
 const routes = [
   'jpg-to-pdf','pdf-to-jpg','webp-to-jpg','favicon-generator',
@@ -43,6 +45,8 @@ for (const locale of publishedLocales) {
   const html = fs.readFileSync(file, 'utf8');
   const canonical = canonicalPath(locale);
   const visibleRoot = coreH1.get(normalizeCode(locale.code));
+  const localHome = homePath(locale);
+  const localPicture = pictureConverterPath(locale);
 
   const required = [
     visibleRoot,
@@ -52,7 +56,9 @@ for (const locale of publishedLocales) {
     'href="/convert-hub-i18n.css"',
     'Picture Converter',
     'oegpbmdpckfdgodnkdnoggedamfflfcl',
-    'href="/picture-converter/"',
+    `href="${localPicture}"`,
+    `"url":"https://layerporter.com${localPicture}"`,
+    `href="${localHome}#workflows"`,
     '/images/picture-converter/images-to-pdf-example-640.webp',
     '/images/picture-converter/webp-to-jpg-example-640.webp',
     '/images/picture-converter/picture-converter-chrome-960.webp',
@@ -66,6 +72,17 @@ for (const locale of publishedLocales) {
   ];
   for (const needle of required) {
     if (!html.includes(needle)) throw new Error(`[${locale.code}] Missing required marker: ${needle}`);
+  }
+
+  if (html.includes(`href="${localHome}#learn"`)) {
+    throw new Error(`[${locale.code}] Stale dead #learn navigation leaked into Convert Hub`);
+  }
+
+  const homeFile = path.join(process.cwd(), 'dist', ...routeDir, 'index.html');
+  if (!fs.existsSync(homeFile)) throw new Error(`[${locale.code}] Missing Home for Convert Hub navigation check: ${homeFile}`);
+  const homeHtml = fs.readFileSync(homeFile, 'utf8');
+  if (!homeHtml.includes('id="workflows"')) {
+    throw new Error(`[${locale.code}] Convert Hub Learn target #workflows is missing on Home`);
   }
 
   for (const hreflang of hreflangs) {
@@ -139,4 +156,4 @@ for (const locale of holdLocales) {
   }
 }
 
-console.log(`Convert hub i18n PASS: 8 published locales + 41 HOLD locales excluded + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
+console.log(`Convert hub i18n PASS: 8 published locales + locale-aware navigation + 41 HOLD locales excluded + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
