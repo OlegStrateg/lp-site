@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const expected = [
   ['/pt-br/convert/jpg-to-pdf/', 'pt-BR'],
+  ['/pt-br/convert/pdf-to-jpg/', 'pt-BR'],
   ['/pt-br/convert/webp-to-jpg/', 'pt-BR'],
   ['/pt-br/convert/favicon-generator/', 'pt-BR'],
   ['/pt-br/convert/png-to-psd/', 'pt-BR'],
@@ -54,9 +55,21 @@ for (const marker of [
   if (!favicon.includes(marker)) throw new Error(`PT-BR Favicon missing marker: ${marker}`);
 }
 
+const pdfJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'pdf-to-jpg', 'index.html');
+const pdfJpg = fs.readFileSync(pdfJpgFile, 'utf8');
+for (const marker of [
+  'Converter PDF para JPG',
+  'Até 50 MB e 100 páginas',
+  'ZIP com mais de 3 páginas',
+  'qualidade 92%',
+  'Adicionar Picture Converter ao Chrome',
+]) {
+  if (!pdfJpg.includes(marker)) throw new Error(`PT-BR PDF→JPG missing marker: ${marker}`);
+}
+
 const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
 const ptBrHub = fs.readFileSync(ptBrHubFile, 'utf8');
-for (const route of ['/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
+for (const route of ['/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
   if (!ptBrHub.includes(`href="${route}"`)) throw new Error(`PT-BR hub missing localized route: ${route}`);
 }
 

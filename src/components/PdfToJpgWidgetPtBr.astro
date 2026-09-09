@@ -1,0 +1,352 @@
+---
+import Icon from './Icon.astro';
+
+interface Props { toolHeading: string }
+const { toolHeading } = Astro.props;
+const pictureStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=ptbr_pdf_to_jpg&utm_content=success_offer';
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div id="pdf-jpg-widget" class="converter-widget" data-state="empty" role="group" aria-label="Conversor de PDF para JPG">
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="file" /></div>
+      <p class="dz-title">Solte um PDF — ou clique para escolher</p>
+      <p class="dz-sub">O arquivo não sai desta aba.</p>
+      <button type="button" class="btn" id="choose-file-btn">Escolher PDF — grátis</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden><p class="dz-title">Solte para converter</p></div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p class="dz-title" id="processing-title">Renderizando as páginas…</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title" id="success-title">Seu JPG está pronto</p>
+      <div id="download-area"></div>
+      <div><button type="button" class="btn secondary" id="convert-another-btn">Converter outro PDF</button></div>
+      <div class="cross-sell" id="extension-offer">
+        <p class="cross-sell-label">Também converte imagens no navegador?</p>
+        <p class="dz-sub">O Picture Converter salva imagens de sites em JPG, PNG, WebP, PDF ou ICO e também converte arquivos locais compatíveis.</p>
+        <div class="cross-sell-cards">
+          <a class="cross-sell-card" id="picture-converter-store" href={pictureStore}>Adicionar Picture Converter ao Chrome</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">Não foi possível converter este PDF. Tente novamente.</p>
+      <button type="button" class="btn" id="retry-btn">Tentar novamente</button>
+    </div>
+
+    <input type="file" id="file-input" accept=".pdf,application/pdf" hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% no seu dispositivo — nada é enviado</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  let pdfjsLibPromise: ReturnType<typeof loadPdfjs> | null = null;
+  async function loadPdfjs() {
+    const [pdfjsLib, { default: pdfWorkerSrc }] = await Promise.all([
+      import('pdfjs-dist'),
+      import('pdfjs-dist/build/pdf.worker.mjs?url'),
+    ]);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+    return pdfjsLib;
+  }
+
+  const MAX_BYTES = 50 * 1024 * 1024;
+  const MAX_PAGES = 100;
+  const RENDER_SCALE = 2;
+  const JPG_QUALITY = 0.92;
+  const ZIP_THRESHOLD = 3;
+
+  const widget = document.getElementById('pdf-jpg-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const errorMessage = document.getElementById('error-message')!;
+  const processingTitle = document.getElementById('processing-title')!;
+  const successTitle = document.getElementById('success-title')!;
+  const downloadArea = document.getElementById('download-area')!;
+  const progressTrack = document.getElementById('progress-track')!;
+  const progressFill = document.getElementById('progress-fill')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const storeLink = document.getElementById('picture-converter-store') as HTMLAnchorElement | null;
+
+  const objectUrls: string[] = [];
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  type State = 'empty' | 'drag-over' | 'processing' | 'success' | 'error';
+
+  function announce(state: State) {
+    if (state === 'processing') statusEl.textContent = 'Convertendo…';
+    else if (state === 'success') statusEl.textContent = 'Pronto. Seus arquivos já podem ser baixados.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setPageProgress(current: number, total: number) {
+    const pct = Math.round((current / total) * 100);
+    progressFill.dataset.determinate = 'true';
+    progressFill.style.setProperty('--progress', `${pct}%`);
+    progressTrack.setAttribute('aria-valuenow', String(pct));
+  }
+
+  function resetProgress() {
+    progressFill.dataset.determinate = 'false';
+    progressFill.style.removeProperty('--progress');
+    progressTrack.setAttribute('aria-valuenow', '0');
+  }
+
+  function setState(state: State) {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) el.hidden = el.dataset.stateView !== state;
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function pageBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 5) return '2-5';
+    if (n <= 20) return '6-20';
+    return '>20';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeAllUrls() {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
+    objectUrls.length = 0;
+  }
+
+  function resetToEmpty() {
+    revokeAllUrls();
+    fileInput.value = '';
+    resetProgress();
+    setState('empty');
+  }
+
+  async function looksLikePdf(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+    } catch { return false; }
+  }
+
+  function baseName(file: File): string {
+    return file.name.replace(/\.[^.]+$/, '') || 'convertido';
+  }
+
+  async function renderPageToJpeg(page: import('pdfjs-dist').PDFPageProxy): Promise<Uint8Array> {
+    const viewport = page.getViewport({ scale: RENDER_SCALE });
+    const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('2d context unavailable in OffscreenCanvas');
+    // @ts-expect-error OffscreenCanvas 2D context is compatible at runtime
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: JPG_QUALITY });
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  async function handleFile(file: File) {
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+    track('upload_start', { file_type: 'pdf', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikePdf(file))) {
+      showError('unsupported_format', 'Este arquivo não parece ser um PDF válido.');
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      showError('too_large', 'Este PDF tem mais de 50 MB. Escolha um arquivo menor.');
+      return;
+    }
+    if (typeof OffscreenCanvas === 'undefined') {
+      showError('unsupported_browser', 'Este navegador não consegue renderizar as páginas do PDF neste fluxo. Use uma versão atual do Chrome, Edge, Firefox ou Safari.');
+      return;
+    }
+
+    resetProgress();
+    setState('processing');
+    const started = performance.now();
+
+    let buffer: ArrayBuffer;
+    try { buffer = await file.arrayBuffer(); }
+    catch {
+      showError('corrupt', 'Não foi possível ler este arquivo.');
+      return;
+    }
+
+    if (!pdfjsLibPromise) pdfjsLibPromise = loadPdfjs();
+    const pdfjsLib = await pdfjsLibPromise;
+
+    let doc;
+    try { doc = await pdfjsLib.getDocument({ data: buffer }).promise; }
+    catch {
+      showError('corrupt', 'Não foi possível abrir este PDF. Ele pode estar corrompido ou protegido por senha.');
+      return;
+    }
+
+    if (doc.numPages > MAX_PAGES) {
+      showError('too_many_pages', 'Este PDF tem mais de 100 páginas. Escolha um documento menor.');
+      return;
+    }
+
+    const jpegPages: Uint8Array[] = [];
+    try {
+      for (let i = 1; i <= doc.numPages; i++) {
+        processingTitle.textContent = `Renderizando página ${i} de ${doc.numPages}…`;
+        setPageProgress(i - 1, doc.numPages);
+        const page = await doc.getPage(i);
+        jpegPages.push(await renderPageToJpeg(page));
+        setPageProgress(i, doc.numPages);
+      }
+    } catch (err) {
+      showError('unknown', err instanceof Error ? err.message : 'A renderização falhou. Tente novamente.');
+      return;
+    }
+
+    const name = baseName(file);
+    downloadArea.innerHTML = '';
+    revokeAllUrls();
+
+    const pageUrls = jpegPages.map((bytes) => {
+      const url = URL.createObjectURL(new Blob([bytes as unknown as BlobPart], { type: 'image/jpeg' }));
+      objectUrls.push(url);
+      return url;
+    });
+
+    const previewGrid = document.createElement('ul');
+    previewGrid.className = 'favicon-preview';
+    pageUrls.forEach((url, i) => {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Prévia da página ${i + 1}`;
+      img.width = 96;
+      img.height = 96;
+      const label = document.createElement('span');
+      label.textContent = `Página ${i + 1}`;
+      li.append(img, label);
+      previewGrid.appendChild(li);
+    });
+    downloadArea.appendChild(previewGrid);
+
+    if (jpegPages.length === 1) {
+      successTitle.textContent = 'Seu JPG está pronto';
+      const a = document.createElement('a');
+      a.className = 'btn';
+      a.href = pageUrls[0];
+      a.download = `${name}.jpg`;
+      a.textContent = 'Baixar JPG (sem cadastro)';
+      a.addEventListener('click', () => track('download_click'));
+      downloadArea.appendChild(a);
+    } else if (jpegPages.length <= ZIP_THRESHOLD) {
+      successTitle.textContent = `Seus ${jpegPages.length} JPGs estão prontos`;
+      const list = document.createElement('ul');
+      list.className = 'staged-list';
+      pageUrls.forEach((url, i) => {
+        const li = document.createElement('li');
+        li.className = 'staged-item';
+        const a = document.createElement('a');
+        a.className = 'btn secondary';
+        a.href = url;
+        a.download = `${name}-pagina-${i + 1}.jpg`;
+        a.textContent = `Baixar página ${i + 1}`;
+        a.addEventListener('click', () => track('download_click'));
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      downloadArea.appendChild(list);
+    } else {
+      successTitle.textContent = `Seus ${jpegPages.length} JPGs estão prontos em um ZIP`;
+      const { zipSync } = await import('fflate');
+      const zipInput: Record<string, Uint8Array> = {};
+      jpegPages.forEach((bytes, i) => { zipInput[`${name}-pagina-${i + 1}.jpg`] = bytes; });
+      const zipBytes = zipSync(zipInput, { level: 6 });
+      const url = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+      objectUrls.push(url);
+      const a = document.createElement('a');
+      a.className = 'btn';
+      a.href = url;
+      a.download = `${name}.zip`;
+      a.textContent = `Baixar ZIP (${jpegPages.length} páginas)`;
+      a.addEventListener('click', () => track('download_click'));
+      downloadArea.appendChild(a);
+    }
+
+    setState('success');
+    track('convert_success', {
+      duration_bucket: durationBucket(performance.now() - started),
+      page_bucket: pageBucket(jpegPages.length),
+    });
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+  widget.addEventListener('click', (event) => {
+    if (widget.dataset.state === 'empty' && !(event.target as HTMLElement).closest('button, a')) fileInput.click();
+  });
+  widget.addEventListener('dragenter', (event) => {
+    event.preventDefault(); dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (event) => event.preventDefault());
+  widget.addEventListener('dragleave', (event) => {
+    event.preventDefault(); dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (event) => {
+    event.preventDefault(); dragCounter = 0;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => { track('retry_click'); resetToEmpty(); });
+  convertAnotherBtn.addEventListener('click', () => { track('convert_another_clicked', { surface: 'widget' }); resetToEmpty(); });
+  storeLink?.addEventListener('click', () => track('extension_store_click', { product: 'picture_converter', placement: 'pdf_to_jpg_success_offer' }));
+
+  takeHandoff(['pdf']).then((file) => { if (file) handleFile(file); });
+</script>
