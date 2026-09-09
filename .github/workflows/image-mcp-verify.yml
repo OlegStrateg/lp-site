@@ -30,6 +30,9 @@ jobs:
       - name: Test image-core
         working-directory: packages/image-core
         run: npm test
+      - name: Benchmark image-core
+        working-directory: packages/image-core
+        run: npm run benchmark | tee /tmp/lp078-benchmark.json
       - name: Install MCP
         working-directory: packages/image-optimizer-mcp
         run: npm install --no-audit --no-fund
