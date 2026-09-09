@@ -10,6 +10,7 @@ on:
       - feat/LP-087-independent-system-validation
       - feat/LP-091-final-pareto-release-gate
       - integration/LP-092-page-optimizer-current-master
+      - release/LP-093-image-mcp-public-prep
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
@@ -30,6 +31,9 @@ jobs:
         with:
           node-version: '22.16.0'
           cache: 'npm'
+      - name: Verify release candidate metadata
+        working-directory: packages/image-optimizer-mcp
+        run: npm run release:preflight
       - name: Install image-core
         working-directory: packages/image-core
         run: npm install --no-audit --no-fund
@@ -62,6 +66,18 @@ jobs:
           mkdir -p /tmp/lp078-pack
           npm pack --pack-destination /tmp/lp078-pack
           ls -lh /tmp/lp078-pack
+      - name: Verify packed package identity
+        run: |
+          mkdir -p /tmp/lp078-packed
+          tar -xzf /tmp/lp078-pack/*.tgz -C /tmp/lp078-packed
+          node <<'NODE'
+          const p = require('/tmp/lp078-packed/package/package.json');
+          const s = require('/tmp/lp078-packed/package/server.json');
+          if (p.private === true) throw new Error('packed package unexpectedly private');
+          if (p.mcpName !== s.name) throw new Error('packed mcpName mismatch');
+          if (p.name !== s.packages[0].identifier) throw new Error('packed package identifier mismatch');
+          if (p.version !== s.version || p.version !== s.packages[0].version) throw new Error('packed version mismatch');
+          NODE
       - name: Install and start packed artifact in clean directory
         run: |
           mkdir -p /tmp/lp078-install
