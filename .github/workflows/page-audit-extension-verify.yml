@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/LP-082-page-audit-extension-mvp
+      - feat/LP-083-findings-normalization
     paths:
       - 'packages/page-audit-extension/**'
       - '.github/workflows/page-audit-extension-verify.yml'
@@ -32,6 +33,7 @@ jobs:
           test -f packages/page-audit-extension/src/sidepanel.js
           test -f packages/page-audit-extension/src/collector.js
           test -f packages/page-audit-extension/src/rules.js
+          test -f packages/page-audit-extension/src/findings.js
       - name: Reject write and broad-access primitives
         run: |
           ! grep -R -nE 'chrome\.(debugger|webRequest)|<all_urls>|host_permissions|fetch\(|XMLHttpRequest|chrome\.storage|document\.(write|execCommand)' packages/page-audit-extension/src packages/page-audit-extension/manifest.json
