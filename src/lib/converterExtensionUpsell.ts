@@ -22,6 +22,12 @@ const UPSELLS: Record<string, UpsellConfig> = {
     label: 'Turn website images into PDF directly in Chrome next time',
     cta: 'Add Picture Converter to Chrome',
   },
+  '/pt-br/convert/jpg-to-pdf/': {
+    campaign: 'jpg-to-pdf-converter-pt-br',
+    widgetId: 'jpg-pdf-widget',
+    label: 'Converta imagens de sites direto no Chrome da próxima vez',
+    cta: 'Adicionar Picture Converter ao Chrome',
+  },
 };
 
 export function installConverterExtensionUpsell(track: TrackFn): void {
