@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 import { TOOL_HANDLERS } from './tools.js';
+import { textResult } from './text-result.js';
 
 const server = new McpServer({ name: 'layerporter-image-optimizer', version: '0.1.0' });
 
@@ -12,11 +13,6 @@ const CLOSED_TRANSFORM_ANNOTATIONS = Object.freeze({
   idempotentHint: true,
   openWorldHint: false,
 });
-
-function textResult(value) {
-  const safe = JSON.stringify(value, (key, v) => Buffer.isBuffer(v) ? { type: 'Buffer', byteLength: v.length } : v);
-  return { content: [{ type: 'text', text: safe }] };
-}
 
 server.registerTool(
   'analyze_page_images',
