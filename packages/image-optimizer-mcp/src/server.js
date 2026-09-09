@@ -5,6 +5,13 @@ import { TOOL_HANDLERS } from './tools.js';
 
 const server = new McpServer({ name: 'layerporter-image-optimizer', version: '0.0.1' });
 
+const CLOSED_TRANSFORM_ANNOTATIONS = Object.freeze({
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+});
+
 function textResult(value) {
   const safe = JSON.stringify(value, (key, v) => Buffer.isBuffer(v) ? { type: 'Buffer', byteLength: v.length } : v);
   return { content: [{ type: 'text', text: safe }] };
@@ -15,6 +22,7 @@ server.registerTool(
   {
     description: 'Analyze normalized page image facts and return deterministic image findings.',
     inputSchema: z.object({ snapshot: z.record(z.string(), z.unknown()) }),
+    annotations: CLOSED_TRANSFORM_ANNOTATIONS,
   },
   async ({ snapshot }) => textResult(await TOOL_HANDLERS.analyze_page_images(snapshot)),
 );
@@ -28,6 +36,7 @@ server.registerTool(
       target: z.object({ width: z.number().int().positive().optional(), height: z.number().int().positive().optional() }).optional(),
       policy: z.record(z.string(), z.unknown()).optional(),
     }),
+    annotations: CLOSED_TRANSFORM_ANNOTATIONS,
   },
   async ({ imageBase64, target, policy }) => textResult(await TOOL_HANDLERS.optimize_image({ buffer: Buffer.from(imageBase64, 'base64'), target, policy })),
 );
@@ -42,6 +51,7 @@ server.registerTool(
       maxVariants: z.number().int().min(1).max(6).optional(),
       policy: z.record(z.string(), z.unknown()).optional(),
     }),
+    annotations: CLOSED_TRANSFORM_ANNOTATIONS,
   },
   async ({ imageBase64, widths, maxVariants, policy }) => textResult(await TOOL_HANDLERS.generate_responsive_variants({ buffer: Buffer.from(imageBase64, 'base64'), widths, maxVariants, policy })),
 );
@@ -55,6 +65,7 @@ server.registerTool(
       candidateBase64: z.string().min(1),
       policy: z.record(z.string(), z.unknown()).optional(),
     }),
+    annotations: CLOSED_TRANSFORM_ANNOTATIONS,
   },
   async ({ originalBase64, candidateBase64, policy }) => textResult(await TOOL_HANDLERS.compare_image_versions({ original: Buffer.from(originalBase64, 'base64'), candidate: Buffer.from(candidateBase64, 'base64'), policy })),
 );
@@ -73,6 +84,7 @@ server.registerTool(
       maxItems: z.number().int().min(1).max(20).optional(),
       policy: z.record(z.string(), z.unknown()).optional(),
     }),
+    annotations: CLOSED_TRANSFORM_ANNOTATIONS,
   },
   async ({ items, maxItems, policy }) => textResult(await TOOL_HANDLERS.optimize_page_images({ items: items.map((item) => ({ ...item, buffer: Buffer.from(item.imageBase64, 'base64') })), maxItems, policy })),
 );
