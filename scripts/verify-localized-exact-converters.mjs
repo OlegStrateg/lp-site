@@ -4,6 +4,7 @@ import path from 'node:path';
 const expected = [
   ['/pt-br/convert/jpg-to-pdf/', 'pt-BR'],
   ['/pt-br/convert/webp-to-jpg/', 'pt-BR'],
+  ['/pt-br/convert/favicon-generator/', 'pt-BR'],
   ['/pt-br/convert/png-to-psd/', 'pt-BR'],
   ['/pt-br/convert/jpg-to-psd/', 'pt-BR'],
   ['/pt-br/convert/psd-to-jpg/', 'pt-BR'],
@@ -41,9 +42,21 @@ for (const marker of [
   if (!psdPng.includes(marker)) throw new Error(`PT-BR PSD→PNG missing marker: ${marker}`);
 }
 
+const faviconFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'favicon-generator', 'index.html');
+const favicon = fs.readFileSync(faviconFile, 'utf8');
+for (const marker of [
+  'Gerador de favicon',
+  'favicon.ico',
+  '16, 32, 48, 180, 192 e 512 px',
+  'As tags HTML são mostradas na página',
+  'Adicionar Picture Converter ao Chrome',
+]) {
+  if (!favicon.includes(marker)) throw new Error(`PT-BR Favicon missing marker: ${marker}`);
+}
+
 const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
 const ptBrHub = fs.readFileSync(ptBrHubFile, 'utf8');
-for (const route of ['/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
+for (const route of ['/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
   if (!ptBrHub.includes(`href="${route}"`)) throw new Error(`PT-BR hub missing localized route: ${route}`);
 }
 
