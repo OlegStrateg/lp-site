@@ -5,7 +5,8 @@ import { CONVERT_HUB_LOCALES, convertHubPath } from '../data/convertHubLocales';
 
 // Deliberately hand-rolled instead of @astrojs/sitemap for explicit control of
 // what's listed. Final site: home + hub + every converter page (from the content
-// collection, so a new converter .md automatically adds its entry) + static hubs/pages.
+// collection, so a new converter .md automatically adds its EN entry) + localized
+// exact converters + static hubs/pages.
 export const prerender = true;
 
 const PINTEREST_LOCALE_PATHS = [
@@ -65,6 +66,10 @@ const PINTEREST_LOCALE_PATHS = [
 
 const PICTURE_CONVERTER_LOCALE_PATHS = PICTURE_CONVERTER_LOCALES.map(pictureConverterPath);
 const CONVERT_HUB_LOCALE_PATHS = CONVERT_HUB_LOCALES.map(convertHubPath);
+const LOCALIZED_EXACT_CONVERTER_PATHS = [
+  '/pt-br/convert/jpg-to-pdf/',
+  '/pt-br/convert/webp-to-jpg/',
+];
 
 const STATIC_PATHS = ['/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/', '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/', '/privacy/', '/terms/', '/formats/', '/guides/'];
 
@@ -74,6 +79,7 @@ export const GET: APIRoute = async () => {
   const paths = [
     ...STATIC_PATHS,
     ...CONVERT_HUB_LOCALE_PATHS,
+    ...LOCALIZED_EXACT_CONVERTER_PATHS,
     ...PINTEREST_LOCALE_PATHS,
     ...PICTURE_CONVERTER_LOCALE_PATHS,
     ...converters.map((c) => `/convert/${c.data.key}/`).sort(),
