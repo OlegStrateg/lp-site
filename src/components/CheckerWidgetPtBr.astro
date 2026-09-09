@@ -1,0 +1,256 @@
+---
+import Icon from './Icon.astro';
+
+interface Props { toolHeading: string }
+const { toolHeading } = Astro.props;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="checker-widget"
+    class="converter-widget"
+    data-state="empty"
+    role="group"
+    aria-label="Verificador de compatibilidade de PPTX exportado do Canva para Google Slides"
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="file" /></div>
+      <p class="dz-title">Solte o PPTX exportado do Canva — ou clique para escolher</p>
+      <p class="dz-sub">Verificado no navegador · nada é enviado</p>
+      <button type="button" class="btn" id="choose-file-btn">Escolher PPTX — grátis</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden><p class="dz-title">Solte para verificar</p></div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">Verificando o PPTX…</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title">A verificação de compatibilidade está pronta</p>
+      <div class="check-report" id="check-report"></div>
+      <p class="dz-sub"><a href="#how-heading">Siga as etapas abaixo</a> para importar o arquivo no Google Slides.</p>
+      <div><button type="button" class="btn secondary" id="check-another-btn">Verificar outro arquivo</button></div>
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">Não foi possível verificar este arquivo. Tente novamente.</p>
+      <button type="button" class="btn" id="retry-btn">Tentar novamente</button>
+    </div>
+
+    <input type="file" id="file-input" accept=".pptx" hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% no seu dispositivo — nada é enviado</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  const MAX_BYTES = 100 * 1024 * 1024;
+
+  const widget = document.getElementById('checker-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const checkAnotherBtn = document.getElementById('check-another-btn')!;
+  const errorMessage = document.getElementById('error-message')!;
+  const reportEl = document.getElementById('check-report')!;
+  const statusEl = document.getElementById('widget-status')!;
+
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  function announce(state: string) {
+    if (state === 'processing') statusEl.textContent = 'Verificando o arquivo…';
+    else if (state === 'success') statusEl.textContent = 'Pronto. O relatório de compatibilidade está disponível.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: 'empty' | 'drag-over' | 'processing' | 'success' | 'error') {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) el.hidden = el.dataset.stateView !== state;
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('checking on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function slideBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 10) return '2-10';
+    if (n <= 30) return '11-30';
+    return '>30';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('check_error', { reason });
+  }
+
+  function resetToEmpty() {
+    fileInput.value = '';
+    setState('empty');
+  }
+
+  async function looksLikeZip(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+    } catch { return false; }
+  }
+
+  function line(label: string, value: string): HTMLParagraphElement {
+    const p = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = label + ': ';
+    p.appendChild(strong);
+    p.appendChild(document.createTextNode(value));
+    return p;
+  }
+
+  function renderReport(r: {
+    slideCount: number;
+    widthIn: number | null;
+    heightIn: number | null;
+    fonts: string[];
+    flaggedFonts: string[];
+    mediaCount: number;
+    gradientCount: number;
+    groupedShapeCount: number;
+  }) {
+    reportEl.innerHTML = '';
+
+    const size = r.widthIn && r.heightIn ? ` · ${r.widthIn}″ × ${r.heightIn}″` : '';
+    reportEl.appendChild(line('Slides', `${r.slideCount}${size}`));
+    reportEl.appendChild(line('Arquivos de mídia', String(r.mediaCount)));
+
+    if (r.fonts.length > 0) reportEl.appendChild(line('Fontes encontradas', r.fonts.join(', ')));
+
+    if (r.flaggedFonts.length > 0) {
+      const warn = document.createElement('p');
+      warn.className = 'check-flag';
+      const strong = document.createElement('strong');
+      strong.textContent = 'O Google Slides pode substituir estas fontes: ';
+      warn.appendChild(strong);
+      warn.appendChild(document.createTextNode(r.flaggedFonts.join(', ')));
+      reportEl.appendChild(warn);
+    } else {
+      const okP = document.createElement('p');
+      okP.className = 'check-ok';
+      okP.textContent = r.fonts.length > 0
+        ? 'Nenhuma fonte encontrada ficou fora da lista de compatibilidade usada pelo verificador.'
+        : 'Nenhuma substituição explícita de fonte foi encontrada nos slides.';
+      reportEl.appendChild(okP);
+    }
+
+    if (r.gradientCount > 0 || r.groupedShapeCount > 0) {
+      const parts: string[] = [];
+      if (r.gradientCount > 0) parts.push(`${r.gradientCount} preenchimento${r.gradientCount === 1 ? '' : 's'} em gradiente`);
+      if (r.groupedShapeCount > 0) parts.push(`${r.groupedShapeCount} forma${r.groupedShapeCount === 1 ? '' : 's'} agrupada${r.groupedShapeCount === 1 ? '' : 's'}`);
+      const warn = document.createElement('p');
+      warn.className = 'check-flag';
+      warn.textContent = `Encontrado: ${parts.join(' e ')}. Esses elementos podem ser simplificados na importação; confira esses slides depois de abrir no Google Slides.`;
+      reportEl.appendChild(warn);
+    }
+  }
+
+  function workerErrorMessage(reason: string): string {
+    if (reason === 'corrupt') return 'Não foi possível ler este arquivo como PPTX. Ele pode estar corrompido; exporte novamente pelo Canva e tente de novo.';
+    if (reason === 'not_pptx') return 'Este arquivo ZIP não é um PowerPoint. No Canva, use Compartilhar → Baixar → Microsoft PowerPoint (.pptx).';
+    return 'A verificação falhou inesperadamente. Tente novamente.';
+  }
+
+  async function handleFile(file: File) {
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+    track('upload_start', { file_type: 'pptx', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikeZip(file))) {
+      showError('unsupported_format', 'Este arquivo não parece ser um PPTX. No Canva, use Compartilhar → Baixar → Microsoft PowerPoint (.pptx).');
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      showError('too_large', 'Este arquivo tem mais de 100 MB. Exporte uma apresentação menor e tente novamente.');
+      return;
+    }
+
+    setState('processing');
+
+    let buffer: ArrayBuffer;
+    try { buffer = await file.arrayBuffer(); }
+    catch {
+      showError('corrupt', 'Não foi possível ler este arquivo.');
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/pptx/pptxCheck.worker.ts', import.meta.url), { type: 'module' });
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        renderReport(msg.report);
+        setState('success');
+        track('check_success', {
+          slide_bucket: slideBucket(msg.report.slideCount),
+          font_flags: msg.report.flaggedFonts.length,
+        });
+      } else {
+        showError(msg.reason || 'unknown', workerErrorMessage(msg.reason || 'unknown'));
+      }
+      worker.terminate();
+    };
+    worker.onerror = () => {
+      showError('unknown', 'A verificação falhou inesperadamente. Tente novamente.');
+      worker.terminate();
+    };
+    worker.postMessage({ type: 'check', buffer }, [buffer]);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+  widget.addEventListener('click', (event) => {
+    if (widget.dataset.state === 'empty' && !(event.target as HTMLElement).closest('button, a')) fileInput.click();
+  });
+  widget.addEventListener('dragenter', (event) => {
+    event.preventDefault(); dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (event) => event.preventDefault());
+  widget.addEventListener('dragleave', (event) => {
+    event.preventDefault(); dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (event) => {
+    event.preventDefault(); dragCounter = 0; fileInput.value = '';
+    const file = event.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => { track('retry_click'); resetToEmpty(); });
+  checkAnotherBtn.addEventListener('click', () => { track('check_another_clicked', { surface: 'widget' }); resetToEmpty(); });
+
+  takeHandoff(['pptx']).then((file) => { if (file) handleFile(file); });
+</script>
