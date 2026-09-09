@@ -268,5 +268,53 @@ Git:
 - Branch: `research/LP-077-page-optimizer-base`.
 - Roadmap commit: `ab2f066cc4d5dcb896f86c3dafd5e1bae37bd0e9`.
 
+### 2/30 — Углублённый аудит Website Image Optimization MCP
+
+Дата: 2026-09-09
+Статус: DONE
+
+Что проверено:
+- Sharp/libvips;
+- IPX;
+- Squoosh;
+- piephai/mcp-image-optimizer;
+- sharp-mcp;
+- ShortPixel MCP в Official MCP Registry;
+- Cleanor MCP;
+- реальные Sharp Issues по AVIF CPU/RAM, timeout/abort и quality/effort;
+- Reddit/webdev/TechSEO практику по WebP/AVIF, LCP, oversized images, srcset/fallback и workflow friction.
+
+Главные решения:
+1. `Sharp/libvips = KEEP` — основное processing ядро.
+2. `IPX = ADAPT PATTERNS` — validation boundary, allowlisted modifiers, auto-format/security patterns.
+3. `Squoosh = STUDY` — benchmark/WASM/UX; не production dependency первого серверного MCP.
+4. Generic image MCP не использовать как основу: они подтверждают, что single-image conversion уже commodity.
+5. ShortPixel уже присутствует в официальном Registry с public-URL optimizer — `optimize image URL` не является дифференциатором.
+6. Наше отличие фиксируется как page-aware optimization: rendered/intrinsic dimensions, responsive variants, LCP context, format decision по expected gain/cost, before/after.
+7. AVIF не является default-всегда: encoding может быть значительно тяжелее WebP, поэтому нужен собственный benchmark и policy.
+8. Обязателен security boundary для remote URL: SSRF/private IP/redirect revalidation/byte cap/pixel cap/magic bytes/time budget/concurrency/allowlisted options.
+
+Что категорически не писать с нуля:
+- codecs;
+- resize engine;
+- AVIF/WebP encoder;
+- generic image editor;
+- CDN;
+- transform DSL;
+- browser WASM stack для v1.
+
+Файл доказательной базы:
+- `_internal/PAGE-OPTIMIZER-REFERENCES.md` — добавлен полный раздел шага 2 с KEEP/ADAPT/STUDY/REJECT и security contract.
+
+Git:
+- Issue: #182 / LP-077.
+- Branch: `research/LP-077-page-optimizer-base`.
+- Research commit: `a6061c5c291d79cb64931c46bedd4ec4f214233f`.
+
+Проверки шага:
+1. Technical maturity: активность, лицензии, Issues и архитектура проверены.
+2. Field evidence: отдельно проверены community pain points; они не выданы за официальные ranking facts.
+3. Pareto: собственная разработка оставлена только для page-context/policy/security/orchestration — там и находится продуктовая дифференциация.
+
 Следующий шаг:
-**2/30 — провести углублённый аудит референсов Website Image Optimization MCP: GitHub/repos/releases/issues/licenses/архитектуры/производительность/конкуренты; классифицировать KEEP / ADAPT / STUDY / REJECT и определить, что именно нельзя писать с нуля.**
+**3/30 — углублённый аудит Page Audit Extension: Lighthouse/Lighthouse CI, web-vitals, axe-core, DevTools/Performance APIs, существующие Chrome-аудиторы, Side Panel/Manifest V3, permissions, ограничения измерений и готовые паттерны. Результат — точная архитектура минимального аудитора и список того, что не пишем сами.**
