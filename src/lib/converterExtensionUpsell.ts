@@ -3,7 +3,9 @@ type TrackFn = (name: string, props?: Record<string, string | number | boolean |
 type UpsellConfig = {
   campaign: string;
   widgetId: string;
-  label: string;
+  inlineTitle: string;
+  inlineBody: string;
+  successLabel: string;
   cta: string;
 };
 
@@ -13,22 +15,88 @@ const UPSELLS: Record<string, UpsellConfig> = {
   '/convert/webp-to-jpg/': {
     campaign: 'webp-to-jpg-converter',
     widgetId: 'converter-widget',
-    label: 'Convert images directly from websites next time',
+    inlineTitle: 'Convert straight from websites next time — and keep the tool one click away in Chrome.',
+    inlineBody: 'Picture Converter converts a selected website image or a local image file to JPG, PNG, WebP, PDF or ICO without reopening LayerPorter.',
+    successLabel: 'Keep this workflow in Chrome — convert selected website images without coming back here',
     cta: 'Add Picture Converter to Chrome',
   },
   '/convert/jpg-to-pdf/': {
     campaign: 'jpg-to-pdf-converter',
     widgetId: 'jpg-pdf-widget',
-    label: 'Turn website images into PDF directly in Chrome next time',
+    inlineTitle: 'Turn images into PDF from Chrome next time — without coming back to this page.',
+    inlineBody: 'Picture Converter works with website images and local image files in Chrome, and can combine up to 30 images into one ordered PDF.',
+    successLabel: 'Next time, keep JPG → PDF in Chrome instead of reopening this page',
+    cta: 'Add Picture Converter to Chrome',
+  },
+  '/convert/favicon-generator/': {
+    campaign: 'favicon-generator-converter',
+    widgetId: 'favicon-widget',
+    inlineTitle: 'Need a quick image → ICO conversion later? Keep it in Chrome.',
+    inlineBody: 'Picture Converter converts a selected website image or a local image file to ICO, JPG, PNG, WebP or PDF directly in Chrome.',
+    successLabel: 'Keep image → ICO conversion one click away in Chrome',
     cta: 'Add Picture Converter to Chrome',
   },
 };
+
+function storeUrl(campaign: string): string {
+  return `${PICTURE_CONVERTER_BASE_URL}?utm_source=layerporter&utm_medium=website&utm_campaign=${campaign}`;
+}
+
+function installInlineOffer(config: UpsellConfig, track: TrackFn): void {
+  if (document.getElementById('extension-inline-offer')) return;
+
+  const host = document.querySelector<HTMLElement>('.hero2-copy') ?? document.querySelector<HTMLElement>('.hero');
+  if (!host) return;
+
+  const block = document.createElement('div');
+  block.className = 'cross-sell';
+  block.id = 'extension-inline-offer';
+
+  const kicker = document.createElement('p');
+  kicker.className = 'cross-sell-label';
+  kicker.textContent = 'Keep it in Chrome';
+
+  const title = document.createElement('p');
+  title.className = 'dz-title';
+  title.textContent = config.inlineTitle;
+
+  const body = document.createElement('p');
+  body.className = 'dz-sub';
+  body.textContent = config.inlineBody;
+
+  const actions = document.createElement('div');
+  actions.className = 'ext-actions';
+
+  const install = document.createElement('a');
+  install.className = 'btn';
+  install.href = storeUrl(config.campaign);
+  install.target = '_blank';
+  install.rel = 'noopener noreferrer';
+  install.textContent = config.cta;
+  install.addEventListener('click', () => {
+    track('extension_store_click', {
+      product: 'picture_converter',
+      placement: 'converter_inline_offer',
+    });
+  });
+
+  const details = document.createElement('a');
+  details.className = 'btn secondary';
+  details.href = '/picture-converter/';
+  details.textContent = 'See how it works';
+
+  actions.append(install, details);
+  block.append(kicker, title, body, actions);
+  host.appendChild(block);
+}
 
 export function installConverterExtensionUpsell(track: TrackFn): void {
   if (typeof window === 'undefined') return;
 
   const config = UPSELLS[window.location.pathname];
   if (!config) return;
+
+  installInlineOffer(config, track);
 
   const widget = document.getElementById(config.widgetId);
   const successView = widget?.querySelector<HTMLElement>('[data-state-view="success"]');
@@ -46,14 +114,14 @@ export function installConverterExtensionUpsell(track: TrackFn): void {
 
     const label = document.createElement('p');
     label.className = 'cross-sell-label';
-    label.textContent = config.label;
+    label.textContent = config.successLabel;
 
     const cards = document.createElement('div');
     cards.className = 'cross-sell-cards';
 
     const link = document.createElement('a');
     link.className = 'cross-sell-card';
-    link.href = `${PICTURE_CONVERTER_BASE_URL}?utm_source=layerporter&utm_medium=website&utm_campaign=${config.campaign}`;
+    link.href = storeUrl(config.campaign);
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.textContent = config.cta;
