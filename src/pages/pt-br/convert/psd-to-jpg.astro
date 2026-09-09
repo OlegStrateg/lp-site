@@ -1,0 +1,134 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import PsdToJpgWidgetPtBr from '../../../components/PsdToJpgWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/psd-to-jpg/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Converter PSD para JPG Grátis no Navegador | LayerPorter';
+const description = 'Converta PSD para JPG grátis no navegador, sem upload e sem cadastro. O PSD é achatado em uma imagem JPG com qualidade fixa de 92%.';
+const h1 = 'Converter PSD para JPG — grátis, sem upload';
+const answerFirst = 'Use este conversor PSD para JPG para transformar um arquivo do Photoshop em uma imagem JPG diretamente no navegador. O documento é achatado em uma única imagem, áreas transparentes ficam brancas e a exportação usa qualidade JPG fixa de 92%. O PSD não é enviado para um servidor.';
+
+const howTo = [
+  { title: 'Adicione o PSD', text: 'Arraste um arquivo .psd para o conversor ou clique para escolher um arquivo no seu dispositivo.' },
+  { title: 'Converta localmente', text: 'O navegador lê o PSD, achata o documento e gera o JPG no seu dispositivo, sem upload do arquivo.' },
+  { title: 'Baixe o JPG', text: 'Quando a conversão terminar, baixe a imagem JPG pronta para compartilhar, anexar ou publicar.' },
+];
+
+const faq = [
+  { q: 'Como converter PSD para JPG grátis?', a: 'Escolha um arquivo PSD ou arraste-o para o conversor. O JPG é criado no navegador e fica disponível para download sem cadastro e sem enviar o PSD para um servidor.' },
+  { q: 'As camadas do PSD são mantidas no JPG?', a: 'Não. JPG é um formato de imagem plana. As camadas, máscaras e textos editáveis do PSD são achatados em uma única imagem. Mantenha o PSD original como arquivo de trabalho.' },
+  { q: 'O que acontece com a transparência do PSD?', a: 'JPG não suporta transparência. As áreas transparentes são preenchidas com branco durante a exportação. Se você precisa manter transparência, use o conversor PSD para PNG.' },
+  { q: 'Qual é a qualidade do JPG?', a: 'A exportação usa qualidade JPG fixa de 92%. Nesta versão não há controle manual de qualidade.' },
+  { q: 'Qual é o limite de tamanho do PSD?', a: 'Nesta versão, o arquivo PSD pode ter até 60 MB. O limite é verificado no dispositivo antes da conversão.' },
+  { q: 'Posso converter vários PSD para JPG de uma vez?', a: 'Não nesta página. A conversão é feita um arquivo por vez.' },
+  { q: 'Preciso do Photoshop para converter PSD em JPG?', a: 'Não. A conversão acontece no navegador. Photoshop não é necessário para gerar o JPG.' },
+  { q: 'Meu PSD é enviado para o LayerPorter?', a: 'Não. A leitura do PSD e a criação do JPG acontecem no seu dispositivo durante esta conversão.' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Converter PSD para JPG', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Converter PSD para JPG',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Converte PSD para JPG no navegador, achata as camadas, preenche transparência com branco, exporta em qualidade fixa de 92% e aceita PSD de até 60 MB',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como converter PSD para JPG no navegador',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/psd-to-jpg/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/psd-to-jpg/` },
+  ]}
+  ogTitle="Converter PSD para JPG Grátis — sem upload | LayerPorter"
+  ogDescription="Converta PSD em JPG no navegador. Camadas achatadas, áreas transparentes em branco, qualidade fixa de 92% e sem upload."
+  ogImage={`${site}/og/psd-to-jpg.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', 'Qualidade JPG 92%', 'PSD até 60 MB']}
+  expectationLeft={{
+    title: 'PSD (entrada)',
+    items: ['Pode conter várias camadas, máscaras e efeitos', 'Até 60 MB nesta versão', 'Arquivo de trabalho para edição'],
+  }}
+  expectationRight={{
+    title: 'JPG (resultado)',
+    items: ['Uma imagem totalmente achatada', 'Transparência preenchida com branco', 'Qualidade fixa de 92%'],
+  }}
+  truthNote="Converter PSD para JPG não preserva camadas nem transparência. O JPG é uma cópia achatada e com compressão; mantenha o PSD original como arquivo de trabalho."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'JPG pronto para compartilhar', text: 'O documento PSD é achatado em uma imagem que pode ser aberta, enviada e publicada em praticamente qualquer dispositivo.' },
+    { title: 'Qualidade previsível', text: 'A exportação usa qualidade JPG fixa de 92%, igual ao conversor em inglês.' },
+    { title: 'Dimensões do documento', text: 'O JPG é exportado no tamanho em pixels do documento PSD processado pelo mecanismo atual.' },
+    { title: 'Processamento local', text: 'O PSD é lido e convertido na memória do navegador; o arquivo não é enviado durante esta conversão.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Conversor no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    proofAria: 'Garantias do produto',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como converter PSD para JPG',
+    whatYouGetHeading: 'O que você recebe',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais conversores',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <PsdToJpgWidgetPtBr toolHeading="Converter PSD para JPG" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>
