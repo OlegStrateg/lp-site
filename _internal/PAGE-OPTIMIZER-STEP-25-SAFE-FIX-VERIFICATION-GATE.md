@@ -1,7 +1,7 @@
 # LP-086 — Шаг 25/30: Safe Fix Verification Gate
 
 Дата: 2026-09-09
-Статус: IMPLEMENTED / CI PENDING
+Статус: PASS
 Issue: #209
 
 ## Цель
@@ -42,9 +42,16 @@ Issue: #209
 
 Экономия байтов учитывается как вторичная метрика и не заменяет подтверждение устранения finding.
 
+## Результаты CI
+
+- Image MCP Verify — run `34395281296` — SUCCESS.
+- Page Audit Extension Verify — run `34395310223` — SUCCESS.
+- End-to-end test подтверждает: oversized finding обнаруживается до transform и исчезает после применения candidate facts и повторного deterministic audit.
+- Markup-only findings не допускаются в byte-transform.
+- False-positive boundary 2× блокируется.
+
 ## Gate
 
-PASS только если одновременно зелёные:
-- image-core tests + end-to-end re-audit test;
-- MCP regression / pack / clean install / stdio / server.json validation;
-- extension rules/permissions/write/network regression.
+`SAFE FIX VERIFICATION GATE = PASS`
+
+Переход к шагу 26 разрешён.
