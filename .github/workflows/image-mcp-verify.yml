@@ -1,0 +1,47 @@
+name: LP-078 Image MCP Verify
+
+on:
+  push:
+    branches:
+      - feat/LP-078-image-optimizer-mcp-core
+    paths:
+      - 'packages/image-core/**'
+      - 'packages/image-optimizer-mcp/**'
+      - '.github/workflows/image-mcp-verify.yml'
+  pull_request:
+    paths:
+      - 'packages/image-core/**'
+      - 'packages/image-optimizer-mcp/**'
+      - '.github/workflows/image-mcp-verify.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+      - name: Install image-core
+        working-directory: packages/image-core
+        run: npm install --no-audit --no-fund
+      - name: Test image-core
+        working-directory: packages/image-core
+        run: npm test
+      - name: Install MCP
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --no-audit --no-fund
+      - name: Test MCP contracts
+        working-directory: packages/image-optimizer-mcp
+        run: npm test
+      - name: Smoke start stdio server
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          timeout 3s node src/server.js >/tmp/lp078-mcp.out 2>/tmp/lp078-mcp.err || code=$?
+          if [ "${code:-0}" != "0" ] && [ "${code:-0}" != "124" ]; then
+            cat /tmp/lp078-mcp.err
+            exit "${code}"
+          fi
+          cat /tmp/lp078-mcp.err
