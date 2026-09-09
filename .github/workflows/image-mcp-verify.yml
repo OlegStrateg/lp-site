@@ -33,13 +33,16 @@ jobs:
       - name: Benchmark image-core
         working-directory: packages/image-core
         run: npm run benchmark | tee /tmp/lp078-benchmark.json
-      - name: Install MCP
+      - name: Install MCP dependencies
         working-directory: packages/image-optimizer-mcp
-        run: npm install --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Sync shared image-core into package artifact
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
       - name: Test MCP contracts
         working-directory: packages/image-optimizer-mcp
         run: npm test
-      - name: Smoke start stdio server
+      - name: Smoke start stdio server from source package
         working-directory: packages/image-optimizer-mcp
         run: |
           timeout 3s node src/server.js >/tmp/lp078-mcp.out 2>/tmp/lp078-mcp.err || code=$?
@@ -47,4 +50,25 @@ jobs:
             cat /tmp/lp078-mcp.err
             exit "${code}"
           fi
-          cat /tmp/lp078-mcp.err
+      - name: Pack distributable tarball
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          mkdir -p /tmp/lp078-pack
+          npm pack --pack-destination /tmp/lp078-pack
+          ls -lh /tmp/lp078-pack
+      - name: Install and start packed artifact in clean directory
+        run: |
+          mkdir -p /tmp/lp078-install
+          cd /tmp/lp078-install
+          npm init -y >/dev/null
+          npm install /tmp/lp078-pack/*.tgz --ignore-scripts --no-audit --no-fund
+          test -x node_modules/.bin/layerporter-image-optimizer-mcp
+          timeout 3s node_modules/.bin/layerporter-image-optimizer-mcp >/tmp/lp078-packed.out 2>/tmp/lp078-packed.err || code=$?
+          if [ "${code:-0}" != "0" ] && [ "${code:-0}" != "124" ]; then
+            cat /tmp/lp078-packed.err
+            exit "${code}"
+          fi
+      - name: Validate Official MCP Registry server.json
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher validate packages/image-optimizer-mcp/server.json
