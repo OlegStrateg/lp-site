@@ -25,7 +25,7 @@ const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-
 // All other cards keep their canonical English destination until a localized
 // page is actually published, which prevents dead links and fake localization.
 const LOCALIZED_EXACT_CONVERTERS: Record<string, Set<string>> = {
-  'pt-br': new Set(['jpg-to-pdf', 'pdf-to-jpg', 'webp-to-jpg', 'favicon-generator', 'png-to-psd', 'jpg-to-psd', 'psd-to-jpg', 'psd-to-png']),
+  'pt-br': new Set(['jpg-to-pdf', 'pdf-to-jpg', 'webp-to-jpg', 'favicon-generator', 'png-to-psd', 'jpg-to-psd', 'psd-to-jpg', 'psd-to-png', 'canva-to-google-slides']),
 };
 const converterPath = (slug: string) =>
   LOCALIZED_EXACT_CONVERTERS[locale.code]?.has(slug)
@@ -152,7 +152,7 @@ const schema = {
         </a>
         <a class="hub-tool-card" href={converterPath('favicon-generator')}>
           <div class="hub-favicon-visual" aria-hidden="true"><div class="hub-favicon-main">LP</div><div class="hub-icon-sizes"><span><i></i><b>16</b></span><span><i></i><b>32</b></span><span><i></i><b>48</b></span><span><i></i><b>180</b></span><span><i></i><b>256</b></span><span><i></i><b>512</b></span></div></div>
-          <div class="hub-tool-body"><div class="hub-pair"><span>IMG</span><i>→</i><span>ICO</span></div><h3>Favicon Generator</h3><p>{c.faviconDesc}</p><b class="hub-open">{c.openTool} <span>↗</span></b></div>
+          <div class="hub-tool-body"><div class="hub-pair"><span>IMG</span><i>→</i><span class="hub-code out">ICO</span></div><h3>Favicon Generator</h3><p>{c.faviconDesc}</p><b class="hub-open">{c.openTool} <span>↗</span></b></div>
         </a>
       </div>
     </section>

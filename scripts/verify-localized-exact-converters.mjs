@@ -10,6 +10,7 @@ const expected = [
   ['/pt-br/convert/jpg-to-psd/', 'pt-BR'],
   ['/pt-br/convert/psd-to-jpg/', 'pt-BR'],
   ['/pt-br/convert/psd-to-png/', 'pt-BR'],
+  ['/pt-br/convert/canva-to-google-slides/', 'pt-BR'],
 ];
 
 for (const [route, lang] of expected) {
@@ -67,9 +68,32 @@ for (const marker of [
   if (!pdfJpg.includes(marker)) throw new Error(`PT-BR PDF→JPG missing marker: ${marker}`);
 }
 
+const canvaSlidesFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'canva-to-google-slides', 'index.html');
+const canvaSlides = fs.readFileSync(canvaSlidesFile, 'utf8');
+for (const marker of [
+  'Canva para Google Slides',
+  'PPTX até 100 MB',
+  'Arquivo não é modificado',
+  'Esta ferramenta não converte nem modifica o PPTX',
+]) {
+  if (!canvaSlides.includes(marker)) throw new Error(`PT-BR Canva→Slides missing marker: ${marker}`);
+}
+if (canvaSlides.includes('Adicionar Picture Converter ao Chrome')) {
+  throw new Error('PT-BR Canva→Slides must not contain unrelated Picture Converter CTA');
+}
+
+const canvaCheckerSource = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'CheckerWidgetPtBr.astro'), 'utf8');
+for (const marker of [
+  'O Google Slides pode substituir estas fontes',
+  'Verificar outro arquivo',
+  "takeHandoff(['pptx'])",
+]) {
+  if (!canvaCheckerSource.includes(marker)) throw new Error(`PT-BR Canva checker source missing marker: ${marker}`);
+}
+
 const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
 const ptBrHub = fs.readFileSync(ptBrHubFile, 'utf8');
-for (const route of ['/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
+for (const route of ['/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/', '/pt-br/convert/canva-to-google-slides/']) {
   if (!ptBrHub.includes(`href="${route}"`)) throw new Error(`PT-BR hub missing localized route: ${route}`);
 }
 
