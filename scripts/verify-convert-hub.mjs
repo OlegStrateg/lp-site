@@ -133,6 +133,13 @@ const routes = [
   'jpg-to-pdf','pdf-to-jpg','webp-to-jpg','favicon-generator',
   'psd-to-png','psd-to-jpg','png-to-psd','jpg-to-psd','canva-to-google-slides',
 ];
+const localizedExactRoutes = new Map([
+  ['pt-br', new Set(['jpg-to-pdf', 'webp-to-jpg'])],
+]);
+const expectedRoutePath = (locale, route) =>
+  localizedExactRoutes.get(normalizeCode(locale.code))?.has(route)
+    ? `/${locale.route}/convert/${route}/`
+    : `/convert/${route}/`;
 
 for (const locale of publishedLocales) {
   const code = normalizeCode(locale.code);
@@ -206,15 +213,19 @@ for (const locale of publishedLocales) {
   }
 
   for (const route of routes) {
-    const count = (html.match(new RegExp(`href="/convert/${route}/"`, 'g')) || []).length;
-    if (count < 1) throw new Error(`[${locale.code}] Missing clickable route: ${route}`);
+    const expected = expectedRoutePath(locale, route);
+    const count = (html.match(new RegExp(`href="${expected.replaceAll('/', '\\/')}"`, 'g')) || []).length;
+    if (count < 1) throw new Error(`[${locale.code}] Missing clickable route: ${expected}`);
+    if (!html.includes(`"url":"https://layerporter.com${expected}"`)) {
+      throw new Error(`[${locale.code}] Schema route does not match clickable route: ${expected}`);
+    }
   }
 
-  const boardRoutes = (html.match(/class="hub-route" href="\/convert\//g) || []).length;
+  const boardRoutes = (html.match(/class="hub-route" href=/g) || []).length;
   if (boardRoutes !== 8) throw new Error(`[${locale.code}] Expected 8 hero routes, got ${boardRoutes}`);
-  const toolCards = (html.match(/class="hub-tool-card" href="\/convert\//g) || []).length;
+  const toolCards = (html.match(/class="hub-tool-card" href=/g) || []).length;
   if (toolCards !== 4) throw new Error(`[${locale.code}] Expected 4 popular cards, got ${toolCards}`);
-  const designCards = (html.match(/class="hub-design-card" href="\/convert\//g) || []).length;
+  const designCards = (html.match(/class="hub-design-card" href=/g) || []).length;
   if (designCards !== 4) throw new Error(`[${locale.code}] Expected 4 design cards, got ${designCards}`);
   const faqDetails = (html.match(/<details><summary><span>0[1-4]<\/span>/g) || []).length;
   if (faqDetails !== 4) throw new Error(`[${locale.code}] Expected 4 FAQ accordions, got ${faqDetails}`);
@@ -263,5 +274,10 @@ for (const locale of holdLocales) {
     throw new Error(`[${locale.code}] HOLD Convert Hub locale leaked into sitemap`);
   }
 }
+for (const localizedPath of ['/pt-br/convert/jpg-to-pdf/', '/pt-br/convert/webp-to-jpg/']) {
+  if (!sitemap.includes(`<loc>https://layerporter.com${localizedPath}</loc>`)) {
+    throw new Error(`Missing localized exact-converter in sitemap: ${localizedPath}`);
+  }
+}
 
-console.log(`Convert hub i18n PASS: 8 published locales + LP-070 copy gate + frozen SEO title/meta/H1 + locale-aware navigation + 41 HOLD locales excluded + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
+console.log(`Convert hub i18n PASS: 8 published locales + LP-070 copy gate + frozen SEO title/meta/H1 + locale-aware navigation + localized exact-converter routing + 41 HOLD locales excluded + reciprocal hreflang + sitemap + SEO image (${preferredImage.byteLength} bytes)`);
