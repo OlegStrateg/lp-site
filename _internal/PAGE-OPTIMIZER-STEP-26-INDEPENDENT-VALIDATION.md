@@ -1,7 +1,7 @@
 # LP-087 — Шаг 26/30: независимая проверка всего контура
 
 Дата: 2026-09-09
-Статус: IMPLEMENTED / CI PENDING
+Статус: PASS
 Issue: #210
 
 ## Цель
@@ -88,8 +88,8 @@ Tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorl
 
 ## Gate
 
-PASS при одновременном выполнении:
-- Page Audit CI PASS после удаления unsafe HTML rendering;
-- image-core/MCP CI PASS;
+PASS:
+- Page Audit CI PASS после удаления unsafe HTML rendering — Run 34396072937;
+- image-core/MCP CI PASS — Run 34396137361;
 - P0 = 0 open;
 - P1/P2 записаны и имеют явный future gate.
