@@ -7,6 +7,7 @@ on:
       - feat/LP-083-findings-normalization
       - feat/LP-084-ai-fix-suggestions
       - feat/LP-085-safe-image-fix
+      - feat/LP-086-safe-fix-verification-gate
     paths:
       - 'packages/page-audit-extension/**'
       - '.github/workflows/page-audit-extension-verify.yml'
