@@ -9,6 +9,7 @@ on:
       - feat/LP-086-safe-fix-verification-gate
       - feat/LP-087-independent-system-validation
       - feat/LP-091-final-pareto-release-gate
+      - integration/LP-092-page-optimizer-current-master
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
