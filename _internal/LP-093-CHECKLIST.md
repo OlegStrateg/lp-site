@@ -27,6 +27,7 @@ Issue: #217
 - [x] Учтено актуальное правило npm: staged publishing требует уже существующий package.
 - [x] Первый publish не автоматизируется token-based CI.
 - [x] CI определяет `PACKAGE_EXISTS` / `BOOTSTRAP_REQUIRED` без ложного PASS.
+- [x] Фактическое состояние на 2026-09-10: `LP093_NPM_STATE=BOOTSTRAP_REQUIRED` — package ещё не существует в npm.
 - [ ] Владелец npm scope `@layerporter` подтверждён фактическим npm bootstrap.
 - [ ] Первый `@layerporter/image-optimizer-mcp@0.1.0` опубликован владельцем с 2FA.
 - [ ] После bootstrap настроен Trusted Publisher: GitHub `OlegStrateg/layerporter-site`, workflow `image-mcp-release.yml`, environment `mcp-release`.
@@ -45,17 +46,17 @@ Issue: #217
 
 ## Проверки кандидата
 
-- [ ] Image MCP CI на финальном LP-093 HEAD SUCCESS.
-- [ ] npm bootstrap state зафиксирован из CI.
-- [ ] image-core tests PASS.
-- [ ] MCP tests PASS.
-- [ ] npm pack PASS.
-- [ ] packed metadata PASS.
-- [ ] clean install PASS.
-- [ ] stdio smoke PASS.
-- [ ] `mcp-publisher validate` PASS.
-- [ ] full Page Optimizer session / Astro build PASS.
-- [ ] master не сдвинулся относительно интеграционной базы либо выполнен новый integration gate.
+- [x] Image MCP CI `34413863024` SUCCESS на release-prep contour.
+- [x] npm bootstrap state зафиксирован из CI: `BOOTSTRAP_REQUIRED`.
+- [x] image-core: 23/23 tests PASS.
+- [x] MCP: 8/8 tests PASS.
+- [x] `npm pack` PASS; tarball `@layerporter/image-optimizer-mcp@0.1.0`, 10 файлов, около 9 kB packed / 32 kB unpacked.
+- [x] packed metadata PASS: package/server identity, `mcpName`, identifier и version совпадают.
+- [x] clean install packed artifact PASS.
+- [x] stdio smoke из packed artifact PASS.
+- [x] `mcp-publisher validate` PASS: `server.json is valid`.
+- [x] full Page Optimizer session / Astro build `34413910963` SUCCESS на HEAD `33d154390062a1d8f37232ecbce88da1de208b20`.
+- [x] master не сдвинулся относительно LP-092 integration base: `31cb27857a0e5f7cf8e8ce157e35d0892495d067`.
 
 ## Release truth
 
@@ -63,4 +64,6 @@ Issue: #217
 До фактического Registry publish нельзя писать, что MCP присутствует в Official MCP Registry.
 До настройки Trusted Publisher нельзя писать, что OIDC release path активен.
 
-Предварительный статус: **RELEASE PREPARED / EXTERNAL BOOTSTRAP BLOCKED**.
+Итоговый статус LP-093: **RELEASE PREPARED / EXTERNAL BOOTSTRAP BLOCKED**.
+
+Техническая подготовка завершена. Оставшиеся блокеры находятся вне репозитория: решение по лицензии, первый npm bootstrap владельцем с 2FA, настройка Trusted Publisher и DNS ownership для Official MCP Registry.
