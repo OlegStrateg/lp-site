@@ -7,6 +7,7 @@ const expected = [
   ['/pt-br/convert/png-to-psd/', 'pt-BR'],
   ['/pt-br/convert/jpg-to-psd/', 'pt-BR'],
   ['/pt-br/convert/psd-to-jpg/', 'pt-BR'],
+  ['/pt-br/convert/psd-to-png/', 'pt-BR'],
 ];
 
 for (const [route, lang] of expected) {
@@ -27,6 +28,23 @@ for (const marker of [
   'oegpbmdpckfdgodnkdnoggedamfflfcl',
 ]) {
   if (!psdJpg.includes(marker)) throw new Error(`PT-BR PSD→JPG missing marker: ${marker}`);
+}
+
+const psdPngFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-png', 'index.html');
+const psdPng = fs.readFileSync(psdPngFile, 'utf8');
+for (const marker of [
+  'Converter PSD para PNG',
+  'Transparência preservada',
+  'Maximize Compatibility',
+  'Adicionar Picture Converter ao Chrome',
+]) {
+  if (!psdPng.includes(marker)) throw new Error(`PT-BR PSD→PNG missing marker: ${marker}`);
+}
+
+const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
+const ptBrHub = fs.readFileSync(ptBrHubFile, 'utf8');
+for (const route of ['/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
+  if (!ptBrHub.includes(`href="${route}"`)) throw new Error(`PT-BR hub missing localized route: ${route}`);
 }
 
 const sitemap = fs.readFileSync(path.join(process.cwd(), 'dist', 'sitemap.xml'), 'utf8');
