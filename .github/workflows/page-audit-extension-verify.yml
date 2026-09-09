@@ -1,0 +1,37 @@
+name: LP-082 Page Audit Extension Verify
+
+on:
+  push:
+    branches:
+      - feat/LP-082-page-audit-extension-mvp
+    paths:
+      - 'packages/page-audit-extension/**'
+      - '.github/workflows/page-audit-extension-verify.yml'
+  pull_request:
+    paths:
+      - 'packages/page-audit-extension/**'
+      - '.github/workflows/page-audit-extension-verify.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Verify extension contracts
+        working-directory: packages/page-audit-extension
+        run: npm run verify
+      - name: Verify required extension files
+        run: |
+          test -f packages/page-audit-extension/manifest.json
+          test -f packages/page-audit-extension/src/service-worker.js
+          test -f packages/page-audit-extension/src/sidepanel.html
+          test -f packages/page-audit-extension/src/sidepanel.js
+          test -f packages/page-audit-extension/src/collector.js
+          test -f packages/page-audit-extension/src/rules.js
+      - name: Reject write and broad-access primitives
+        run: |
+          ! grep -R -nE 'chrome\.(debugger|webRequest)|<all_urls>|host_permissions|fetch\(|XMLHttpRequest|chrome\.storage|document\.(write|execCommand)' packages/page-audit-extension/src packages/page-audit-extension/manifest.json
