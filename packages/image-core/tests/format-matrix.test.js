@@ -61,6 +61,6 @@ test('explicit AVIF encode is supported and guarded', async () => {
   const input = await encode('jpeg', { width: 480, height: 320 });
   const result = await optimizeImage(input, { policy: { format: 'avif', avifQuality: 48, effort: 2 } });
   assert.ok(['ACCEPT', 'REJECT'].includes(result.status));
-  if (result.status === 'ACCEPT') assert.equal(result.output.format, 'heif');
+  if (result.status === 'ACCEPT') assert.equal(result.output.format, 'avif');
   else assert.equal(result.reason, 'no_byte_saving');
 });
