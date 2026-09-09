@@ -337,3 +337,74 @@ HYPOTHESIS → EVIDENCE → COUNTER-EVIDENCE → RISK → COST → UPSIDE → TE
 `Image Optimization MCP → distribution → Page Audit → prioritized Findings → first verified safe image fix`.
 
 Это и есть MVP, после которого уже есть самостоятельный продукт и доказательство всей архитектуры.
+
+---
+
+# 16. Канонический execution tracker — 30 шагов
+
+Правило отчёта: каждый шаг закрывается форматом `N/30 → результат → проверки → Git/МИТ → следующий шаг`. Один шаг не считается закрытым, если нет измеримого выхода или зафиксированного решения `НЕ ДЕЛАТЬ`.
+
+## Сессия 1 — Research Gate и архитектура (1–5/30)
+
+1. **Зафиксировать 30-шаговый execution tracker и границы LP-077.** Выход: канонический список шагов, session grouping, stop-rules, MIT sync.
+2. **Референсы Image Optimization MCP.** GitHub/repos/issues/releases/licenses + конкуренты; KEEP/ADAPT/STUDY/REJECT.
+3. **Референсы Page Audit Extension.** Lighthouse/web-vitals/axe/DevTools/extension auditors + реальные ограничения Manifest V3.
+4. **Референсы Safe Patch + Verification + Agent loop.** Aider/Playwright/Stagehand/Browser Use/SafeAgent-подобные подходы; blast-radius и rollback patterns.
+5. **Скилы и security review.** Для каждого этапа: официальный/проверенный skill или извлечённая методика; ADOPT / EXTRACT METHOD / REJECT.
+
+Gate сессии 1: доказано, что мы знаем, что переиспользуем, что не пишем и почему.
+
+## Сессия 2 — Дистрибуция, доверие и продуктовая спецификация (6–10/30)
+
+6. **Карта всех релевантных площадок обнаружения.** MCP Registry, Claude, ChatGPT, Smithery, Glama, mcp.so, GitHub, npm, skill/agent/dev directories; поля Website/Homepage/Docs/Privacy/Repo.
+7. **Field Intelligence по AI/SEO trust.** Форумы, Reddit, Issues, реальные кейсы: что даёт discovery/entity/link value, что является мусорной гипотезой.
+8. **Baseline AI Search Observatory.** Набор коммерческих prompts, конкуренты, mention/citation/referral baseline до запуска.
+9. **Normalized Finding schema + SAFE/REVIEW/FORBIDDEN matrix.** Единый контракт аудита и исправлений.
+10. **ADR архитектуры первого MVP.** Точная граница: Image Optimization MCP → Audit → Findings → first safe fix; reuse vs custom decisions.
+
+Gate сессии 2: можно открыть implementation issue без архитектурных догадок.
+
+## Сессия 3 — Website Image Optimization MCP (11–15/30)
+
+11. **Создать отдельную implementation-задачу и pre-flight.** Repo/branch/HEAD/scope/files/tests; определить место runtime в текущей архитектуре.
+12. **Собрать минимальное image-core adapter.** Sharp/libvips или подтверждённая альтернатива; no-upscale, alpha, orientation, output guards.
+13. **Реализовать page-aware analysis.** Rendered dimensions, intrinsic dimensions, current format/bytes, LCP/hero role where reliable, expected saving.
+14. **Реализовать Pareto MCP tools.** Только 5: analyze_page_images / optimize_image / optimize_page_images / generate_responsive_variants / compare_image_versions.
+15. **Benchmark и verification Image MCP.** Качество, bytes, responsive output, failure fixtures, performance; закрыть MCP technical gate.
+
+Gate сессии 3: первый самостоятельный полезный MCP работает и доказан before/after.
+
+## Сессия 4 — Публичная упаковка и AI/MCP distribution (16–20/30)
+
+16. **Product/MCP page + docs.** Канонические URL, machine-readable docs, examples, privacy/security, benchmark; без псевдо-GEO.
+17. **Техническая индексируемость и AI-crawlability.** robots/canonical/sitemap/schema where eligible/OAI-SearchBot/Claude search access; никаких ranking claims без evidence.
+18. **Official MCP Registry + GitHub/npm.** Публикация, проверка INDEXED/DISCOVERABLE, canonical website links.
+19. **Claude/ChatGPT submission.** Требования, модерация, карточки, сайт/доки/privacy, проверка реальной discoverability после approval.
+20. **Smithery/Glama/mcp.so + quality secondary directories.** Только релевантные площадки; фиксировать discovery/entity/link/spam value отдельно.
+
+Gate сессии 4: продукт не просто опубликован, а имеет измеряемый distribution baseline и статус по каждой площадке.
+
+## Сессия 5 — Page Audit + Findings + first safe fix (21–25/30)
+
+21. **Минимальный Page Audit Extension shell.** Manifest V3, Side Panel, минимальные permissions, без тяжёлого дублирующего движка.
+22. **P0 deterministic audit.** Images, page weight/network, indexability, canonical/title/meta/H1, broken resources, console, Core Web Vitals signals where valid.
+23. **Prioritization engine.** Impact × Confidence × Reuse / Cost × Complexity × Risk; вывод «сейчас / высокий эффект / позже / не трогать».
+24. **AI Fix Suggestions.** Только после normalize/dedupe/rules; evidence-bound context; hallucinated selectors/files/claims rejected.
+25. **First Safe Image Fix.** Snapshot → patch → diff → preview → tests → before/after → accept/rollback; direct production write запрещён.
+
+Gate сессии 5: полный контур `audit → prioritized finding → safe image fix → verification` работает хотя бы на контролируемых fixtures/pilot pages.
+
+## Сессия 6 — Verification, bounded agent и релизный gate (26–30/30)
+
+26. **Verification Engine.** Machine + visual Playwright diff + functional contract; AI self-report не считается evidence.
+27. **Expanded safe-fix library.** Добавлять только типы с доказанным Pareto; каждый имеет preconditions/patch/rollback/verification contract.
+28. **Bounded Agent Mode.** GOAL → AUDIT → SELECT SAFE → PLAN → PATCH → VERIFY → DECIDE; лимиты итераций/files/cost/tools.
+29. **Continuous Optimization pilot.** Связать с LP-072: Preview → regression → safe fix candidate → verify → PR; не строить собственный CI/CD.
+30. **Release/measurement gate.** Verified Improvement Rate, rollback/false-positive, audit→fix time, MCP usage, discovery/referral/citation 7/14/30/60; решение SCALE / RETEST / STOP по каждому модулю.
+
+Gate сессии 6: система доказала не «умение ИИ что-то менять», а повторяемое измеримое улучшение без регрессий.
+
+## Текущий прогресс
+
+- **1/30 — ACTIVE**: канонический execution tracker фиксируется в roadmap + MIT + LP-077 issue.
+- 2/30–30/30 — BACKLOG до закрытия предыдущего gate, кроме параллельного измерительного трека, если он не блокирует основную реализацию.
