@@ -69,6 +69,7 @@ const CONVERT_HUB_LOCALE_PATHS = CONVERT_HUB_LOCALES.map(convertHubPath);
 const LOCALIZED_EXACT_CONVERTER_PATHS = [
   '/pt-br/convert/jpg-to-pdf/',
   '/pt-br/convert/webp-to-jpg/',
+  '/pt-br/convert/png-to-psd/',
 ];
 
 const STATIC_PATHS = ['/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/', '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/', '/privacy/', '/terms/', '/formats/', '/guides/'];
