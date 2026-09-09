@@ -151,7 +151,10 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
     </footer>
     <script>
       import { track } from '../lib/analytics';
+      import { installConverterExtensionUpsell } from '../lib/converterExtensionUpsell';
+
       track('page_view', { path: window.location.pathname });
+      installConverterExtensionUpsell(track);
     </script>
   </body>
 </html>
