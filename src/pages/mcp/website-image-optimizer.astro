@@ -1,0 +1,33 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import * as product from '../../copy/website-image-optimizer-mcp.md';
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+const canonical = `${site}/mcp/website-image-optimizer/`;
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'LayerPorter Website Image Optimizer MCP',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Node.js',
+  url: canonical,
+  description: 'Page-aware image optimization MCP server with deterministic safety guards, responsive variants, and before/after evidence.',
+  isPartOf: {
+    '@type': 'WebSite',
+    name: 'LayerPorter',
+    url: site,
+  },
+};
+---
+
+<PageLayout
+  title="Website Image Optimizer MCP — LayerPorter"
+  description="Page-aware image optimization MCP server for AI agents: analyze image usage, optimize safely, generate responsive variants, and verify before/after results."
+  canonicalPath="/mcp/website-image-optimizer/"
+  ogImage={`${site}/og/home.png`}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+  </Fragment>
+  <product.Content />
+</PageLayout>
