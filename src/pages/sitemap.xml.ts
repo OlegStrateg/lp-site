@@ -68,6 +68,7 @@ const PICTURE_CONVERTER_LOCALE_PATHS = PICTURE_CONVERTER_LOCALES.map(pictureConv
 const CONVERT_HUB_LOCALE_PATHS = CONVERT_HUB_LOCALES.map(convertHubPath);
 const LOCALIZED_EXACT_CONVERTER_PATHS = [
   '/pt-br/convert/jpg-to-pdf/',
+  '/pt-br/convert/pdf-to-jpg/',
   '/pt-br/convert/webp-to-jpg/',
   '/pt-br/convert/favicon-generator/',
   '/pt-br/convert/png-to-psd/',
