@@ -13,6 +13,7 @@ on:
       - feat/LP-089-bounded-agent-mode
       - feat/LP-090-continuous-optimization
       - feat/LP-091-final-pareto-release-gate
+      - integration/LP-092-page-optimizer-current-master
     paths:
       - 'packages/page-audit-extension/**'
       - '.github/workflows/page-audit-extension-verify.yml'
