@@ -7,6 +7,7 @@ on:
       - feat/LP-091-final-pareto-release-gate
       - integration/LP-092-page-optimizer-current-master
       - release/LP-093-image-mcp-public-prep
+      - release/LP-094-proprietary-license
   pull_request:
 
 jobs:
@@ -21,7 +22,9 @@ jobs:
           cache: 'npm'
       - name: Verify release candidate metadata
         working-directory: packages/image-optimizer-mcp
-        run: npm run release:preflight
+        run: |
+          npm run release:preflight
+          npm run release:preflight -- --publishable
       - name: Install image-core
         working-directory: packages/image-core
         run: npm install --no-audit --no-fund

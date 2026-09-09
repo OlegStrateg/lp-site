@@ -11,6 +11,7 @@ on:
       - feat/LP-091-final-pareto-release-gate
       - integration/LP-092-page-optimizer-current-master
       - release/LP-093-image-mcp-public-prep
+      - release/LP-094-proprietary-license
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
@@ -33,15 +34,17 @@ jobs:
           cache: 'npm'
       - name: Verify release candidate metadata
         working-directory: packages/image-optimizer-mcp
-        run: npm run release:preflight
+        run: |
+          npm run release:preflight
+          npm run release:preflight -- --publishable
       - name: Detect npm bootstrap state
         run: |
           PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
-          if npm view "$PKG_NAME" name >/tmp/lp093-npm-name 2>/dev/null; then
-            echo "LP093_NPM_STATE=PACKAGE_EXISTS" | tee -a "$GITHUB_ENV"
-            echo "npm package exists: $(cat /tmp/lp093-npm-name)"
+          if npm view "$PKG_NAME" name >/tmp/lp-release-npm-name 2>/dev/null; then
+            echo "LP_RELEASE_NPM_STATE=PACKAGE_EXISTS" | tee -a "$GITHUB_ENV"
+            echo "npm package exists: $(cat /tmp/lp-release-npm-name)"
           else
-            echo "LP093_NPM_STATE=BOOTSTRAP_REQUIRED" | tee -a "$GITHUB_ENV"
+            echo "LP_RELEASE_NPM_STATE=BOOTSTRAP_REQUIRED" | tee -a "$GITHUB_ENV"
             echo "npm package does not exist yet; first owner+2FA bootstrap publish is required"
           fi
       - name: Install image-core
@@ -76,17 +79,23 @@ jobs:
           mkdir -p /tmp/lp078-pack
           npm pack --pack-destination /tmp/lp078-pack
           ls -lh /tmp/lp078-pack
-      - name: Verify packed package identity
+      - name: Verify packed package identity and license
         run: |
           mkdir -p /tmp/lp078-packed
           tar -xzf /tmp/lp078-pack/*.tgz -C /tmp/lp078-packed
           node <<'NODE'
+          const fs = require('node:fs');
           const p = require('/tmp/lp078-packed/package/package.json');
           const s = require('/tmp/lp078-packed/package/server.json');
           if (p.private === true) throw new Error('packed package unexpectedly private');
           if (p.mcpName !== s.name) throw new Error('packed mcpName mismatch');
           if (p.name !== s.packages[0].identifier) throw new Error('packed package identifier mismatch');
           if (p.version !== s.version || p.version !== s.packages[0].version) throw new Error('packed version mismatch');
+          if (p.license !== 'SEE LICENSE IN LICENSE') throw new Error('packed proprietary license metadata mismatch');
+          const licensePath = '/tmp/lp078-packed/package/LICENSE';
+          if (!fs.existsSync(licensePath)) throw new Error('packed LICENSE file missing');
+          const license = fs.readFileSync(licensePath, 'utf8');
+          if (!license.includes('LayerPorter Proprietary Software License')) throw new Error('packed proprietary LICENSE content mismatch');
           NODE
       - name: Install and start packed artifact in clean directory
         run: |

@@ -56,6 +56,12 @@ Do not treat this command as available until the npm package has actually been p
 npx -y @layerporter/image-optimizer-mcp
 ```
 
+## License
+
+This package is proprietary LayerPorter software. The official unmodified package may be downloaded, installed, and used under the terms in `LICENSE`. Copying beyond technically necessary installation/runtime copies, modification, derivative works, repackaging, redistribution, sublicensing, resale, and unauthorized hosting are prohibited.
+
+The software is licensed, not sold. Third-party dependencies remain governed by their own licenses.
+
 ## Release model
 
 The first npm version is a bootstrap release: npm staged publishing and Trusted Publisher configuration require the package to already exist. The first public package therefore must be published by the package owner with npm account 2FA. After that bootstrap, GitHub Actions Trusted Publishing can be configured for `.github/workflows/image-mcp-release.yml`, and later versions can use the staged OIDC release path.
@@ -80,6 +86,7 @@ Hard safety comes from implementation controls, not only from MCP metadata.
 Release preparation verifies:
 
 - package/server identity consistency;
+- proprietary license metadata and packaged `LICENSE` presence;
 - image-core and MCP tests;
 - packed npm artifact metadata;
 - clean installation of the packed tarball;

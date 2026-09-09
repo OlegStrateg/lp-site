@@ -4,7 +4,7 @@
   "description": "Page-aware MCP server for deterministic website image analysis and safe optimization.",
   "mcpName": "com.layerporter/website-image-optimizer",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -14,6 +14,7 @@
   "files": [
     "src/**",
     "README.md",
+    "LICENSE",
     "server.json"
   ],
   "scripts": {

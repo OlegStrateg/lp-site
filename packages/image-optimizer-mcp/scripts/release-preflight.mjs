@@ -7,6 +7,7 @@ const root = path.resolve(here, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const server = JSON.parse(fs.readFileSync(path.join(root, 'server.json'), 'utf8'));
 const publishable = process.argv.includes('--publishable');
+const licensePath = path.join(root, 'LICENSE');
 
 const errors = [];
 const expect = (condition, message) => {
@@ -28,9 +29,20 @@ expect(pkg.publishConfig?.access === 'public', 'npm publishConfig.access must be
 expect(pkg.repository?.url === 'git+https://github.com/OlegStrateg/layerporter-site.git', 'repository.url must match the canonical GitHub repository');
 expect(pkg.repository?.directory === 'packages/image-optimizer-mcp', 'repository.directory must point to the monorepo package');
 expect(pkg.bin?.['layerporter-image-optimizer-mcp'] === 'src/server.js', 'expected MCP executable is missing');
+expect(pkg.license === 'SEE LICENSE IN LICENSE', 'package must use the explicit proprietary LICENSE file');
+expect(fs.existsSync(licensePath), 'LICENSE file is missing');
+
+let licenseText = '';
+if (fs.existsSync(licensePath)) {
+  licenseText = fs.readFileSync(licensePath, 'utf8');
+  expect(licenseText.includes('LayerPorter Proprietary Software License'), 'LICENSE must identify the LayerPorter proprietary license');
+  expect(licenseText.includes('licensed, not sold'), 'LICENSE must preserve proprietary ownership language');
+  expect(licenseText.includes('modify, adapt, translate, alter, or create derivative works'), 'LICENSE must preserve modification restrictions');
+}
 
 if (publishable) {
-  expect(pkg.license && pkg.license !== 'UNLICENSED', 'publication blocked: license decision is unresolved');
+  expect(pkg.license === 'SEE LICENSE IN LICENSE', 'publication blocked: proprietary license metadata is unresolved');
+  expect(licenseText.length > 500, 'publication blocked: proprietary LICENSE file is incomplete');
 }
 
 const result = {
@@ -40,6 +52,7 @@ const result = {
   version: pkg.version,
   mcpName: pkg.mcpName,
   license: pkg.license ?? null,
+  licenseFile: fs.existsSync(licensePath) ? 'LICENSE' : null,
   errors,
 };
 
