@@ -5,6 +5,7 @@ on:
     branches:
       - feat/LP-081-session-2-gate
       - feat/LP-091-final-pareto-release-gate
+      - integration/LP-092-page-optimizer-current-master
   pull_request:
 
 jobs:
