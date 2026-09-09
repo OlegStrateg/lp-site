@@ -74,13 +74,21 @@ for (const marker of [
   'Canva para Google Slides',
   'PPTX até 100 MB',
   'Arquivo não é modificado',
-  'O Google Slides pode substituir estas fontes',
   'Esta ferramenta não converte nem modifica o PPTX',
 ]) {
   if (!canvaSlides.includes(marker)) throw new Error(`PT-BR Canva→Slides missing marker: ${marker}`);
 }
 if (canvaSlides.includes('Adicionar Picture Converter ao Chrome')) {
   throw new Error('PT-BR Canva→Slides must not contain unrelated Picture Converter CTA');
+}
+
+const canvaCheckerSource = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'CheckerWidgetPtBr.astro'), 'utf8');
+for (const marker of [
+  'O Google Slides pode substituir estas fontes',
+  'Verificar outro arquivo',
+  "takeHandoff(['pptx'])",
+]) {
+  if (!canvaCheckerSource.includes(marker)) throw new Error(`PT-BR Canva checker source missing marker: ${marker}`);
 }
 
 const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
