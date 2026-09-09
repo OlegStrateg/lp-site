@@ -1,8 +1,9 @@
 # LP-089 — Шаг 28/30: Bounded Agent Mode
 
 Дата: 2026-09-10
-Статус: IMPLEMENTED / CI PENDING
+Статус: DONE / PASS
 Issue: #212
+CI: GitHub Actions run 34410747979 — SUCCESS
 
 ## Оптимизационный аудит
 
@@ -30,10 +31,10 @@ Hard limits:
 
 ## Проверки
 
-1. Unit/adversarial: unsupported rule, action substitution, target substitution, prompt-injection text блокируются.
-2. Loop simulation: максимум 3 verified iterations, stop immediately on regression.
-3. CI regression: permissions/network/write/unsafe HTML остаются запрещены.
+1. Unit/adversarial: unsupported rule, action substitution, target substitution, prompt-injection text блокируются — PASS.
+2. Loop simulation: максимум 3 verified iterations, stop immediately on regression — PASS.
+3. CI regression: permissions/network/write/unsafe HTML остаются запрещены — PASS.
 
 ## Gate
 
-PASS после зелёного GitHub Actions и отсутствия расширения permission/action surface.
+PASS. Action surface не расширен за пределы двух ранее разрешённых safe fixes; автономный цикл ограничен детерминированным policy layer.
