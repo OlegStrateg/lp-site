@@ -24,25 +24,47 @@ for (const [route, lang] of expected) {
 
 const psdJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-jpg', 'index.html');
 const psdJpg = fs.readFileSync(psdJpgFile, 'utf8');
-for (const marker of ['Converter PSD para JPG', 'qualidade JPG fixa de 92%', 'Adicionar Picture Converter ao Chrome', 'oegpbmdpckfdgodnkdnoggedamfflfcl']) {
+for (const marker of [
+  'Converter PSD para JPG',
+  'qualidade JPG fixa de 92%',
+  'Adicionar Picture Converter ao Chrome',
+  'oegpbmdpckfdgodnkdnoggedamfflfcl',
+]) {
   if (!psdJpg.includes(marker)) throw new Error(`PT-BR PSD→JPG missing marker: ${marker}`);
 }
 
 const psdPngFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-png', 'index.html');
 const psdPng = fs.readFileSync(psdPngFile, 'utf8');
-for (const marker of ['Converter PSD para PNG', 'Transparência preservada', 'Maximize Compatibility', 'Adicionar Picture Converter ao Chrome']) {
+for (const marker of [
+  'Converter PSD para PNG',
+  'Transparência preservada',
+  'Maximize Compatibility',
+  'Adicionar Picture Converter ao Chrome',
+]) {
   if (!psdPng.includes(marker)) throw new Error(`PT-BR PSD→PNG missing marker: ${marker}`);
 }
 
 const faviconFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'favicon-generator', 'index.html');
 const favicon = fs.readFileSync(faviconFile, 'utf8');
-for (const marker of ['Gerador de favicon', 'favicon.ico', '16, 32, 48, 180, 192 e 512 px', 'As tags HTML são mostradas na página', 'Adicionar Picture Converter ao Chrome']) {
+for (const marker of [
+  'Gerador de favicon',
+  'favicon.ico',
+  '16, 32, 48, 180, 192 e 512 px',
+  'As tags HTML são mostradas na página',
+  'Adicionar Picture Converter ao Chrome',
+]) {
   if (!favicon.includes(marker)) throw new Error(`PT-BR Favicon missing marker: ${marker}`);
 }
 
 const pdfJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'pdf-to-jpg', 'index.html');
 const pdfJpg = fs.readFileSync(pdfJpgFile, 'utf8');
-for (const marker of ['Converter PDF para JPG', 'Até 50 MB e 100 páginas', 'ZIP com mais de 3 páginas', 'qualidade 92%', 'Adicionar Picture Converter ao Chrome']) {
+for (const marker of [
+  'Converter PDF para JPG',
+  'Até 50 MB e 100 páginas',
+  'ZIP com mais de 3 páginas',
+  'qualidade 92%',
+  'Adicionar Picture Converter ao Chrome',
+]) {
   if (!pdfJpg.includes(marker)) throw new Error(`PT-BR PDF→JPG missing marker: ${marker}`);
 }
 
