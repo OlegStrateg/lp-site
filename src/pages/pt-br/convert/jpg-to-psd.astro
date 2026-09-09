@@ -1,0 +1,162 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import JpgToPsdWidgetPtBr from '../../../components/JpgToPsdWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/jpg-to-psd/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Converter JPG em PSD Grátis no Navegador | LayerPorter';
+const description = 'Converta JPG ou JPEG em PSD grátis no navegador, sem upload. O resultado tem uma camada de imagem, até 30 MB e download sem cadastro.';
+const h1 = 'Converter JPG em PSD — grátis, sem upload';
+const answerFirst = 'Use este conversor JPG para PSD para colocar uma foto JPG ou JPEG em um arquivo PSD diretamente no navegador. O resultado contém uma camada de imagem pronta para receber máscaras, ajustes e novas camadas; ele não recupera elementos ou detalhes que já foram achatados ou perdidos no JPG original.';
+
+const howTo = [
+  { title: 'Adicione o JPG ou JPEG', text: 'Arraste uma imagem JPG ou JPEG para o conversor ou clique para escolher um arquivo no seu dispositivo.' },
+  { title: 'Crie o PSD no navegador', text: 'O LayerPorter decodifica a imagem localmente e cria um PSD com uma camada de imagem, sem enviar o arquivo para um servidor.' },
+  { title: 'Baixe ou abra no Photopea', text: 'Baixe o PSD pronto ou abra o resultado no Photopea para continuar editando e adicionar novas camadas.' },
+];
+
+const faq = [
+  {
+    q: 'Como converter JPG em PSD grátis?',
+    a: 'Escolha uma imagem JPG ou JPEG ou arraste o arquivo para o conversor. O PSD é criado no navegador e fica disponível para download sem cadastro e sem upload do arquivo.',
+  },
+  {
+    q: 'JPG para PSD cria várias camadas editáveis?',
+    a: 'Não. Um JPG é uma imagem achatada. O resultado contém uma camada de imagem com a foto. Depois você pode adicionar máscaras, textos, ajustes e novas camadas, mas o conversor não reconstrói os elementos originais separados.',
+  },
+  {
+    q: 'JPEG para PSD é diferente de JPG para PSD?',
+    a: 'Não. JPG e JPEG são extensões do mesmo formato de imagem. Este conversor aceita arquivos .jpg e .jpeg e usa o mesmo processo para ambos.',
+  },
+  {
+    q: 'A conversão remove artefatos ou melhora a qualidade do JPG?',
+    a: 'Não. Artefatos e detalhes perdidos já fazem parte da imagem JPG original. O conversor não tenta inventar detalhes nem remover automaticamente a compressão; ele coloca a imagem em um arquivo PSD para que você possa continuar editando de forma não destrutiva.',
+  },
+  {
+    q: 'A transparência aparece no PSD?',
+    a: 'JPG não possui canal alfa, portanto a camada criada no PSD é opaca. Para imagens com transparência, use o conversor PNG para PSD.',
+  },
+  {
+    q: 'Qual é o limite do conversor JPG para PSD?',
+    a: 'Nesta versão, o arquivo JPG ou JPEG pode ter até 30 MB e a imagem pode ter no máximo 6000×6000 pixels. A conversão é feita um arquivo por vez.',
+  },
+  {
+    q: 'O EXIF da foto é preservado?',
+    a: 'Não conte com isso. O fluxo cria um novo arquivo PSD a partir da imagem decodificada; mantenha o JPG original se precisar preservar metadados como câmera, data ou GPS.',
+  },
+  {
+    q: 'O arquivo é enviado para um servidor?',
+    a: 'Não. A leitura do JPG e a criação do PSD acontecem no seu dispositivo. O LayerPorter não envia o arquivo durante esta conversão.',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Converter JPG em PSD', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Converter JPG em PSD',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Converte uma imagem JPG ou JPEG em PSD com uma camada de imagem, aceita até 30 MB e 6000×6000 pixels e processa o arquivo localmente no navegador',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como converter JPG para PSD no navegador',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/jpg-to-psd/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/jpg-to-psd/` },
+  ]}
+  ogTitle="Converter JPG em PSD Grátis — sem upload | LayerPorter"
+  ogDescription="Converta JPG ou JPEG para PSD no navegador. Uma camada de imagem, até 30 MB, sem cadastro e sem enviar o arquivo."
+  ogImage={`${site}/og/jpg-to-psd.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', 'JPG e JPEG', 'Uma camada de imagem']}
+  expectationLeft={{
+    title: 'JPG/JPEG (entrada)',
+    items: ['Um arquivo por conversão', 'Até 30 MB e 6000×6000 px', 'Imagem achatada e opaca'],
+  }}
+  expectationRight={{
+    title: 'PSD (resultado)',
+    items: ['Uma camada de imagem', 'Pronto para máscaras e novas camadas', 'Abre em Photoshop, Photopea ou GIMP'],
+  }}
+  truthNote="Converter JPG para PSD não recupera camadas, transparência, texto editável nem detalhes já perdidos pela compressão JPEG. O resultado é um PSD com uma camada de imagem baseada no arquivo original."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'Uma camada de imagem', text: 'A foto entra em uma camada própria no PSD para que você possa trabalhar por cima sem alterar o JPG original.' },
+    { title: 'Base para edição não destrutiva', text: 'Adicione máscaras, ajustes, textos e novas camadas depois de abrir o PSD em um editor compatível.' },
+    { title: 'Sem falsa restauração', text: 'O conversor não promete remover artefatos, recuperar detalhes perdidos ou reconstruir objetos que não existem mais no JPG.' },
+    { title: 'Processamento local', text: 'A conversão acontece na memória do navegador. O arquivo JPG ou JPEG não é enviado para o LayerPorter.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Conversor no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    proofAria: 'Garantias do produto',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como converter JPG em PSD',
+    whatYouGetHeading: 'O que você recebe',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais conversores',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <JpgToPsdWidgetPtBr toolHeading="Converter JPG ou JPEG para PSD" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>

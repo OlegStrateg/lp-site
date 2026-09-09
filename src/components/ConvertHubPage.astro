@@ -25,7 +25,7 @@ const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-
 // All other cards keep their canonical English destination until a localized
 // page is actually published, which prevents dead links and fake localization.
 const LOCALIZED_EXACT_CONVERTERS: Record<string, Set<string>> = {
-  'pt-br': new Set(['jpg-to-pdf', 'webp-to-jpg', 'png-to-psd']),
+  'pt-br': new Set(['jpg-to-pdf', 'webp-to-jpg', 'png-to-psd', 'jpg-to-psd']),
 };
 const converterPath = (slug: string) =>
   LOCALIZED_EXACT_CONVERTERS[locale.code]?.has(slug)
