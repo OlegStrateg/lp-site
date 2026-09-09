@@ -1,1 +1,0 @@
-LP-085 safe image fix implementation branch marker.
