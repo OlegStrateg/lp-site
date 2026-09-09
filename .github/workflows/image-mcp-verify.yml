@@ -8,6 +8,7 @@ on:
       - feat/LP-085-safe-image-fix
       - feat/LP-086-safe-fix-verification-gate
       - feat/LP-087-independent-system-validation
+      - feat/LP-091-final-pareto-release-gate
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
