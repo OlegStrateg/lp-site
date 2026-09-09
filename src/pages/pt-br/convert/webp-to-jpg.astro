@@ -1,0 +1,154 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import WebpToJpgWidgetPtBr from '../../../components/WebpToJpgWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/webp-to-jpg/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Converter WebP em JPG Grátis no Navegador | LayerPorter';
+const description = 'Converta WebP em JPG no navegador, grátis e sem upload. Arquivos de até 30 MB, imagens de até 6000×6000 px e download sem cadastro.';
+const h1 = 'Converter WebP em JPG — grátis, sem upload';
+const answerFirst = 'Use este conversor WebP para JPG para transformar uma imagem WebP em JPG diretamente no navegador. O arquivo fica no seu dispositivo durante a conversão e o JPG fica pronto para baixar sem cadastro.';
+
+const howTo = [
+  { title: 'Adicione o WebP', text: 'Arraste uma imagem WebP para o conversor ou clique para escolher um arquivo no dispositivo.' },
+  { title: 'Converta no navegador', text: 'O LayerPorter lê a imagem localmente e cria uma nova cópia em JPG sem enviar o arquivo para um servidor.' },
+  { title: 'Baixe o JPG', text: 'Quando a conversão terminar, baixe o arquivo JPG e use a cópia em aplicativos, formulários ou editores que não aceitam WebP.' },
+];
+
+const faq = [
+  {
+    q: 'Como converter WebP em JPG grátis?',
+    a: 'Escolha uma imagem WebP ou arraste o arquivo para o conversor. A conversão acontece no navegador e, quando terminar, você pode baixar o JPG sem cadastro.',
+  },
+  {
+    q: 'Posso usar WebP para JPG sem enviar a imagem?',
+    a: 'Sim. O processamento acontece no seu navegador. O arquivo não é enviado, armazenado ou compartilhado pelo LayerPorter durante esta conversão.',
+  },
+  {
+    q: 'Qual é o limite do conversor WebP para JPG?',
+    a: 'Nesta versão, o arquivo WebP pode ter até 30 MB e a imagem pode ter no máximo 6000×6000 pixels.',
+  },
+  {
+    q: 'O que acontece com a transparência do WebP?',
+    a: 'JPG não suporta transparência. As áreas transparentes da imagem WebP são convertidas sobre fundo branco no arquivo JPG.',
+  },
+  {
+    q: 'WebP animado vira JPG animado?',
+    a: 'Não. JPG não é um formato de animação. Se o WebP for animado, este conversor exporta apenas o primeiro quadro como uma imagem JPG estática.',
+  },
+  {
+    q: 'Converter WebP em JPG perde qualidade?',
+    a: 'Pode haver alguma perda porque WebP e JPG usam compressão com perdas em muitos arquivos. A conversão cria uma nova codificação em JPG, então não é correto tratá-la como uma transformação sem perda de qualidade.',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Converter WebP em JPG', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Converter WebP em JPG',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Converte uma imagem WebP em JPG no navegador, aceita arquivos de até 30 MB e imagens de até 6000×6000 pixels sem upload',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como converter WebP em JPG no navegador',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/webp-to-jpg/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/webp-to-jpg/` },
+  ]}
+  ogTitle="Converter WebP em JPG Grátis — sem upload | LayerPorter"
+  ogDescription="Converta WebP para JPG diretamente no navegador. Até 30 MB, sem cadastro e sem enviar a imagem."
+  ogImage={`${site}/og/webp-to-jpg.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', 'Até 30 MB', 'Até 6000×6000 px']}
+  expectationLeft={{
+    title: 'WebP (entrada)',
+    items: ['Um arquivo por conversão', 'Até 30 MB', 'Até 6000×6000 pixels'],
+  }}
+  expectationRight={{
+    title: 'JPG (resultado)',
+    items: ['Imagem JPG estática', 'Pronta para baixar', 'Transparência substituída por branco'],
+  }}
+  truthNote="JPG não suporta transparência nem animação. Áreas transparentes viram fundo branco; em WebP animado, apenas o primeiro quadro é exportado. A imagem também é recodificada em JPG, portanto pode haver perda de qualidade."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'Um JPG compatível', text: 'Crie uma cópia JPG para aplicativos, formulários e editores que não aceitam o arquivo WebP original.' },
+    { title: 'Processamento local', text: 'A imagem é lida e convertida no navegador. Não existe uma etapa de upload para o LayerPorter.' },
+    { title: 'Download imediato', text: 'Assim que a conversão termina, o JPG pode ser baixado sem criar uma conta.' },
+    { title: 'Limites claros', text: 'O conversor aceita um WebP por vez, com até 30 MB e no máximo 6000×6000 pixels.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Conversor no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    proofAria: 'Garantias do produto',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como converter WebP em JPG',
+    whatYouGetHeading: 'O que você recebe',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais conversores',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <WebpToJpgWidgetPtBr toolHeading="Converter WebP para JPG" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>
