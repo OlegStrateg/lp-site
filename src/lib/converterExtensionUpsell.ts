@@ -2,6 +2,7 @@ type TrackFn = (name: string, props?: Record<string, string | number | boolean |
 
 type UpsellConfig = {
   campaign: string;
+  widgetId: string;
   label: string;
   cta: string;
 };
@@ -11,11 +12,13 @@ const PICTURE_CONVERTER_BASE_URL = 'https://chromewebstore.google.com/detail/pic
 const UPSELLS: Record<string, UpsellConfig> = {
   '/convert/webp-to-jpg/': {
     campaign: 'webp-to-jpg-converter',
+    widgetId: 'converter-widget',
     label: 'Convert images directly from websites next time',
     cta: 'Add Picture Converter to Chrome',
   },
   '/convert/jpg-to-pdf/': {
     campaign: 'jpg-to-pdf-converter',
+    widgetId: 'jpg-pdf-widget',
     label: 'Turn website images into PDF directly in Chrome next time',
     cta: 'Add Picture Converter to Chrome',
   },
@@ -27,7 +30,7 @@ export function installConverterExtensionUpsell(track: TrackFn): void {
   const config = UPSELLS[window.location.pathname];
   if (!config) return;
 
-  const widget = document.getElementById('converter-widget');
+  const widget = document.getElementById(config.widgetId);
   const successView = widget?.querySelector<HTMLElement>('[data-state-view="success"]');
   if (!widget || !successView) return;
 
