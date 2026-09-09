@@ -39,3 +39,12 @@ test('v2 split MCP server package and registerTool API are used', () => {
   assert.doesNotMatch(serverSource, /server\.tool\(/);
   assert.doesNotMatch(serverSource, /@modelcontextprotocol\/sdk/);
 });
+
+test('all tools declare closed non-destructive risk hints', () => {
+  assert.match(serverSource, /readOnlyHint:\s*true/);
+  assert.match(serverSource, /destructiveHint:\s*false/);
+  assert.match(serverSource, /idempotentHint:\s*true/);
+  assert.match(serverSource, /openWorldHint:\s*false/);
+  const annotationUses = [...serverSource.matchAll(/annotations:\s*CLOSED_TRANSFORM_ANNOTATIONS/g)];
+  assert.equal(annotationUses.length, 5);
+});
