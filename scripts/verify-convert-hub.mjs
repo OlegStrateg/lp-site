@@ -134,7 +134,7 @@ const routes = [
   'psd-to-png','psd-to-jpg','png-to-psd','jpg-to-psd','canva-to-google-slides',
 ];
 const localizedExactRoutes = new Map([
-  ['pt-br', new Set(['jpg-to-pdf', 'webp-to-jpg'])],
+  ['pt-br', new Set(['jpg-to-pdf', 'webp-to-jpg', 'png-to-psd'])],
 ]);
 const expectedRoutePath = (locale, route) =>
   localizedExactRoutes.get(normalizeCode(locale.code))?.has(route)
@@ -274,9 +274,13 @@ for (const locale of holdLocales) {
     throw new Error(`[${locale.code}] HOLD Convert Hub locale leaked into sitemap`);
   }
 }
-for (const localizedPath of ['/pt-br/convert/jpg-to-pdf/', '/pt-br/convert/webp-to-jpg/']) {
+for (const localizedPath of ['/pt-br/convert/jpg-to-pdf/', '/pt-br/convert/webp-to-jpg/', '/pt-br/convert/png-to-psd/']) {
   if (!sitemap.includes(`<loc>https://layerporter.com${localizedPath}</loc>`)) {
     throw new Error(`Missing localized exact-converter in sitemap: ${localizedPath}`);
+  }
+  const localizedFile = path.join(process.cwd(), 'dist', ...localizedPath.split('/').filter(Boolean), 'index.html');
+  if (!fs.existsSync(localizedFile)) {
+    throw new Error(`Missing localized exact-converter build output: ${localizedFile}`);
   }
 }
 
