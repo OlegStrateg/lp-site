@@ -1,8 +1,9 @@
 # LP-090 — Шаг 29/30: Continuous Website Optimization
 
 Дата: 2026-09-10
-Статус: IMPLEMENTED / CI PENDING
+Статус: PASS
 Issue: #213
+CI: GitHub Actions 34411303946 — SUCCESS
 
 ## Цель
 
@@ -95,18 +96,21 @@ Queue формируется только для:
 
 ## Проверки
 
-1. Lifecycle: NEW → PERSISTING(IMPROVED) → RESOLVED → REGRESSED.
-2. Idempotency: duplicate auditId не мутирует state.
-3. Failure guard: FAILED audit с пустым findings не создаёт ложный RESOLVED.
-4. Security: malicious page text не сохраняется в continuous state/queue и не влияет на action authorization.
-5. Authority: unsupported SEO/hero rules блокируются существующим Bounded Agent policy.
-6. Queue discipline: unchanged persistent finding повторно не ставится в очередь; worsened — ставится для review.
-7. Chrome regression: новые permissions/network/write/unsafe HTML primitives не добавляются.
+1. Lifecycle: NEW → PERSISTING(IMPROVED) → RESOLVED → REGRESSED — PASS.
+2. Idempotency: duplicate auditId не мутирует state — PASS.
+3. Failure guard: FAILED audit с пустым findings не создаёт ложный RESOLVED — PASS.
+4. Security: malicious page text не сохраняется в continuous state/queue и не влияет на action authorization — PASS.
+5. Authority: unsupported SEO/hero rules блокируются существующим Bounded Agent policy — PASS.
+6. Queue discipline: unchanged persistent finding повторно не ставится в очередь; worsened — ставится для review — PASS.
+7. Chrome regression: новые permissions/network/write/unsafe HTML primitives не добавляются — PASS.
+8. GitHub Actions 34411303946 — SUCCESS.
 
 ## Gate
 
-PASS только после зелёного CI при сохранении:
+`CONTINUOUS WEBSITE OPTIMIZATION GATE = PASS`
+
+Сохранены обязательные инварианты:
 - `autoExecute = false`;
 - `productionWrite = false`;
 - `pageContentCanAuthorizeActions = false`;
-- отсутствия новых Chrome permissions/network/storage.
+- новых Chrome permissions/network/storage нет.
