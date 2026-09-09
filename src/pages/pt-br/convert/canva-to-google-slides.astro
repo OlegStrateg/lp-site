@@ -1,0 +1,135 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import CheckerWidgetPtBr from '../../../components/CheckerWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/canva-to-google-slides/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Canva para Google Slides: Verificar PPTX Grátis | LayerPorter';
+const description = 'Exporte a apresentação do Canva como PPTX, verifique fontes e objetos no navegador e depois importe no Google Slides. Grátis, sem upload e sem cadastro.';
+const h1 = 'Canva para Google Slides — verifique o PPTX antes de importar';
+const answerFirst = 'Exporte sua apresentação do Canva como Microsoft PowerPoint (.pptx), verifique o arquivo aqui no navegador e só depois importe no Google Slides. O verificador conta slides e mídia, lista fontes e sinaliza fontes fora da lista de compatibilidade do mecanismo, além de gradientes e formas agrupadas que merecem revisão após a importação. O PPTX não é enviado para o LayerPorter.';
+
+const howTo = [
+  { title: 'Exporte do Canva como PPTX', text: 'No Canva, abra a apresentação e baixe uma cópia em Microsoft PowerPoint (.pptx).' },
+  { title: 'Verifique o PPTX', text: 'Arraste o arquivo para o verificador. A análise acontece no navegador e aceita arquivos de até 100 MB.' },
+  { title: 'Revise os alertas', text: 'Confira as fontes sinalizadas, a quantidade de mídia, gradientes e formas agrupadas antes de seguir para o Google Slides.' },
+  { title: 'Importe no Google Slides', text: 'Envie o PPTX ao Google Drive e abra com Google Slides, ou use a opção de importar slides dentro do próprio Google Slides.' },
+  { title: 'Compare os slides sinalizados', text: 'Depois da importação, revise principalmente os slides com fontes sinalizadas, gradientes ou grupos complexos.' },
+];
+
+const faq = [
+  { q: 'Como passar uma apresentação do Canva para o Google Slides?', a: 'Exporte a apresentação do Canva como PowerPoint (.pptx), verifique o arquivo nesta página e depois envie o PPTX ao Google Drive para abrir no Google Slides, ou importe os slides pelo próprio Google Slides.' },
+  { q: 'Este site converte o arquivo diretamente para um formato do Google Slides?', a: 'Não. Esta página verifica o PPTX antes da importação. A etapa final de abrir ou importar o arquivo é feita por você diretamente no Google Drive ou Google Slides.' },
+  { q: 'O que o verificador analisa?', a: 'Ele conta os slides, lê o tamanho da apresentação, identifica arquivos de mídia e fontes declaradas e conta preenchimentos em gradiente e formas agrupadas presentes nos XMLs dos slides.' },
+  { q: 'Como as fontes são sinalizadas?', a: 'As fontes encontradas são comparadas com uma lista de fontes conhecidas pelo mecanismo como compatíveis com Google Slides. Uma fonte fora dessa lista é marcada para revisão; isso é um alerta de compatibilidade, não uma garantia de que a substituição vai acontecer.' },
+  { q: 'O verificador corrige fontes, gradientes ou grupos automaticamente?', a: 'Não. Ele apenas sinaliza pontos que merecem revisão. O arquivo PPTX não é reescrito nem modificado nesta página.' },
+  { q: 'Qual é o limite do arquivo PPTX?', a: 'Nesta versão, o verificador aceita arquivos de até 100 MB. O limite é aplicado no navegador antes da análise completa.' },
+  { q: 'Meu PPTX é enviado para o LayerPorter?', a: 'Não. A leitura do arquivo e a geração do relatório acontecem no seu dispositivo. O upload para Google Drive, se você fizer depois, é uma etapa separada diretamente com o Google.' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Canva para Google Slides', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Verificador Canva para Google Slides',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Verifica um PPTX exportado do Canva no navegador antes da importação no Google Slides; conta slides e mídia, lista fontes e sinaliza fontes, gradientes e formas agrupadas para revisão; aceita até 100 MB',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como passar Canva para Google Slides usando PPTX',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/canva-to-google-slides/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/canva-to-google-slides/` },
+  ]}
+  ogTitle="Canva para Google Slides — verifique o PPTX grátis | LayerPorter"
+  ogDescription="Analise o PPTX exportado do Canva no navegador antes de importar no Google Slides. Sem upload e sem cadastro."
+  ogImage={`${site}/og/canva-to-google-slides.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', 'PPTX até 100 MB', 'Arquivo não é modificado']}
+  expectationLeft={{
+    title: 'PPTX do Canva (entrada)',
+    items: ['Apresentação exportada como Microsoft PowerPoint (.pptx)', 'Pode conter fontes, mídia, gradientes e formas agrupadas', 'Até 100 MB nesta versão'],
+  }}
+  expectationRight={{
+    title: 'Relatório (resultado)',
+    items: ['Contagem de slides, tamanho e arquivos de mídia', 'Lista de fontes e alertas de compatibilidade', 'Contagem de gradientes e formas agrupadas para revisão'],
+  }}
+  truthNote="Esta ferramenta não converte nem modifica o PPTX e não envia o arquivo ao Google. Ela faz uma verificação local antes de você importar o arquivo manualmente no Google Slides."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'Mapa rápido da apresentação', text: 'Veja quantidade de slides, dimensões da apresentação e arquivos de mídia encontrados dentro do PPTX.' },
+    { title: 'Fontes para revisar', text: 'O verificador compara as fontes declaradas com sua lista de compatibilidade e destaca as que merecem conferência no Google Slides.' },
+    { title: 'Objetos de maior risco', text: 'Gradientes e formas agrupadas são contados para indicar quais slides merecem comparação depois da importação.' },
+    { title: 'Arquivo preservado localmente', text: 'O PPTX é apenas lido no navegador; o verificador não reescreve, envia ou armazena sua apresentação.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Verificador no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    proofAria: 'Garantias do produto',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como passar Canva para Google Slides',
+    whatYouGetHeading: 'O que o relatório mostra',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais ferramentas',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <CheckerWidgetPtBr toolHeading="Verificar PPTX do Canva para Google Slides" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>
