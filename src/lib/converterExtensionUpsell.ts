@@ -7,9 +7,12 @@ type UpsellConfig = {
   inlineBody: string;
   successLabel: string;
   cta: string;
+  successEnabled?: boolean;
 };
 
 const PICTURE_CONVERTER_BASE_URL = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl';
+
+const ADJACENT_IMAGE_BODY = 'For everyday image conversion beyond PSD, Picture Converter handles selected website images and local WebP, HEIC, AVIF, PNG, JPG and other image files, with JPG, PNG, WebP, PDF or ICO output. This PSD conversion stays on LayerPorter.';
 
 const UPSELLS: Record<string, UpsellConfig> = {
   '/convert/webp-to-jpg/': {
@@ -35,6 +38,42 @@ const UPSELLS: Record<string, UpsellConfig> = {
     inlineBody: 'Picture Converter converts a selected website image or a local image file to ICO, JPG, PNG, WebP or PDF directly in Chrome.',
     successLabel: 'Keep image → ICO conversion one click away in Chrome',
     cta: 'Add Picture Converter to Chrome',
+  },
+  '/convert/png-to-psd/': {
+    campaign: 'png-to-psd-adjacent-image-conversion',
+    widgetId: 'converter-widget',
+    inlineTitle: 'Keep the rest of your image conversion work one click away in Chrome.',
+    inlineBody: ADJACENT_IMAGE_BODY,
+    successLabel: '',
+    cta: 'Add Picture Converter to Chrome',
+    successEnabled: false,
+  },
+  '/convert/jpg-to-psd/': {
+    campaign: 'jpg-to-psd-adjacent-image-conversion',
+    widgetId: 'converter-widget',
+    inlineTitle: 'Keep the rest of your image conversion work one click away in Chrome.',
+    inlineBody: ADJACENT_IMAGE_BODY,
+    successLabel: '',
+    cta: 'Add Picture Converter to Chrome',
+    successEnabled: false,
+  },
+  '/convert/psd-to-png/': {
+    campaign: 'psd-to-png-adjacent-image-conversion',
+    widgetId: 'converter-widget',
+    inlineTitle: 'Keep the rest of your image conversion work one click away in Chrome.',
+    inlineBody: ADJACENT_IMAGE_BODY,
+    successLabel: '',
+    cta: 'Add Picture Converter to Chrome',
+    successEnabled: false,
+  },
+  '/convert/psd-to-jpg/': {
+    campaign: 'psd-to-jpg-adjacent-image-conversion',
+    widgetId: 'converter-widget',
+    inlineTitle: 'Keep the rest of your image conversion work one click away in Chrome.',
+    inlineBody: ADJACENT_IMAGE_BODY,
+    successLabel: '',
+    cta: 'Add Picture Converter to Chrome',
+    successEnabled: false,
   },
 };
 
@@ -97,6 +136,7 @@ export function installConverterExtensionUpsell(track: TrackFn): void {
   if (!config) return;
 
   installInlineOffer(config, track);
+  if (config.successEnabled === false) return;
 
   const widget = document.getElementById(config.widgetId);
   const successView = widget?.querySelector<HTMLElement>('[data-state-view="success"]');
