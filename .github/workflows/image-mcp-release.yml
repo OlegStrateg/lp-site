@@ -33,26 +33,41 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
+      - name: Install release-capable npm CLI
+        run: npm install --global npm@11.15.0
       - name: Verify release remains explicitly enabled
         run: |
           if [ "${{ inputs.mode }}" != "dry-run" ] && [ "${{ vars.LP_MCP_RELEASE_ENABLED }}" != "true" ]; then
             echo "Release blocked: repository variable LP_MCP_RELEASE_ENABLED must equal true"
             exit 1
           fi
+      - name: Verify candidate metadata contract
+        working-directory: packages/image-optimizer-mcp
+        run: npm run release:preflight
+      - name: Verify publication metadata contract
+        if: inputs.mode != 'dry-run'
+        working-directory: packages/image-optimizer-mcp
+        run: npm run release:preflight -- --publishable
       - name: Verify version lock
         run: |
           PKG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/package.json').version")
           REG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/server.json').version")
           test "$PKG_VERSION" = "${{ inputs.version }}"
           test "$REG_VERSION" = "${{ inputs.version }}"
-      - name: Block unresolved license or private package for publication
+      - name: Require existing npm package for staged or Registry release
         if: inputs.mode != 'dry-run'
         run: |
-          node <<'NODE'
-          const p = require('./packages/image-optimizer-mcp/package.json');
-          if (p.private === true) throw new Error('Release blocked: package.json private=true');
-          if (!p.license || p.license === 'UNLICENSED') throw new Error('Release blocked: license unresolved');
-          NODE
+          PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
+          npm view "$PKG_NAME" name >/dev/null 2>&1 || {
+            echo "Release blocked: $PKG_NAME does not exist on npm yet. Bootstrap the first public version manually with the package owner and 2FA, then configure npm Trusted Publishing."
+            exit 1
+          }
+      - name: Require exact npm version before MCP Registry publication
+        if: inputs.mode == 'publish-registry'
+        run: |
+          PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
+          PKG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/package.json').version")
+          npm view "$PKG_NAME@$PKG_VERSION" version | grep -Fx "$PKG_VERSION"
       - name: Install and test image-core
         working-directory: packages/image-core
         run: |
@@ -67,6 +82,19 @@ jobs:
       - name: Pack candidate
         working-directory: packages/image-optimizer-mcp
         run: npm pack --json > /tmp/lp079-pack.json
+      - name: Verify packed metadata
+        run: |
+          TARBALL=$(node -e "const x=require('/tmp/lp079-pack.json'); console.log(x[0].filename)")
+          mkdir -p /tmp/lp079-packed
+          tar -xzf "packages/image-optimizer-mcp/$TARBALL" -C /tmp/lp079-packed
+          node <<'NODE'
+          const p = require('/tmp/lp079-packed/package/package.json');
+          const s = require('/tmp/lp079-packed/package/server.json');
+          if (p.private === true) throw new Error('packed package unexpectedly private');
+          if (p.mcpName !== s.name) throw new Error('packed mcpName does not match server name');
+          if (p.name !== s.packages[0].identifier) throw new Error('packed npm identifier mismatch');
+          if (p.version !== s.version || p.version !== s.packages[0].version) throw new Error('packed version mismatch');
+          NODE
       - name: Clean-install packed candidate
         run: |
           TARBALL=$(node -e "const x=require('/tmp/lp079-pack.json'); console.log(x[0].filename)")
@@ -100,6 +128,8 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
+      - name: Install staged-publishing capable npm CLI
+        run: npm install --global npm@11.15.0
       - name: Stage npm package via Trusted Publishing
         working-directory: packages/image-optimizer-mcp
         run: npm stage publish
