@@ -12,6 +12,7 @@ on:
       - feat/LP-088-safe-fix-allowlist-expansion
       - feat/LP-089-bounded-agent-mode
       - feat/LP-090-continuous-optimization
+      - feat/LP-091-final-pareto-release-gate
     paths:
       - 'packages/page-audit-extension/**'
       - '.github/workflows/page-audit-extension-verify.yml'
