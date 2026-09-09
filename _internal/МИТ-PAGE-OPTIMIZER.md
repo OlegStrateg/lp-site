@@ -316,5 +316,62 @@ Git:
 2. Field evidence: отдельно проверены community pain points; они не выданы за официальные ranking facts.
 3. Pareto: собственная разработка оставлена только для page-context/policy/security/orchestration — там и находится продуктовая дифференциация.
 
+### 3/30 — Углублённый аудит Page Audit Extension
+
+Дата: 2026-09-09
+Статус: DONE
+
+Что проверено:
+- Lighthouse / Lighthouse CI;
+- web-vitals и PerformanceObserver;
+- axe-core;
+- Chrome Extensions Manifest V3 / Side Panel / scripting patterns;
+- Performance API / Resource Timing / Navigation Timing;
+- существующие расширения-аудиторы, включая `plainsignal/seo-auditor`;
+- влияние самого расширения на performance measurement;
+- soft-navigation измерения для SPA.
+
+Главные решения:
+1. `Lighthouse/Lighthouse CI = KEEP`, но только как независимый эталонный lab-аудит. Lighthouse сам предупреждает о вариативности и рекомендует повторные прогоны; расширения могут влиять на результаты, поэтому reference-run нельзя считать корректным внутри того же нагруженного профиля.
+2. `web-vitals/PerformanceObserver = KEEP` для runtime-сигналов LCP/CLS/INP и атрибуции; для SPA учитывать soft navigations и `navigationId`, а не сваливать всё в одну initial navigation.
+3. `axe-core = KEEP` для deterministic accessibility; не писать свой WCAG ruleset и не считать автоматическую проверку полной доступностью.
+4. `Side Panel = KEEP` как основной UI-паттерн: аудит должен оставаться рядом со страницей, но тяжёлый расчёт и внешний reference-run не должны жить в UI-потоке.
+5. Минимизировать permissions: доступ к странице выдавать по пользовательскому действию/нужному origin; не просить широкие host permissions «на всякий случай».
+6. Внутри расширения собирать фактический DOM/SEO/image/network/runtime контекст; эталонные performance scores проверять отдельно, без влияния расширения.
+7. Generic SEO Auditor = STUDY, не база: Apache-2.0, но маленькая доказательная база и старый push; checklist можно переиспользовать как список правил, но конкурентное преимущество будет в приоритизации и verified fixes.
+
+Архитектура минимального аудитора:
+`Content collector → normalized page snapshot → deterministic rule engine → prioritized findings → Side Panel`.
+Отдельный verification channel:
+`clean profile/headless browser → Lighthouse/Playwright → reference metrics`.
+
+P0-сигналы первого аудитора:
+- DOM/title/meta/H1/canonical/indexability;
+- images: intrinsic/rendered dimensions, format, bytes, lazy/srcset/width-height, LCP candidate;
+- network/resource weight и broken resources;
+- console/runtime errors;
+- LCP/CLS/INP runtime signals where observable;
+- render-blocking/high-cost JS/CSS signals;
+- accessibility critical deterministic failures.
+
+Что не писать с нуля:
+- Lighthouse clone;
+- собственный performance scoring engine;
+- собственный WCAG engine;
+- собственный browser profiler;
+- собственный crawler в MVP;
+- собственный trace viewer.
+
+Проверки шага:
+1. Accuracy: browser-collected факты отделены от lab-score и от гипотез.
+2. Non-interference: эталонный performance-run запускается отдельно от установленного аудитора.
+3. Permissions: минимальный Manifest V3 surface; широкие разрешения запрещены без доказанной необходимости.
+4. SPA readiness: soft navigations учитываются отдельно.
+5. Pareto: в P0 оставлены только сигналы, которые непосредственно ведут к приоритизации или будущему safe fix.
+
+Git:
+- Issue: #182 / LP-077.
+- Branch: `research/LP-077-page-optimizer-base`.
+
 Следующий шаг:
-**3/30 — углублённый аудит Page Audit Extension: Lighthouse/Lighthouse CI, web-vitals, axe-core, DevTools/Performance APIs, существующие Chrome-аудиторы, Side Panel/Manifest V3, permissions, ограничения измерений и готовые паттерны. Результат — точная архитектура минимального аудитора и список того, что не пишем сами.**
+**4/30 — углублённый аудит Safe Patch + Verification + Agent loop: Aider, Playwright, Stagehand, Browser Use и безопасные agent-паттерны. Результат — точный контракт snapshot → patch → diff → preview → test → compare → accept/rollback и ограничения автономности.**
