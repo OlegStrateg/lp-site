@@ -1,0 +1,47 @@
+name: LP-081 Session Gate
+
+on:
+  push:
+    branches:
+      - feat/LP-081-session-2-gate
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+      - name: Install image-core
+        working-directory: packages/image-core
+        run: npm install --no-audit --no-fund
+      - name: Test image-core
+        working-directory: packages/image-core
+        run: npm test
+      - name: Install MCP dependencies
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Sync shared image-core
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
+      - name: Test MCP including binary response contract
+        working-directory: packages/image-optimizer-mcp
+        run: npm test
+      - name: Smoke stdio server
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          timeout 3s node src/server.js >/tmp/lp081.out 2>/tmp/lp081.err || code=$?
+          if [ "${code:-0}" != "0" ] && [ "${code:-0}" != "124" ]; then
+            cat /tmp/lp081.err
+            exit "${code}"
+          fi
+      - name: Build Astro public pages
+        run: |
+          npm ci --no-audit --no-fund
+          npx astro build
+          test -f dist/mcp/website-image-optimizer/index.html
+          test -f dist/docs/mcp/website-image-optimizer/index.html
