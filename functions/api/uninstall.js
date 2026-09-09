@@ -11,9 +11,20 @@ import {
   sanitizeComment,
 } from '../_lib/analytics.js';
 
-const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd']);
+const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd', 'eav']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PHASES = new Set(['open', 'feedback', 'skip', 'partial']);
+const EAV_REASON_RU = {
+  unsupported: 'Не удалось извлечь звук из видео',
+  format: 'Нужен другой формат или качество аудио',
+  errors: 'Работало медленно или с ошибкой',
+  workflow: 'Было непонятно, как пользоваться',
+  feature: 'Не хватило нужной функции',
+  alternative: 'Нашёл другой инструмент',
+  privacy: 'Смутили разрешения или приватность',
+  trying: 'Просто попробовал',
+  other: 'Другая причина',
+};
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -24,21 +35,20 @@ function json(body, status = 200) {
 
 function cleanReasonKeys(value) {
   if (!Array.isArray(value)) return [];
-  return value
-    .filter((x) => typeof x === 'string')
-    .map((x) => x.trim().slice(0, 80))
-    .filter(Boolean)
-    .slice(0, 8);
+  return value.filter((x) => typeof x === 'string').map((x) => x.trim().slice(0, 80)).filter(Boolean).slice(0, 8);
+}
+
+function eavLabel(text, record) {
+  if (record.p !== 'eav') return text;
+  let out = String(text).replaceAll('eav', 'Audio Extractor from Video');
+  for (const [key, label] of Object.entries(EAV_REASON_RU)) out = out.replaceAll(key, label);
+  return out;
 }
 
 async function sendOrEdit(env, record) {
-  const [today, total] = await Promise.all([
-    statsForDays(env, record.p, 1),
-    statsTotal(env, record.p),
-  ]);
-  const text = uninstallMessage(record, today, total);
+  const [today, total] = await Promise.all([statsForDays(env, record.p, 1), statsTotal(env, record.p)]);
+  const text = eavLabel(uninstallMessage(record, today, total), record);
   if (record.telegram_message_id) {
-    // Если edit упал — не откатываться к send: это создаёт дубль.
     await editTelegram(env, record.telegram_message_id, text).catch(() => null);
     return Number(record.telegram_message_id);
   }
@@ -66,54 +76,18 @@ export async function onRequestPost(context) {
 
   if (phase === 'open') {
     if (record) return json({ ok: true, dedup: true });
-
     const { isTest, country } = ownerTestInfo(request, env);
-    record = {
-      p,
-      sid,
-      v,
-      locale,
-      country,
-      is_test: isTest,
-      created_at: new Date().toISOString(),
-      feedback_status: 'none',
-      reason_keys: [],
-      comment: '',
-      telegram_message_id: null,
-    };
-
-    if (!isTest) {
-      await saveStatEvent(env, { p, event: 'uninstall', id: sid, ts: Date.now() });
-    }
-
+    record = { p, sid, v, locale, country, is_test: isTest, created_at: new Date().toISOString(), feedback_status: 'none', reason_keys: [], comment: '', telegram_message_id: null };
+    if (!isTest) await saveStatEvent(env, { p, event: 'uninstall', id: sid, ts: Date.now() });
     await putUninstallSession(env, sid, record);
-
-    const messageId = await sendOrEdit(env, { ...record, feedback_status: 'none' }).catch(() => null);
-    if (messageId) {
-      record.telegram_message_id = messageId;
-      await putUninstallSession(env, sid, record);
-    }
-
+    const messageId = await sendOrEdit(env, record).catch(() => null);
+    if (messageId) { record.telegram_message_id = messageId; await putUninstallSession(env, sid, record); }
     return json({ ok: true });
   }
 
-  // Если feedback пришёл раньше, чем open успел записаться (редкий race), создаём
-  // сессию здесь и всё равно считаем один uninstall, а не теряем событие.
   if (!record) {
     const { isTest, country } = ownerTestInfo(request, env);
-    record = {
-      p,
-      sid,
-      v,
-      locale,
-      country,
-      is_test: isTest,
-      created_at: new Date().toISOString(),
-      feedback_status: 'none',
-      reason_keys: [],
-      comment: '',
-      telegram_message_id: null,
-    };
+    record = { p, sid, v, locale, country, is_test: isTest, created_at: new Date().toISOString(), feedback_status: 'none', reason_keys: [], comment: '', telegram_message_id: null };
     if (!isTest) await saveStatEvent(env, { p, event: 'uninstall', id: sid, ts: Date.now() });
   }
 
@@ -124,16 +98,10 @@ export async function onRequestPost(context) {
   if (phase === 'partial') record.feedback_status = 'partial';
   record.updated_at = new Date().toISOString();
 
-  if (phase === 'feedback' && !record.is_test) {
-    await saveStatEvent(env, { p, event: 'uninstall_feedback', id: sid, ts: Date.now() });
-  }
+  if (phase === 'feedback' && !record.is_test) await saveStatEvent(env, { p, event: 'uninstall_feedback', id: sid, ts: Date.now() });
 
   await putUninstallSession(env, sid, record);
   const messageId = await sendOrEdit(env, record).catch(() => null);
-  if (messageId && !record.telegram_message_id) {
-    record.telegram_message_id = messageId;
-    await putUninstallSession(env, sid, record);
-  }
-
+  if (messageId && !record.telegram_message_id) { record.telegram_message_id = messageId; await putUninstallSession(env, sid, record); }
   return json({ ok: true });
 }
