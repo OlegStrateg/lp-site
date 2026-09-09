@@ -56,7 +56,8 @@ Issue: #217
 - [x] stdio smoke из packed artifact PASS.
 - [x] `mcp-publisher validate` PASS: `server.json is valid`.
 - [x] full Page Optimizer session / Astro build `34413910963` SUCCESS на HEAD `33d154390062a1d8f37232ecbce88da1de208b20`.
-- [x] финальный session gate после фиксации доказательств: run `34414060785`, HEAD `3205a921f53673d1c338b1e76de2ab8e81bb0598`, все job steps SUCCESS.
+- [x] session gate после первой фиксации доказательств: run `34414060785`, HEAD `3205a921f53673d1c338b1e76de2ab8e81bb0598`, all steps SUCCESS.
+- [x] финальная проверка перед закрытием LP-093: run `34414162928`, HEAD `0cf3cf5378ada473bd9fcf8529868fd4c1602c68`, all steps SUCCESS.
 - [x] master не сдвинулся относительно LP-092 integration base: `31cb27857a0e5f7cf8e8ce157e35d0892495d067`.
 
 ## Release truth
