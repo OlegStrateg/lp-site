@@ -1,1 +1,0 @@
-Do not merge Step 24 changes into the Step 23 branch. Dedicated branch isolation is mandatory before final gate.
