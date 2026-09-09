@@ -1,7 +1,7 @@
 # LP-088 — Шаг 27/30: расширение Safe Fix allowlist
 
 Дата: 2026-09-09
-Статус: IMPLEMENTED / CI PENDING
+Статус: PASS
 Issue: #211
 
 ## Цель
@@ -52,10 +52,11 @@ Patch:
 
 ## Проверки
 
-1. Before/after deterministic audit: `missing_image_dimensions` обязан исчезнуть после preview patch.
-2. Original facts immutable; patch target должен совпадать с image id.
-3. Aspect-ratio mismatch, malformed attrs, low confidence и unsupported rules блокируются.
-4. Existing Chrome permissions/network/write/unsafe HTML regression остаётся неизменным.
+1. Before/after deterministic audit: `missing_image_dimensions` исчезает после preview patch — PASS.
+2. Original facts immutable; patch target совпадает с image id — PASS.
+3. Aspect-ratio mismatch, malformed attrs, low confidence и unsupported rules блокируются — PASS.
+4. Existing Chrome permissions/network/write/unsafe HTML regression — PASS.
+5. GitHub Actions run `34397178538` — SUCCESS.
 
 ## Allowlist после шага 27
 
@@ -74,4 +75,6 @@ Patch:
 
 ## Gate
 
-PASS только после зелёного CI и повторного аудита before/after.
+`SAFE FIX ALLOWLIST EXPANSION = PASS`
+
+Следующий шаг: 28/30 — Bounded Agent Mode с жестким policy boundary, максимум одним safe finding за итерацию и запретом расширять scope.
