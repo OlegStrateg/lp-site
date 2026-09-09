@@ -1,0 +1,136 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import FaviconWidgetPtBr from '../../../components/FaviconWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/favicon-generator/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Gerador de Favicon Grátis — ICO e PNG no Navegador | LayerPorter';
+const description = 'Gerador de favicon grátis no navegador. Transforme PNG ou JPG em favicon.ico e PNGs de 16, 32, 48, 180, 192 e 512 px, sem upload e sem cadastro.';
+const h1 = 'Gerador de favicon — ICO e tamanhos PNG grátis';
+const answerFirst = 'Envie uma imagem PNG ou JPG e gere no navegador um conjunto de favicon com PNGs de 16, 32, 48, 180, 192 e 512 px, além de um favicon.ico que reúne 16, 32 e 48 px. A imagem é recortada ao centro para um quadrado antes de ser redimensionada; nada é enviado para um servidor.';
+
+const howTo = [
+  { title: 'Escolha a imagem', text: 'Use um PNG ou JPG de até 30 MB e no máximo 6000×6000 px. Uma imagem quadrada funciona melhor porque ícones são quadrados.' },
+  { title: 'Gere os tamanhos', text: 'O navegador faz um recorte quadrado central quando necessário e cria versões de 16, 32, 48, 180, 192 e 512 px.' },
+  { title: 'Confira as prévias', text: 'Veja o resultado em cada tamanho antes de baixar para identificar um logo que perca legibilidade quando fica pequeno.' },
+  { title: 'Baixe o ZIP', text: 'O ZIP contém os seis PNGs e o favicon.ico. As tags HTML correspondentes ficam disponíveis na própria página para copiar.' },
+];
+
+const faq = [
+  { q: 'Como criar um favicon grátis?', a: 'Escolha uma imagem PNG ou JPG. O LayerPorter gera localmente os tamanhos de favicon e o arquivo favicon.ico, mostra as prévias e libera um ZIP para download sem cadastro.' },
+  { q: 'Quais tamanhos de favicon são gerados?', a: 'São gerados PNGs de 16, 32, 48, 180, 192 e 512 px. O favicon.ico contém versões de 16, 32 e 48 px no mesmo arquivo.' },
+  { q: 'O gerador cria favicon.ico de verdade?', a: 'Sim. O arquivo ICO contém três entradas, de 16, 32 e 48 px. Ele não é apenas um PNG renomeado.' },
+  { q: 'O que acontece se minha imagem não for quadrada?', a: 'A ferramenta recorta ao centro o maior quadrado possível antes de redimensionar. Para controlar exatamente o enquadramento, prepare uma imagem quadrada antes de gerar o favicon.' },
+  { q: 'PNG com transparência continua transparente?', a: 'Sim. Os tamanhos são codificados como PNG e podem preservar o canal alfa da imagem de origem. JPG não possui transparência para preservar.' },
+  { q: 'O ZIP inclui manifest.json?', a: 'Não. O ZIP contém favicon.ico e os arquivos PNG gerados. Se seu site é um PWA, adicione as referências de 192 e 512 px ao seu próprio manifest.json.' },
+  { q: 'As tags HTML vêm dentro do ZIP?', a: 'Não. As tags ficam visíveis na página depois da geração e podem ser copiadas com um botão. Os nomes usados nas tags correspondem aos arquivos do ZIP.' },
+  { q: 'Qual é o limite da imagem de origem?', a: 'Nesta versão, a imagem pode ter até 30 MB e no máximo 6000×6000 px. Os limites são verificados no dispositivo antes da geração.' },
+  { q: 'Minha imagem é enviada para o LayerPorter?', a: 'Não. O redimensionamento, a criação do ICO e a montagem do ZIP acontecem no navegador durante esta geração.' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Gerador de favicon', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Gerador de Favicon',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Gera favicon.ico com 16, 32 e 48 px mais PNGs de 16, 32, 48, 180, 192 e 512 px a partir de PNG ou JPG, com processamento local no navegador',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como gerar favicon no navegador',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/favicon-generator/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/favicon-generator/` },
+  ]}
+  ogTitle="Gerador de Favicon Grátis — ICO + PNG | LayerPorter"
+  ogDescription="Gere favicon.ico e PNGs de 16 a 512 px a partir de uma imagem, direto no navegador e sem upload."
+  ogImage={`${site}/og/favicon-generator.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', '16–512 px + .ico', 'Prévia de cada tamanho']}
+  expectationLeft={{
+    title: 'Imagem (entrada)',
+    items: ['PNG ou JPG', 'Até 30 MB e 6000×6000 px', 'Recortada ao centro se não for quadrada'],
+  }}
+  expectationRight={{
+    title: 'Favicons (resultado)',
+    items: ['6 PNGs: 16, 32, 48, 180, 192 e 512 px', '1 favicon.ico com 16, 32 e 48 px', 'Tudo reunido em um ZIP'],
+  }}
+  truthNote="Esta ferramenta gera os arquivos de ícone modernos e o favicon.ico. Ela não cria manifest.json, browserconfig.xml ou SVG de aba fixada do Safari. As tags HTML são mostradas na página para copiar, mas não são incluídas como arquivo no ZIP."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'favicon.ico real', text: 'Um arquivo ICO com três resoluções internas: 16×16, 32×32 e 48×48 px.' },
+    { title: 'Ícones modernos', text: 'PNGs de 180 px para Apple touch icon e de 192 e 512 px para fluxos Android/PWA, além dos PNGs pequenos de navegador.' },
+    { title: 'Prévia antes do download', text: 'Cada tamanho gerado aparece na página para você conferir se o símbolo continua legível em dimensões pequenas.' },
+    { title: 'Tags prontas para copiar', text: 'A página mostra as tags <link> correspondentes aos nomes dos arquivos do ZIP para facilitar a instalação no site.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Gerador no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    proofAria: 'Garantias do produto',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como gerar um favicon',
+    whatYouGetHeading: 'O que você recebe',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais conversores',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <FaviconWidgetPtBr toolHeading="Gerar favicon a partir de uma imagem" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>
