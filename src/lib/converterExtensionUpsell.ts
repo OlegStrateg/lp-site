@@ -26,6 +26,17 @@ const UPSELLS: Record<string, UpsellConfig> = {
     successLabel: 'Keep this workflow in Chrome — convert selected website images without coming back here',
     cta: 'Add Picture Converter to Chrome',
   },
+  '/pt-br/convert/webp-to-jpg/': {
+    campaign: 'pt-br-webp-to-jpg-converter',
+    widgetId: 'converter-widget',
+    kicker: 'Deixe no Chrome',
+    inlineTitle: 'Na próxima vez, converta WebP direto de sites e deixe o conversor sempre à mão no Chrome.',
+    inlineBody: 'O Picture Converter pega uma imagem selecionada em um site ou um arquivo WebP local e salva em JPG, PNG, WebP, PDF ou ICO direto no Chrome.',
+    successLabel: 'Converta WebP direto dos sites na próxima vez — sem voltar a esta página',
+    cta: 'Adicionar Picture Converter ao Chrome',
+    detailsLabel: 'Ver como funciona',
+    detailsHref: '/pt-br/picture-converter/',
+  },
   '/convert/jpg-to-pdf/': {
     campaign: 'jpg-to-pdf-converter',
     widgetId: 'jpg-pdf-widget',
