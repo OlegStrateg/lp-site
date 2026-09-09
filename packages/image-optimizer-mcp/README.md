@@ -4,7 +4,16 @@ Technical candidate for page-aware website image optimization through Model Cont
 
 ## Status
 
-This package is not yet claimed as a public npm or Official MCP Registry release. The current implementation is verified in CI from repository source.
+The package is release-prepared but is **not yet claimed as a public npm or Official MCP Registry release**. Publication status changes only after the exact npm version and Registry entry are externally verified.
+
+Registry identity:
+
+- npm package: `@layerporter/image-optimizer-mcp`
+- MCP server: `com.layerporter/website-image-optimizer`
+- transport: `stdio`
+- Node.js: `>=22.12.0`
+
+The npm package carries `mcpName: com.layerporter/website-image-optimizer`, matching `server.json`, so the Official MCP Registry can verify package ownership after the package exists publicly on npm.
 
 ## Tools
 
@@ -19,7 +28,7 @@ This package is not yet claimed as a public npm or Official MCP Registry release
 - Node.js `>=22.12.0`
 - MCP v2 server package
 - stdio transport
-- image processing through `@layerporter/image-core` / Sharp / libvips
+- image processing through the shared image core / Sharp / libvips
 
 ## Local source setup
 
@@ -32,11 +41,26 @@ npm test
 
 cd ../image-optimizer-mcp
 npm install --no-audit --no-fund
+npm run release:preflight
 npm test
 node src/server.js
 ```
 
 The last command starts the stdio MCP server and waits for a client connection.
+
+## Installation after public release
+
+Do not treat this command as available until the npm package has actually been published and verified:
+
+```bash
+npx -y @layerporter/image-optimizer-mcp
+```
+
+## Release model
+
+The first npm version is a bootstrap release: npm staged publishing and Trusted Publisher configuration require the package to already exist. The first public package therefore must be published by the package owner with npm account 2FA. After that bootstrap, GitHub Actions Trusted Publishing can be configured for `.github/workflows/image-mcp-release.yml`, and later versions can use the staged OIDC release path.
+
+Official MCP Registry publication happens only **after** the matching npm version is publicly available. The Registry namespace uses ownership of `layerporter.com` and the server name `com.layerporter/website-image-optimizer`.
 
 ## Safety boundary
 
@@ -53,24 +77,27 @@ Hard safety comes from implementation controls, not only from MCP metadata.
 
 ## Verification
 
-The current technical gate was verified in GitHub Actions Run `34341457360` on Node `22.16.0`:
+Release preparation verifies:
 
-- image-core 17/17 tests PASS;
-- MCP contracts 4/4 PASS;
-- stdio startup PASS;
-- deterministic engineering benchmark PASS.
+- package/server identity consistency;
+- image-core and MCP tests;
+- packed npm artifact metadata;
+- clean installation of the packed tarball;
+- real stdio startup from the packed artifact;
+- Official MCP Registry `server.json` validation;
+- full LayerPorter Astro build in the integrated repository tree.
 
 ## Public documentation
 
-Canonical product page after site release:
+Canonical product pages after site release:
 
 - `https://layerporter.com/mcp/website-image-optimizer/`
 - `https://layerporter.com/docs/mcp/website-image-optimizer/`
 
 ## Not yet included
 
-- public npm release;
-- Official MCP Registry publication;
+- confirmed public npm release;
+- confirmed Official MCP Registry publication;
 - hosted endpoint;
 - remote URL ingestion;
 - production apply/write tool;
