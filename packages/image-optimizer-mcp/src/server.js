@@ -1,9 +1,10 @@
+#!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 import { TOOL_HANDLERS } from './tools.js';
 
-const server = new McpServer({ name: 'layerporter-image-optimizer', version: '0.0.1' });
+const server = new McpServer({ name: 'layerporter-image-optimizer', version: '0.1.0' });
 
 const CLOSED_TRANSFORM_ANNOTATIONS = Object.freeze({
   readOnlyHint: true,
