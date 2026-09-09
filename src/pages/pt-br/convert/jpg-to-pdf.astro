@@ -1,0 +1,153 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import JpgToPdfWidgetPtBr from '../../../components/JpgToPdfWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/jpg-to-pdf/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Converter JPG em PDF Grátis no Navegador | LayerPorter';
+const description = 'Converta JPG e PNG em PDF no navegador, sem upload. Junte até 40 imagens em um único PDF, reorganize as páginas e baixe grátis.';
+const h1 = 'Converter JPG em PDF — grátis, sem upload';
+const answerFirst = 'Converta uma ou várias imagens JPG ou PNG em um único PDF diretamente no navegador. Cada imagem vira uma página, você pode reorganizar a ordem antes de converter e os arquivos não são enviados para um servidor.';
+
+const howTo = [
+  { title: 'Adicione suas imagens', text: 'Arraste arquivos JPG ou PNG para a área de conversão ou clique para escolhê-los no dispositivo.' },
+  { title: 'Organize as páginas', text: 'Cada imagem vira uma página do PDF. Use as setas para mudar a ordem ou remova o que não quiser incluir.' },
+  { title: 'Converta e baixe', text: 'O PDF é criado no seu navegador. Quando terminar, baixe o arquivo sem cadastro e sem enviar as imagens para o LayerPorter.' },
+];
+
+const faq = [
+  {
+    q: 'Como converter JPG em PDF grátis?',
+    a: 'Adicione uma ou mais imagens JPG ao conversor, organize a ordem das páginas e clique em Converter em PDF. O arquivo é criado no navegador e pode ser baixado sem cadastro.',
+  },
+  {
+    q: 'Posso juntar várias imagens JPG em um único PDF?',
+    a: 'Sim. Você pode adicionar até 40 imagens JPG ou PNG, com até 60 MB no total. Cada imagem vira uma página e a ordem pode ser alterada antes da conversão.',
+  },
+  {
+    q: 'As imagens são enviadas para um servidor?',
+    a: 'Não. A conversão acontece no navegador usando o seu dispositivo. As imagens não são enviadas, armazenadas ou compartilhadas pelo LayerPorter.',
+  },
+  {
+    q: 'Também posso converter PNG para PDF?',
+    a: 'Sim. O mesmo conversor aceita arquivos JPG e PNG, inclusive misturados no mesmo PDF. Cada arquivo vira uma página separada.',
+  },
+  {
+    q: 'A qualidade da imagem diminui ao converter para PDF?',
+    a: 'O conversor usa as imagens nas dimensões originais, sem redimensioná-las. A conversão muda o contêiner do arquivo para PDF; ela não adiciona uma nova etapa de compressão JPEG.',
+  },
+  {
+    q: 'Posso escolher margens ou tamanho da página?',
+    a: 'Não nesta versão. Cada página acompanha as dimensões da imagem correspondente, sem margens adicionadas. O foco deste conversor é criar rapidamente um PDF a partir das imagens.',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Converter JPG em PDF', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Converter JPG em PDF',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Converte JPG e PNG em PDF no navegador, combina até 40 imagens, permite reorganizar páginas e não envia arquivos para um servidor',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como converter JPG em PDF no navegador',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#learn"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/jpg-to-pdf/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/jpg-to-pdf/` },
+  ]}
+  ogTitle="Converter JPG em PDF Grátis — sem upload | LayerPorter"
+  ogDescription="Junte JPG e PNG em um PDF diretamente no navegador. Até 40 imagens, sem cadastro e sem upload."
+  ogImage={`${site}/og/jpg-to-pdf.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', 'Até 40 imagens', 'Uma página por imagem']}
+  expectationLeft={{
+    title: 'JPG ou PNG (entrada)',
+    items: ['Uma ou várias imagens', 'Ordem ajustável antes da conversão', 'Arquivos ficam no seu dispositivo'],
+  }}
+  expectationRight={{
+    title: 'PDF (resultado)',
+    items: ['Um único arquivo PDF', 'Uma página para cada imagem', 'Pronto para baixar, imprimir ou enviar'],
+  }}
+  truthNote="O conversor cria uma página por imagem. Ele não coloca várias imagens na mesma página e não adiciona margens, cabeçalhos ou numeração."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'Um PDF com várias imagens', text: 'Junte arquivos JPG e PNG em um único documento, em vez de enviar várias imagens separadas.' },
+    { title: 'Controle da ordem', text: 'Reorganize as imagens antes de converter para definir exatamente a sequência das páginas.' },
+    { title: 'Processamento local', text: 'O PDF é montado na memória do navegador. Suas imagens não passam por uma fila de upload.' },
+    { title: 'Sem conta', text: 'Abra a página, converta e baixe. Não há etapa de cadastro antes do resultado.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Conversor no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como converter JPG em PDF',
+    whatYouGetHeading: 'O que você recebe',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais conversores',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <JpgToPdfWidgetPtBr toolHeading="Converter JPG ou PNG em PDF" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>
