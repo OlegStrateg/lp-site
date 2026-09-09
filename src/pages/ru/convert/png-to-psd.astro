@@ -1,0 +1,176 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import ConverterWidgetV2 from '../../../components/ConverterWidgetV2.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'ru');
+if (!locale) throw new Error('RU converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/ru/convert/png-to-psd/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Конвертер PNG в PSD бесплатно в браузере | LayerPorter';
+const description = 'Конвертируйте PNG в PSD бесплатно прямо в браузере, без загрузки на сервер. PNG становится одним слоем изображения в PSD, прозрачность сохраняется.';
+const h1 = 'Конвертер PNG в PSD — бесплатно, без загрузки';
+const answerFirst = 'Этот конвертер PNG в PSD помещает изображение PNG в файл PSD прямо в браузере. Результат содержит один слой изображения и сохраняет прозрачность PNG, но не восстанавливает отдельные тексты, кнопки, объекты или фон, если они уже были сведены в исходном PNG.';
+
+const howTo = [
+  { title: 'Добавьте PNG', text: 'Перетащите изображение PNG в конвертер или выберите файл на устройстве.' },
+  { title: 'Создайте PSD в браузере', text: 'LayerPorter локально читает пиксели PNG и создаёт PSD с одним слоем изображения, не отправляя файл на сервер.' },
+  { title: 'Скачайте PSD или откройте в Photopea', text: 'Скачайте готовый PSD либо откройте результат в Photopea, чтобы продолжить работу и добавить новые слои.' },
+];
+
+const faq = [
+  { q: 'Как конвертировать PNG в PSD бесплатно?', a: 'Выберите PNG или перетащите изображение в конвертер. PSD создаётся прямо в браузере и становится доступен для скачивания без регистрации и без загрузки файла на сервер.' },
+  { q: 'Будут ли в PSD редактируемые слои?', a: 'В результате будет один слой изображения с пикселями PNG. После конвертации можно добавлять маски, корректировки и новые слои, но плоский PNG не содержит исходные элементы по отдельности, поэтому текст, кнопки, объекты и фон автоматически не восстанавливаются.' },
+  { q: 'Сохраняется ли прозрачность PNG в PSD?', a: 'Да. Альфа-канал PNG сохраняется в слое изображения PSD, поэтому прозрачные области остаются прозрачными.' },
+  { q: 'Теряется ли качество при конвертации PNG в PSD?', a: 'Размеры и пиксели изображения сохраняются. Конвертер меняет контейнер на PSD и не применяет к PNG дополнительное JPEG-сжатие.' },
+  { q: 'Какие ограничения у конвертера PNG в PSD?', a: 'В текущей версии файл PNG может быть размером до 30 МБ, а изображение — не больше 6000×6000 пикселей. За одну конвертацию обрабатывается один файл.' },
+  { q: 'Нужен ли Photoshop для конвертации PNG в PSD?', a: 'Нет. Конвертация выполняется в браузере. После этого PSD можно открыть в Photoshop, Photopea или GIMP и продолжить редактирование.' },
+  { q: 'PNG загружается на сервер LayerPorter?', a: 'Нет. Чтение PNG и создание PSD происходят на вашем устройстве. Во время этой конвертации файл не отправляется на сервер LayerPorter.' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/ru/` },
+        { '@type': 'ListItem', position: 2, name: 'Конвертеры', item: `${site}/ru/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Конвертер PNG в PSD', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter — конвертер PNG в PSD',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'ru',
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'RUB' },
+      featureList: 'Конвертирует PNG в PSD с одним слоем изображения, сохраняет прозрачность, поддерживает до 30 МБ и 6000×6000 пикселей и обрабатывает файл локально в браузере',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Как конвертировать PNG в PSD в браузере',
+      inLanguage: 'ru',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'ru',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="ru"
+  dir="ltr"
+  homePath="/ru/"
+  extensionsPath="/ru/extensions/"
+  learnPath="/ru/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/png-to-psd/` },
+    { hreflang: 'ru', href: pageUrl },
+    { hreflang: 'pt-BR', href: `${site}/pt-br/convert/png-to-psd/` },
+    { hreflang: 'x-default', href: `${site}/convert/png-to-psd/` },
+  ]}
+  ogTitle="Конвертер PNG в PSD бесплатно — без загрузки | LayerPorter"
+  ogDescription="Конвертируйте PNG в PSD прямо в браузере. Один слой изображения, прозрачность сохраняется, до 30 МБ и без отправки файла на сервер."
+  ogImage={`${site}/og/png-to-psd.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Без загрузки', 'Без регистрации', 'Прозрачность сохраняется', 'Один слой изображения']}
+  expectationLeft={{
+    title: 'PNG — на входе',
+    items: ['Один файл за конвертацию', 'До 30 МБ и 6000×6000 пикселей', 'Плоское изображение; может содержать прозрачность'],
+  }}
+  expectationRight={{
+    title: 'PSD — на выходе',
+    items: ['Один слой изображения', 'Прозрачность сохраняется', 'Можно открыть в Photoshop, Photopea или GIMP'],
+  }}
+  truthNote="PNG — это плоское изображение. Конвертер создаёт PSD с одним слоем изображения и не может заново разделить текст, кнопки, объекты или фон, которые уже были растрированы в исходном PNG."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'Один слой изображения', text: 'Пиксели PNG помещаются в отдельный слой PSD, к которому затем можно добавлять маски, корректировки и новые слои.' },
+    { title: 'Сохранённая прозрачность', text: 'Альфа-канал переносится пиксель в пиксель, поэтому прозрачные области остаются прозрачными в PSD.' },
+    { title: 'Стандартный PSD', text: 'Файл создаётся тем же движком, что и английская версия конвертера; путь записи и чтения PSD проверяется тестами сборки проекта.' },
+    { title: 'Локальная обработка', text: 'Конвертация выполняется в памяти браузера. PNG не отправляется на сервер LayerPorter.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Конвертер в браузере',
+    subtitle: 'На вашем устройстве. Без загрузки. Без аккаунта.',
+    proofAria: 'Гарантии и ограничения конвертера',
+    expectationHeading: 'Что получится',
+    howHeading: 'Как конвертировать PNG в PSD',
+    whatYouGetHeading: 'Что вы получаете',
+    faqHeading: 'Частые вопросы',
+    moreHeading: 'Другие конвертеры',
+    allConverters: 'Все конвертеры',
+  }}
+  allConvertersHref="/ru/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <ConverterWidgetV2
+      toolHeading="Конвертер PNG в PSD"
+      showExtensionBridge={false}
+      labels={{
+        ariaLabel: 'Конвертер PNG в PSD',
+        dropTitle: 'Перетащите PNG сюда',
+        dropSubtitle: 'или выберите PNG на вашем устройстве',
+        choose: 'Выбрать PNG',
+        hint: 'Только PNG · обработка на устройстве',
+        privacy: 'Данных файла отправлено: 0 Б',
+        processingNoUpload: 'Данные файла не отправляются.',
+        successBadge: 'Конвертация завершена на устройстве',
+        successTitle: 'Ваш PSD готов',
+        previewAlt: 'Предпросмотр конвертированного изображения на клетчатом фоне',
+        layerPill: 'Один слой изображения',
+        transparencyPreserved: 'Прозрачность сохранена',
+        opaqueImage: 'Изображение без прозрачности',
+        download: 'Скачать PSD',
+        photopea: 'Открыть в Photopea',
+        convertAnother: 'Конвертировать другой PNG',
+        errorDefault: 'Не удалось обработать файл. Попробовать ещё раз?',
+        jpgErrorLead: 'Похоже, это JPG →',
+        jpgBridgeLabel: 'Конвертер JPG в PSD',
+        jpgBridgeHref: '/convert/jpg-to-psd/',
+        retry: 'Попробовать ещё раз',
+        announceConverting: 'Конвертация…',
+        announceSuccess: 'Готово. PSD можно скачать.',
+        jpgNotPng: 'Похоже, этот файл — JPG, а не PNG.',
+        notPng: 'Этот файл не похож на PNG. Выберите файл .png.',
+        tooLarge: 'Файл больше 30 МБ. Выберите изображение меньшего размера.',
+        tooLargeDimensions: 'Размер изображения превышает {max}×{max} пикселей. Выберите изображение меньшего размера.',
+        corrupt: 'Не удалось прочитать файл. Возможно, он повреждён или имеет неподдерживаемый формат.',
+        stageRead: 'Читаем PNG…',
+        stageBuild: 'Создаём PSD…',
+        stagePrepare: 'Готовим скачивание…',
+        conversionFailed: 'Конвертация не удалась. Попробуйте ещё раз.',
+        unexpectedFailed: 'Во время конвертации произошла ошибка. Попробуйте ещё раз.',
+      }}
+    />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>

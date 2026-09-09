@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const expected = [
   ['/ru/convert/jpg-to-pdf/', 'ru'],
+  ['/ru/convert/png-to-psd/', 'ru'],
   ['/pt-br/convert/jpg-to-pdf/', 'pt-BR'],
   ['/pt-br/convert/pdf-to-jpg/', 'pt-BR'],
   ['/pt-br/convert/webp-to-jpg/', 'pt-BR'],
@@ -33,6 +34,22 @@ for (const marker of [
   'Установить Picture Converter в Chrome',
 ]) {
   if (!ruJpgPdf.includes(marker)) throw new Error(`RU JPG→PDF missing marker: ${marker}`);
+}
+
+const ruPngPsdFile = path.join(process.cwd(), 'dist', 'ru', 'convert', 'png-to-psd', 'index.html');
+const ruPngPsd = fs.readFileSync(ruPngPsdFile, 'utf8');
+for (const marker of [
+  'Конвертер PNG в PSD',
+  'один слой изображения',
+  'Прозрачность сохранена',
+  'до 30 МБ',
+  '6000×6000',
+  'не может заново разделить текст, кнопки, объекты или фон',
+]) {
+  if (!ruPngPsd.includes(marker)) throw new Error(`RU PNG→PSD missing marker: ${marker}`);
+}
+if (ruPngPsd.includes('Установить Picture Converter в Chrome')) {
+  throw new Error('RU PNG→PSD must not contain unrelated Picture Converter CTA');
 }
 
 const psdJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-jpg', 'index.html');
@@ -102,6 +119,12 @@ for (const marker of [
   "takeHandoff(['pptx'])",
 ]) {
   if (!canvaCheckerSource.includes(marker)) throw new Error(`PT-BR Canva checker source missing marker: ${marker}`);
+}
+
+const ruHubFile = path.join(process.cwd(), 'dist', 'ru', 'convert', 'index.html');
+const ruHub = fs.readFileSync(ruHubFile, 'utf8');
+for (const route of ['/ru/convert/jpg-to-pdf/', '/ru/convert/png-to-psd/']) {
+  if (!ruHub.includes(`href="${route}"`)) throw new Error(`RU hub missing localized route: ${route}`);
 }
 
 const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
