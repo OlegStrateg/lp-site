@@ -21,6 +21,17 @@ const learnPath = `${homePath}#workflows`;
 const pictureConverterPath = locale.code === 'en' ? '/picture-converter/' : `/${locale.route}/picture-converter/`;
 const pictureConverterStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=convert_hub&utm_content=extension_block';
 
+// Only route to a localized exact-converter when that route really exists.
+// All other cards keep their canonical English destination until a localized
+// page is actually published, which prevents dead links and fake localization.
+const LOCALIZED_EXACT_CONVERTERS: Record<string, Set<string>> = {
+  'pt-br': new Set(['jpg-to-pdf', 'webp-to-jpg']),
+};
+const converterPath = (slug: string) =>
+  LOCALIZED_EXACT_CONVERTERS[locale.code]?.has(slug)
+    ? `/${locale.route}/convert/${slug}/`
+    : `/convert/${slug}/`;
+
 const alternates = [
   ...CONVERT_HUB_LOCALES.map((item) => ({ hreflang: item.hreflang, href: `${site}${convertHubPath(item)}` })),
   { hreflang: 'x-default', href: `${site}/convert/` },
@@ -47,7 +58,7 @@ const schema = {
     itemListOrder: 'https://schema.org/ItemListOrderAscending',
     numberOfItems: schemaItems.length,
     itemListElement: schemaItems.map(([name, slug], index) => ({
-      '@type': 'ListItem', position: index + 1, name, url: `${site}/convert/${slug}/`,
+      '@type': 'ListItem', position: index + 1, name, url: `${site}${converterPath(slug)}`,
     })),
   },
   hasPart: {
@@ -101,16 +112,16 @@ const schema = {
         <div class="hub-route-head"><strong>{c.chooseConversion}</strong><span>{c.allCurrentTools}</span></div>
         <div class="hub-route-columns">
           <div class="hub-route-column">
-            <a class="hub-route" href="/convert/jpg-to-pdf/"><span class="hub-code">JPG</span><i>→</i><span class="hub-code out">PDF</span><span class="hub-route-copy"><b>JPG → PDF</b><small>{c.jpgPdfShort}</small></span><em>↗</em></a>
-            <a class="hub-route" href="/convert/pdf-to-jpg/"><span class="hub-code">PDF</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>PDF → JPG</b><small>{c.pdfJpgShort}</small></span><em>↗</em></a>
-            <a class="hub-route" href="/convert/webp-to-jpg/"><span class="hub-code">WEBP</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>WebP → JPG</b><small>{c.webpJpgShort}</small></span><em>↗</em></a>
-            <a class="hub-route" href="/convert/favicon-generator/"><span class="hub-code">IMG</span><i>→</i><span class="hub-code out">ICO</span><span class="hub-route-copy"><b>Favicon Generator</b><small>{c.faviconShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('jpg-to-pdf')}><span class="hub-code">JPG</span><i>→</i><span class="hub-code out">PDF</span><span class="hub-route-copy"><b>JPG → PDF</b><small>{c.jpgPdfShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('pdf-to-jpg')}><span class="hub-code">PDF</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>PDF → JPG</b><small>{c.pdfJpgShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('webp-to-jpg')}><span class="hub-code">WEBP</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>WebP → JPG</b><small>{c.webpJpgShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('favicon-generator')}><span class="hub-code">IMG</span><i>→</i><span class="hub-code out">ICO</span><span class="hub-route-copy"><b>Favicon Generator</b><small>{c.faviconShort}</small></span><em>↗</em></a>
           </div>
           <div class="hub-route-column">
-            <a class="hub-route" href="/convert/psd-to-png/"><span class="hub-code">PSD</span><i>→</i><span class="hub-code out">PNG</span><span class="hub-route-copy"><b>PSD → PNG</b><small>{c.psdPngShort}</small></span><em>↗</em></a>
-            <a class="hub-route" href="/convert/psd-to-jpg/"><span class="hub-code">PSD</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>PSD → JPG</b><small>{c.psdJpgShort}</small></span><em>↗</em></a>
-            <a class="hub-route" href="/convert/png-to-psd/"><span class="hub-code">PNG</span><i>→</i><span class="hub-code out">PSD</span><span class="hub-route-copy"><b>PNG → PSD</b><small>{c.pngPsdShort}</small></span><em>↗</em></a>
-            <a class="hub-route" href="/convert/jpg-to-psd/"><span class="hub-code">JPG</span><i>→</i><span class="hub-code out">PSD</span><span class="hub-route-copy"><b>JPG → PSD</b><small>{c.jpgPsdShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('psd-to-png')}><span class="hub-code">PSD</span><i>→</i><span class="hub-code out">PNG</span><span class="hub-route-copy"><b>PSD → PNG</b><small>{c.psdPngShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('psd-to-jpg')}><span class="hub-code">PSD</span><i>→</i><span class="hub-code out">JPG</span><span class="hub-route-copy"><b>PSD → JPG</b><small>{c.psdJpgShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('png-to-psd')}><span class="hub-code">PNG</span><i>→</i><span class="hub-code out">PSD</span><span class="hub-route-copy"><b>PNG → PSD</b><small>{c.pngPsdShort}</small></span><em>↗</em></a>
+            <a class="hub-route" href={converterPath('jpg-to-psd')}><span class="hub-code">JPG</span><i>→</i><span class="hub-code out">PSD</span><span class="hub-route-copy"><b>JPG → PSD</b><small>{c.jpgPsdShort}</small></span><em>↗</em></a>
           </div>
         </div>
         <div class="hub-route-foot"><strong>● {c.filesStay}</strong><a href="#checker">{c.checkerJump}</a></div>
@@ -121,25 +132,25 @@ const schema = {
       <div class="hub-section-label">{c.popularLabel}</div>
       <div class="hub-section-head"><h2 id="popular-heading">{c.popularHeading}</h2><p>{c.popularIntro}</p></div>
       <div class="hub-popular-grid">
-        <a class="hub-tool-card" href="/convert/jpg-to-pdf/">
+        <a class="hub-tool-card" href={converterPath('jpg-to-pdf')}>
           <picture class="hub-tool-image">
             <source srcset="/images/picture-converter/images-to-pdf-example-320.webp 320w, /images/picture-converter/images-to-pdf-example-640.webp 640w, /images/picture-converter/images-to-pdf-example-960.webp 960w" sizes="(max-width:760px) 100vw, 48vw" />
             <img src="/images/picture-converter/images-to-pdf-example-640.webp" width="640" height="427" alt={c.jpgPdfAlt} loading="lazy" />
           </picture>
           <div class="hub-tool-body"><div class="hub-pair"><span>JPG</span><i>→</i><span>PDF</span></div><h3>JPG → PDF</h3><p>{c.jpgPdfDesc}</p><b class="hub-open">{c.openConverter} <span>↗</span></b></div>
         </a>
-        <a class="hub-tool-card" href="/convert/pdf-to-jpg/">
+        <a class="hub-tool-card" href={converterPath('pdf-to-jpg')}>
           <div class="hub-pdf-visual" aria-hidden="true"><div class="hub-pdf-sheet"><div></div><i></i><i class="medium"></i><i class="short"></i></div><span class="hub-big-arrow">→</span><div class="hub-jpg-stack"><i></i><i></i><i><b>JPG</b></i></div></div>
           <div class="hub-tool-body"><div class="hub-pair"><span>PDF</span><i>→</i><span>JPG</span></div><h3>PDF → JPG</h3><p>{c.pdfJpgDesc}</p><b class="hub-open">{c.openConverter} <span>↗</span></b></div>
         </a>
-        <a class="hub-tool-card" href="/convert/webp-to-jpg/">
+        <a class="hub-tool-card" href={converterPath('webp-to-jpg')}>
           <picture class="hub-tool-image">
             <source srcset="/images/picture-converter/webp-to-jpg-example-320.webp 320w, /images/picture-converter/webp-to-jpg-example-640.webp 640w, /images/picture-converter/webp-to-jpg-example-960.webp 960w" sizes="(max-width:760px) 100vw, 48vw" />
             <img src="/images/picture-converter/webp-to-jpg-example-640.webp" width="640" height="427" alt={c.webpJpgAlt} loading="lazy" />
           </picture>
           <div class="hub-tool-body"><div class="hub-pair"><span>WEBP</span><i>→</i><span>JPG</span></div><h3>WebP → JPG</h3><p>{c.webpJpgDesc}</p><b class="hub-open">{c.openConverter} <span>↗</span></b></div>
         </a>
-        <a class="hub-tool-card" href="/convert/favicon-generator/">
+        <a class="hub-tool-card" href={converterPath('favicon-generator')}>
           <div class="hub-favicon-visual" aria-hidden="true"><div class="hub-favicon-main">LP</div><div class="hub-icon-sizes"><span><i></i><b>16</b></span><span><i></i><b>32</b></span><span><i></i><b>48</b></span><span><i></i><b>180</b></span><span><i></i><b>256</b></span><span><i></i><b>512</b></span></div></div>
           <div class="hub-tool-body"><div class="hub-pair"><span>IMG</span><i>→</i><span>ICO</span></div><h3>Favicon Generator</h3><p>{c.faviconDesc}</p><b class="hub-open">{c.openTool} <span>↗</span></b></div>
         </a>
@@ -150,13 +161,13 @@ const schema = {
       <div class="hub-section-label">{c.designLabel}</div>
       <div class="hub-section-head"><h2 id="design-heading">{c.designHeading}</h2><p>{c.designIntro}</p></div>
       <div class="hub-design-grid">
-        <a class="hub-design-card" href="/convert/psd-to-png/"><div><div class="hub-pair"><span>PSD</span><i>→</i><span>PNG</span></div><h3>PSD → PNG</h3><p>{c.psdPngDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-layer-stack"><i></i><i></i><i></i></span><em>→</em><span class="hub-output png">PNG</span></div></div></a>
-        <a class="hub-design-card" href="/convert/psd-to-jpg/"><div><div class="hub-pair"><span>PSD</span><i>→</i><span>JPG</span></div><h3>PSD → JPG</h3><p>{c.psdJpgDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-layer-stack"><i></i><i></i><i></i></span><em>→</em><span class="hub-output jpg">JPG</span></div></div></a>
-        <a class="hub-design-card" href="/convert/png-to-psd/"><div><div class="hub-pair"><span>PNG</span><i>→</i><span>PSD</span></div><h3>PNG → PSD</h3><p>{c.pngPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output png">PNG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
-        <a class="hub-design-card" href="/convert/jpg-to-psd/"><div><div class="hub-pair"><span>JPG</span><i>→</i><span>PSD</span></div><h3>JPG → PSD</h3><p>{c.jpgPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output jpg">JPG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
+        <a class="hub-design-card" href={converterPath('psd-to-png')}><div><div class="hub-pair"><span>PSD</span><i>→</i><span>PNG</span></div><h3>PSD → PNG</h3><p>{c.psdPngDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-layer-stack"><i></i><i></i><i></i></span><em>→</em><span class="hub-output png">PNG</span></div></div></a>
+        <a class="hub-design-card" href={converterPath('psd-to-jpg')}><div><div class="hub-pair"><span>PSD</span><i>→</i><span>JPG</span></div><h3>PSD → JPG</h3><p>{c.psdJpgDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-layer-stack"><i></i><i></i><i></i></span><em>→</em><span class="hub-output jpg">JPG</span></div></div></a>
+        <a class="hub-design-card" href={converterPath('png-to-psd')}><div><div class="hub-pair"><span>PNG</span><i>→</i><span>PSD</span></div><h3>PNG → PSD</h3><p>{c.pngPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output png">PNG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
+        <a class="hub-design-card" href={converterPath('jpg-to-psd')}><div><div class="hub-pair"><span>JPG</span><i>→</i><span>PSD</span></div><h3>JPG → PSD</h3><p>{c.jpgPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output jpg">JPG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
       </div>
 
-      <a class="hub-checker" id="checker" href="/convert/canva-to-google-slides/">
+      <a class="hub-checker" id="checker" href={converterPath('canva-to-google-slides')}>
         <div class="hub-checker-copy"><span>{c.compatibilityChecker}</span><h3>Canva → Google Slides</h3><p>{c.checkerDesc}</p><b>{c.openChecker} <i>↗</i></b></div>
         <div class="hub-checker-visual" aria-hidden="true"><div class="hub-checker-window"><div class="hub-checker-top"><b>presentation.pptx</b><span>{c.analysis}</span></div><div class="hub-checker-content"><div class="hub-slide-list"><i></i><i></i><i></i></div><div class="hub-results"><div><span>Aa</span><p><b>{c.fontCompatibility}</b><small>{c.fontResult}</small></p><em class="warn">{c.check}</em></div><div><span>▣</span><p><b>{c.groupedObjects}</b><small>{c.groupedResult}</small></p><em>{c.ok}</em></div><div><span>✦</span><p><b>{c.effects}</b><small>{c.effectsResult}</small></p><em class="warn">{c.check}</em></div></div></div></div></div>
       </a>
