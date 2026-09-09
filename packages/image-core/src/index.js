@@ -15,6 +15,18 @@ function assertTarget(target = {}) {
   }
 }
 
+function normalizeFormat(format, compression) {
+  if (format === 'heif' && compression === 'av1') return 'avif';
+  return format ?? null;
+}
+
+function orientedBounds(image, applyOrientation) {
+  if (applyOrientation && [5, 6, 7, 8].includes(image.orientation)) {
+    return { width: image.height, height: image.width };
+  }
+  return { width: image.width, height: image.height };
+}
+
 function encoder(pipeline, format, policy) {
   switch (format) {
     case 'jpeg':
@@ -44,8 +56,9 @@ export async function inspectImage(input, options = {}) {
 
   return {
     bytes: input.length,
-    format: metadata.format ?? null,
+    format: normalizeFormat(metadata.format, metadata.compression),
     mediaType: metadata.mediaType ?? null,
+    compression: metadata.compression ?? null,
     width: metadata.width,
     height: metadata.height,
     orientation: metadata.orientation ?? null,
@@ -95,8 +108,9 @@ export async function optimizeImage(input, options = {}) {
 
   const encoded = encoder(pipeline, outputFormat, policy);
   const { data, info } = await encoded.toBuffer({ resolveWithObject: true });
+  const originalBounds = orientedBounds(original, policy.preserveOrientation);
 
-  if (policy.withoutEnlargement && (info.width > original.width || info.height > original.height)) {
+  if (policy.withoutEnlargement && (info.width > originalBounds.width || info.height > originalBounds.height)) {
     throw new Error('no-upscale guard failed');
   }
   if (policy.preserveAlpha && original.hasAlpha && !info.channels) {
@@ -113,7 +127,7 @@ export async function optimizeImage(input, options = {}) {
       original,
       output: {
         bytes: data.length,
-        format: info.format,
+        format: outputFormat,
         width: info.width,
         height: info.height,
         channels: info.channels,
@@ -136,7 +150,7 @@ export async function optimizeImage(input, options = {}) {
     original,
     output: {
       bytes: data.length,
-      format: info.format,
+      format: normalizeFormat(outputMetadata.format, outputMetadata.compression),
       width: info.width,
       height: info.height,
       hasAlpha: Boolean(outputMetadata.hasAlpha),
