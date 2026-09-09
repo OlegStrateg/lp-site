@@ -1,0 +1,261 @@
+---
+// Adaptador PT-BR do fluxo WebP -> JPG existente.
+// Mantém as mesmas classes visuais, worker e limites do conversor EN.
+import Icon from './Icon.astro';
+
+interface Props {
+  toolHeading: string;
+}
+const { toolHeading } = Astro.props;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="converter-widget"
+    class="converter-widget"
+    data-state="empty"
+    data-input="webp"
+    data-output="jpg"
+    role="group"
+    aria-label="Conversor de imagem WebP para JPG"
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="folder" /></div>
+      <p class="dz-title">Solte uma imagem WebP — ou clique para escolher um arquivo</p>
+      <p class="dz-sub">O arquivo não sai desta aba.</p>
+      <button type="button" class="btn" id="choose-file-btn">Escolher arquivo — grátis</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden>
+      <p class="dz-title">Solte para converter</p>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">Exportando seu JPG…</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title">Seu JPG está pronto</p>
+      <ul class="layer-preview" id="layer-preview-list"></ul>
+      <a class="btn" id="download-link" download>Baixar JPG (sem cadastro)</a>
+      <div>
+        <button type="button" class="btn secondary" id="convert-another-btn">Converter outro</button>
+      </div>
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">Não foi possível converter esse arquivo. Tente novamente.</p>
+      <button type="button" class="btn" id="retry-btn">Tentar novamente</button>
+    </div>
+
+    <input type="file" id="file-input" accept="image/webp" hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% no seu dispositivo — nada é enviado</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { looksLikeWebpBytes } from '../lib/converter/webpSignature';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  const MAX_WEBP_BYTES = 30 * 1024 * 1024;
+  const MAX_DIMENSION = 6000;
+
+  const widget = document.getElementById('converter-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const downloadLink = document.getElementById('download-link') as HTMLAnchorElement;
+  const errorMessage = document.getElementById('error-message')!;
+  const layerList = document.getElementById('layer-preview-list')!;
+  const statusEl = document.getElementById('widget-status')!;
+
+  let currentObjectUrl: string | null = null;
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  function announce(state: string) {
+    if (state === 'processing') statusEl.textContent = 'Convertendo…';
+    else if (state === 'success') statusEl.textContent = 'Pronto. Seu JPG já pode ser baixado.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: 'empty' | 'drag-over' | 'processing' | 'success' | 'error') {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeCurrentUrl() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+  }
+
+  function resetToEmpty() {
+    revokeCurrentUrl();
+    fileInput.value = '';
+    setState('empty');
+  }
+
+  async function looksLikeWebp(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+      return looksLikeWebpBytes(bytes);
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleFile(file: File) {
+    if (widget.dataset.state === 'processing') return;
+
+    logPrivacyEvent('file selected locally');
+    track('upload_start', { file_type: 'webp', size_bucket: sizeBucket(file.size) });
+
+    if (!(await looksLikeWebp(file))) {
+      showError('unsupported_format', 'Este arquivo não parece ser uma imagem WebP. Escolha um arquivo .webp.');
+      return;
+    }
+
+    if (file.size > MAX_WEBP_BYTES) {
+      showError('too_large', 'Este arquivo tem mais de 30 MB. Escolha uma imagem menor.');
+      return;
+    }
+
+    setState('processing');
+
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      showError('corrupt', 'Não foi possível ler este arquivo. Ele pode estar corrompido ou em um formato não compatível.');
+      return;
+    }
+
+    if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+      bitmap.close();
+      showError('too_large_dimensions', `A imagem é maior que ${MAX_DIMENSION}×${MAX_DIMENSION}px. Escolha uma imagem menor.`);
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/converter/webpToJpg.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        const blob = new Blob([msg.buffer], { type: 'image/jpeg' });
+        revokeCurrentUrl();
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        downloadLink.download = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+
+        layerList.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = `🖼️ ${file.name.replace(/\.[^.]+$/, '')}.jpg (${msg.width}×${msg.height})`;
+        layerList.appendChild(li);
+
+        setState('success');
+        track('convert_success', {
+          duration_bucket: durationBucket(msg.durationMs),
+          layer_bucket: '1',
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', msg.message || 'A conversão falhou. Tente novamente.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'A conversão falhou inesperadamente. Tente novamente.');
+      worker.terminate();
+    };
+
+    worker.postMessage({ type: 'convert', bitmap }, [bitmap]);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
+
+  widget.addEventListener('click', (event) => {
+    if (widget.dataset.state === 'empty' && !(event.target as HTMLElement).closest('button, a')) {
+      fileInput.click();
+    }
+  });
+
+  widget.addEventListener('dragenter', (event) => {
+    event.preventDefault();
+    dragCounter++;
+    if (widget.dataset.state === 'empty') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (event) => event.preventDefault());
+  widget.addEventListener('dragleave', (event) => {
+    event.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState('empty');
+  });
+  widget.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dragCounter = 0;
+    fileInput.value = '';
+    const file = event.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+    else if (widget.dataset.state === 'drag-over') setState('empty');
+  });
+
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToEmpty();
+  });
+  convertAnotherBtn.addEventListener('click', () => {
+    track('convert_another_clicked', { surface: 'widget' });
+    resetToEmpty();
+  });
+  downloadLink.addEventListener('click', () => track('download_click'));
+
+  takeHandoff(['webp']).then((file) => {
+    if (file) handleFile(file);
+  });
+</script>
