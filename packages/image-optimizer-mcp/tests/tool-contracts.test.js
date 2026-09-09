@@ -18,7 +18,7 @@ const names = [
 
 test('exactly five Pareto MCP tools are exposed', () => {
   for (const name of names) assert.match(serverSource, new RegExp(`['\"]${name}['\"]`));
-  const registrations = [...serverSource.matchAll(/server\.tool\(/g)];
+  const registrations = [...serverSource.matchAll(/server\.registerTool\(/g)];
   assert.equal(registrations.length, 5);
 });
 
@@ -33,7 +33,9 @@ test('MCP layer has no production write or arbitrary filesystem operation', () =
   assert.doesNotMatch(serverSource + toolsSource, /fetch\(|axios|http\.request|https\.request/);
 });
 
-test('v2 split MCP server package is used', () => {
+test('v2 split MCP server package and registerTool API are used', () => {
   assert.match(serverSource, /@modelcontextprotocol\/server/);
+  assert.match(serverSource, /server\.registerTool\(/);
+  assert.doesNotMatch(serverSource, /server\.tool\(/);
   assert.doesNotMatch(serverSource, /@modelcontextprotocol\/sdk/);
 });
