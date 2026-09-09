@@ -1,0 +1,219 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface AlternateLink {
+  hreflang: string;
+  href: string;
+}
+
+interface HeaderLabels {
+  converters: string;
+  extensions: string;
+  learn: string;
+  mainAria?: string;
+  localEngine: string;
+  localTitle: string;
+}
+
+interface FooterLabels {
+  tagline: string;
+  about: string;
+  extensions: string;
+  privacy: string;
+  terms: string;
+  footerAria?: string;
+}
+
+interface InfoCard {
+  title: string;
+  text: string;
+}
+
+interface ExpectationColumn {
+  title: string;
+  items: string[];
+}
+
+interface HowToStep {
+  title: string;
+  text: string;
+}
+
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+interface Labels {
+  eyebrow: string;
+  subtitle: string;
+  expectationHeading: string;
+  howHeading: string;
+  whatYouGetHeading: string;
+  faqHeading: string;
+  moreHeading: string;
+  allConverters: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  lang: string;
+  dir?: 'ltr' | 'rtl';
+  homePath: string;
+  extensionsPath: string;
+  learnPath: string;
+  headerLabels: HeaderLabels;
+  footerLabels: FooterLabels;
+  alternates: AlternateLink[];
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  h1: string;
+  answerFirst: string;
+  proofChips: string[];
+  expectationLeft: ExpectationColumn;
+  expectationRight: ExpectationColumn;
+  truthNote: string;
+  howTo: HowToStep[];
+  whatYouGet: InfoCard[];
+  faq: FaqItem[];
+  labels: Labels;
+  allConvertersHref: string;
+  jsonLd: Record<string, unknown>;
+}
+
+const {
+  title,
+  description,
+  canonicalPath,
+  lang,
+  dir = 'ltr',
+  homePath,
+  extensionsPath,
+  learnPath,
+  headerLabels,
+  footerLabels,
+  alternates,
+  ogTitle = title,
+  ogDescription = description,
+  ogImage,
+  h1,
+  answerFirst,
+  proofChips,
+  expectationLeft,
+  expectationRight,
+  truthNote,
+  howTo,
+  whatYouGet,
+  faq,
+  labels,
+  allConvertersHref,
+  jsonLd,
+} = Astro.props;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  ogTitle={ogTitle}
+  ogDescription={ogDescription}
+  ogImage={ogImage}
+  lang={lang}
+  dir={dir}
+  homePath={homePath}
+  extensionsPath={extensionsPath}
+  learnPath={learnPath}
+  headerLabels={headerLabels}
+  footerLabels={footerLabels}
+  alternates={alternates}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </Fragment>
+
+  <article>
+    <section class="hero2 tool-hero2">
+      <div class="hero2-grid">
+        <div class="hero2-copy">
+          <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> {labels.eyebrow}</p>
+          <h1>{h1}</h1>
+          <p class="tool-subtitle">{labels.subtitle}</p>
+          <p class="answer-first">{answerFirst}</p>
+          <div class="trust-row" aria-label="Garantias do produto">
+            {proofChips.map((chip) => <span class="trust-chip">{chip}</span>)}
+          </div>
+        </div>
+        <div class="hero2-drop">
+          <div class="udz-shell tool-shell" id="tool-widget-shell">
+            <slot name="tool" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="expect-heading" class="tool-section">
+      <h2 id="expect-heading">{labels.expectationHeading}</h2>
+      <div class="expect-grid">
+        <div class="expect-card">
+          <h3>{expectationLeft.title}</h3>
+          <ul>{expectationLeft.items.map((item) => <li>{item}</li>)}</ul>
+        </div>
+        <div class="expect-card">
+          <h3>{expectationRight.title}</h3>
+          <ul>{expectationRight.items.map((item) => <li>{item}</li>)}</ul>
+        </div>
+      </div>
+      <p class="truth-note">{truthNote}</p>
+    </section>
+
+    <section aria-labelledby="how-heading" class="tool-section">
+      <h2 id="how-heading">{labels.howHeading}</h2>
+      <ol class="how-it-works">
+        {howTo.map((step) => (
+          <li><strong>{step.title}.</strong> {step.text}</li>
+        ))}
+      </ol>
+    </section>
+
+    <section aria-labelledby="get-heading" class="tool-section">
+      <h2 id="get-heading">{labels.whatYouGetHeading}</h2>
+      <div class="wyg-grid">
+        {whatYouGet.map((item) => (
+          <div class="wyg-card"><h3>{item.title}</h3><p>{item.text}</p></div>
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-heading" id="faq-client-side" class="tool-section">
+      <h2 id="faq-heading">{labels.faqHeading}</h2>
+      <div class="faq-list">
+        {faq.map((item, index) => (
+          <details class="faq-details" data-faq-index={index}>
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="more-heading" class="tool-section">
+      <h2 id="more-heading">{labels.moreHeading}</h2>
+      <ul class="more-conversions">
+        <li><a href={allConvertersHref}>{labels.allConverters}</a></li>
+      </ul>
+    </section>
+  </article>
+
+  <script>
+    import { track } from '../lib/analytics';
+
+    document.querySelectorAll<HTMLDetailsElement>('.faq-details').forEach((el) => {
+      el.addEventListener('toggle', () => {
+        if (el.open) track('faq_opened', { index: Number(el.dataset.faqIndex ?? -1) });
+      });
+    });
+  </script>
+</BaseLayout>
