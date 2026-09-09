@@ -9,6 +9,7 @@ on:
       - feat/LP-085-safe-image-fix
       - feat/LP-086-safe-fix-verification-gate
       - feat/LP-087-independent-system-validation
+      - feat/LP-088-safe-fix-allowlist-expansion
     paths:
       - 'packages/page-audit-extension/**'
       - '.github/workflows/page-audit-extension-verify.yml'
@@ -39,6 +40,7 @@ jobs:
           test -f packages/page-audit-extension/src/rules.js
           test -f packages/page-audit-extension/src/findings.js
           test -f packages/page-audit-extension/src/suggestions.js
+          test -f packages/page-audit-extension/src/safe-markup-fix.js
       - name: Reject write, broad-access and unsafe HTML primitives
         run: |
           ! grep -R -nE 'chrome\.(debugger|webRequest)|<all_urls>|host_permissions|fetch\(|XMLHttpRequest|chrome\.storage|document\.(write|execCommand)|\.innerHTML\s*=|insertAdjacentHTML|\.outerHTML\s*=' packages/page-audit-extension/src packages/page-audit-extension/manifest.json
