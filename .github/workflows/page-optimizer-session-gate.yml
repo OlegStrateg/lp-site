@@ -6,6 +6,7 @@ on:
       - feat/LP-081-session-2-gate
       - feat/LP-091-final-pareto-release-gate
       - integration/LP-092-page-optimizer-current-master
+      - release/LP-093-image-mcp-public-prep
   pull_request:
 
 jobs:
@@ -18,6 +19,9 @@ jobs:
         with:
           node-version: '22.16.0'
           cache: 'npm'
+      - name: Verify release candidate metadata
+        working-directory: packages/image-optimizer-mcp
+        run: npm run release:preflight
       - name: Install image-core
         working-directory: packages/image-core
         run: npm install --no-audit --no-fund
