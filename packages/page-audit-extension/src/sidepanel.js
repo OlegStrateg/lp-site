@@ -9,17 +9,58 @@ const summaryEl = document.querySelector('#summary');
 const snapshotEl = document.querySelector('#snapshot');
 const runButton = document.querySelector('#runAudit');
 
+function appendTextLine(parent, label, value, { bold = false } = {}) {
+  const p = document.createElement('p');
+  if (label) {
+    const strong = document.createElement('b');
+    strong.textContent = label;
+    p.append(strong, document.createTextNode(' '));
+  }
+  const text = document.createTextNode(String(value ?? ''));
+  if (bold) {
+    const strong = document.createElement('b');
+    strong.append(text);
+    p.append(strong);
+  } else {
+    p.append(text);
+  }
+  parent.append(p);
+}
+
 function renderFinding(item) {
   const el = document.createElement('article');
   el.className = `finding severity-${item.severity}`;
-  const evidence = item.evidence?.length
-    ? `<details><summary>Evidence (${item.affectedCount})</summary>${item.evidence.map((entry) => `<p>${entry.fact}</p>`).join('')}</details>`
-    : '';
+
+  const head = document.createElement('div');
+  head.className = 'finding-head';
+  const title = document.createElement('strong');
+  title.textContent = String(item.title ?? 'Finding');
+  const severity = document.createElement('span');
+  severity.textContent = String(item.severity ?? '');
+  head.append(title, severity);
+  el.append(head);
+
+  appendTextLine(el, '', item.fact);
+  appendTextLine(el, 'Priority:', `${item.priorityScore} · Confidence: ${item.confidence} · Area: ${item.category}`);
+  appendTextLine(el, 'Impact:', item.impact);
+  appendTextLine(el, 'Fixability:', item.fixability);
+  appendTextLine(el, 'Verify:', item.verification);
+
   const suggestion = suggestionReadiness(item);
   const suggestionLabel = suggestion.ready
     ? (suggestion.mode === 'review_required' ? 'AI suggestion: review required' : 'AI suggestion: ready')
     : `AI suggestion: blocked (${suggestion.reason})`;
-  el.innerHTML = `<div class="finding-head"><strong>${item.title}</strong><span>${item.severity}</span></div><p>${item.fact}</p><p><b>Priority:</b> ${item.priorityScore} · <b>Confidence:</b> ${item.confidence} · <b>Area:</b> ${item.category}</p><p><b>Impact:</b> ${item.impact}</p><p><b>Fixability:</b> ${item.fixability}</p><p><b>Verify:</b> ${item.verification}</p><p><b>${suggestionLabel}</b></p>${evidence}`;
+  appendTextLine(el, '', suggestionLabel, { bold: true });
+
+  if (item.evidence?.length) {
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = `Evidence (${item.affectedCount})`;
+    details.append(summary);
+    for (const entry of item.evidence) appendTextLine(details, '', entry.fact);
+    el.append(details);
+  }
+
   return el;
 }
 
