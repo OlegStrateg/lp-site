@@ -10,9 +10,9 @@ import {
   installSessionMessage,
 } from '../_lib/analytics.js';
 
-const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd']);
+const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd', 'eav']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const PHASES = new Set(['open', 'pinned', 'panel_opened', 'abandoned']);
+const PHASES = new Set(['open', 'pinned', 'panel_opened', 'abandoned', 'open_click', 'open_success', 'open_error']);
 const ATTR_SOURCES = new Set(['google_organic','yandex_organic','bing_organic','duckduckgo_organic','yahoo_organic','search_organic','paid','referral','direct','unknown']);
 const ATTR_CTAS = new Set(['header','hero','final','mobile_sticky','']);
 
@@ -23,12 +23,16 @@ function json(body, status = 200) {
   });
 }
 
+function productLabel(text, p) {
+  return p === 'eav' ? String(text).replaceAll('eav', 'Audio Extractor from Video') : text;
+}
+
 async function sendOrEdit(env, record) {
   const [today, total] = await Promise.all([
     statsForDays(env, record.p, 1),
     statsTotal(env, record.p),
   ]);
-  const text = installSessionMessage({ record, today, total });
+  const text = productLabel(installSessionMessage({ record, today, total }), record.p);
   if (record.telegram_message_id) {
     await editTelegram(env, record.telegram_message_id, text).catch(() => null);
     return Number(record.telegram_message_id);
@@ -65,12 +69,10 @@ export async function onRequestPost(context) {
     }
   }
 
-
   if (!PRODUCTS.has(p))   return json({ ok: false, error: 'unknown_product' }, 400);
   if (!UUID_RE.test(sid)) return json({ ok: false, error: 'bad_sid' }, 400);
   if (!PHASES.has(phase)) return json({ ok: false, error: 'bad_phase' }, 400);
 
-  // --- phase: open — первый визит на welcome-страницу = факт установки ---
   if (phase === 'open') {
     const existing = await getInstallSession(env, sid);
     if (existing) return json({ ok: true, dedup: true });
@@ -83,12 +85,15 @@ export async function onRequestPost(context) {
       created_at: new Date().toISOString(),
       pinned: false,
       panel_opened: false,
+      open_clicked: false,
+      open_error: false,
       abandoned: false,
       telegram_message_id: null,
     };
 
     if (!isTest) {
       await saveStatEvent(env, { p, event: 'install', id: sid, ts: Date.now() });
+      await saveStatEvent(env, { p, event: 'welcome_view', id: sid, ts: Date.now() });
       if (attribution) {
         await saveStatEvent(env, { p, event: 'install_landing', id: sid, ts: Date.now(), value: attribution.source });
         if (attribution.organic) {
@@ -98,27 +103,29 @@ export async function onRequestPost(context) {
     }
 
     await putInstallSession(env, sid, record);
-
     const messageId = await sendOrEdit(env, record).catch(() => null);
     if (messageId) {
       record.telegram_message_id = messageId;
       await putInstallSession(env, sid, record);
     }
-
     return json({ ok: true });
   }
 
-  // --- последующие фазы: pinned / panel_opened / abandoned ---
   let record = await getInstallSession(env, sid);
-  if (!record) {
-    // сессия не найдена (очень редкий edge case — KV replication lag)
-    return json({ ok: false, error: 'session_not_found' }, 404);
-  }
+  if (!record) return json({ ok: false, error: 'session_not_found' }, 404);
 
-  if (phase === 'pinned')       record.pinned       = true;
-  if (phase === 'panel_opened') record.panel_opened = true;
-  if (phase === 'abandoned')    record.abandoned    = true;
+  if (phase === 'pinned') record.pinned = true;
+  if (phase === 'panel_opened' || phase === 'open_success') record.panel_opened = true;
+  if (phase === 'open_click') record.open_clicked = true;
+  if (phase === 'open_error') record.open_error = true;
+  if (phase === 'abandoned') record.abandoned = true;
   record.updated_at = new Date().toISOString();
+
+  if (!record.is_test) {
+    if (phase === 'open_click') await saveStatEvent(env, { p, event: 'welcome_open_click', id: sid, ts: Date.now() });
+    if (phase === 'panel_opened' || phase === 'open_success') await saveStatEvent(env, { p, event: 'welcome_open_success', id: sid, ts: Date.now() });
+    if (phase === 'open_error') await saveStatEvent(env, { p, event: 'welcome_open_error', id: sid, ts: Date.now() });
+  }
 
   await putInstallSession(env, sid, record);
   const messageId = await sendOrEdit(env, record).catch(() => null);
