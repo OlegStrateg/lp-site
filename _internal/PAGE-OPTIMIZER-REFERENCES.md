@@ -151,3 +151,217 @@ LayerPorter выигрывает не количеством audits, а связ
 `DETECT → PRIORITIZE → PROVE → SAFE FIX → VERIFY → ROLLBACK`.
 
 Каждый следующий референс сравнивать именно по этой цепочке.
+
+---
+
+# 10. Шаг 2/30 — углублённый аудит Website Image Optimization MCP
+
+Дата: 2026-09-09
+Статус: DONE
+
+## 10.1 Sharp / libvips — KEEP, основной processing engine
+
+Факты на момент проверки:
+- `lovell/sharp` — ~32.6k stars, ~1.4k forks;
+- активный проект: push 2026-09-07;
+- Apache-2.0;
+- JPEG/PNG/WebP/AVIF/TIFF, resize, metadata, alpha, ICC/EXIF pipeline;
+- libvips под капотом.
+
+Решение:
+- использовать как основной серверный image engine;
+- не писать собственный resize/compression/format pipeline;
+- завернуть в LayerPorter adapter с собственными guards и policy.
+
+Критические ограничения из реальных Issues:
+1. AVIF encoding может быть существенно тяжелее WebP по CPU/RAM; нельзя по умолчанию обещать «AVIF всегда лучше».
+2. У Sharp timeout/abort не гарантирован на самой encode-фазе; внешнее ограничение времени не всегда прекращает расход CPU.
+3. AVIF quality/effort требует собственного benchmark; универсальный quality=50 не считать правильным для любого контента.
+
+Архитектурное следствие:
+- bounded queue;
+- input pixel/dimension limits;
+- memory/concurrency limits;
+- per-format time budget;
+- WebP как быстрый безопасный baseline, AVIF — только когда expected gain оправдывает стоимость;
+- never increase bytes guard;
+- quality strategy определяется benchmark/classification, а не одной цифрой.
+
+## 10.2 unjs/ipx — ADAPT PATTERNS
+
+Источник: https://github.com/unjs/ipx
+Факты:
+- ~2.45k stars;
+- MIT;
+- активный push 2026-09-07;
+- позиционируется как secure high-performance image optimizer;
+- использует Sharp/libvips;
+- поддерживает автоматический выбор формата по Accept header;
+- валидирует modifiers до передачи в Sharp.
+
+Что берём:
+- строгую validation boundary перед image engine;
+- allowlisted modifiers вместо произвольной передачи параметров Sharp;
+- auto-format negotiation как референс;
+- идею тонкого proxy/adapter слоя.
+
+Что не берём как есть:
+- URL-transform DSL и CDN/proxy-модель не нужны для первого MCP;
+- не строим собственный image CDN.
+
+## 10.3 piephai/mcp-image-optimizer — STUDY / не зависимость
+
+Факты:
+- MIT;
+- TypeScript;
+- 12 stars / 2 forks;
+- 15 commits;
+- последний push 2025-11-25 — существенно слабее по активности, чем Sharp/IPX;
+- URL/local files, batch, WebP/AVIF, resize/crop, LQIP, watermark, favicon.
+
+Плюсы:
+- хорошая проверка того, что generic MCP over Sharp очень легко собрать;
+- простая установка в Claude/Codex/VS Code/Cursor;
+- полезен для tool schema и packaging reference.
+
+Минусы:
+- слишком широкий generic image-tool scope;
+- нет page-aware анализа;
+- нет rendered dimensions/srcset/LCP/context;
+- не найден зрелый security layer для remote URL fetch;
+- небольшая доказательная база эксплуатации.
+
+Решение:
+- код как основную зависимость НЕ брать;
+- изучить только packaging/tool schema/error handling;
+- наш MCP делать уже и более task-oriented.
+
+## 10.4 greatSumini/sharp-mcp — STUDY / REJECT AS BASE
+
+Факты:
+- MIT;
+- ~11 stars / 6 forks;
+- generic image session/manipulation/compression MCP.
+
+Полезно:
+- structured error responses;
+- before/after byte reporting;
+- session pattern как возможный reference для больших payloads.
+
+Не подходит как база:
+- generic manipulation surface;
+- не решает website optimization intent;
+- лишние tools повышают tool-selection noise.
+
+## 10.5 Squoosh — STUDY, не production dependency первого MCP
+
+Сильные стороны:
+- зрелый UX сравнения качества;
+- WASM/browser processing reference;
+- best-in-class codec experimentation.
+
+Практические риски:
+- реальный открытый issue 2026: AVIF export в Safari 26.2 может падать с WASM memory error;
+- большой кодовый стек относительно простого серверного MCP;
+- браузерная кодек-совместимость создаёт лишний слой поддержки.
+
+Решение:
+- не тащить Squoosh runtime в первый серверный MCP;
+- использовать как benchmark/UX/codec research reference;
+- браузерный вариант рассмотреть позже отдельно.
+
+## 10.6 ShortPixel MCP — STUDY COMPETITOR
+
+Факт:
+- `com.shortpixel.mcp/optimize` уже находится в Official MCP Registry;
+- публичное позиционирование: optimize public image URLs через ShortPixel API для AI agents.
+
+Вывод:
+- сама функция `optimize_image_url` уже не дифференциатор;
+- наш продукт должен стартовать выше уровня одиночной картинки: `analyze_page_images → decide → optimize → responsive output → before/after`.
+
+## 10.7 Cleanor MCP — STUDY DISTRIBUTION/TRANSPORT
+
+Полезные паттерны:
+- hosted Streamable HTTP endpoint;
+- zero-auth first-use;
+- npm/local variant;
+- REST capabilities рядом с MCP;
+- machine-readable capabilities.
+
+Решение:
+- использовать как distribution/transport reference;
+- не копировать 18+ generic utilities: широкий набор размывает category ownership.
+
+## 10.8 Field Intelligence — подтверждённые боли
+
+Повторяющиеся community patterns:
+1. Люди не хотят вручную выбирать WebP/AVIF и собирать fallback/srcset; ценность — автоматизированный workflow.
+2. AVIF часто выигрывает по размеру, но encode cost и perceived quality непредсказуемы; «AVIF для всего» — плохое правило.
+3. Для LCP сначала надо доказать, что проблема именно в изображении; случайное сжатие всего сайта не равно оптимизации.
+4. Lazy loading LCP image — повторяющаяся реальная ошибка.
+5. На многих сайтах основной выигрыш даёт не «формат», а уменьшение oversized source до фактического rendered size.
+6. CWV нельзя превращать в культ: оптимизация последних миллисекунд без бизнес-эффекта должна проигрывать Pareto Gate.
+
+Продуктовый вывод:
+LayerPorter должен отвечать не «какой quality поставить», а:
+`что здесь реально тормозит → какой размер/формат нужен → сколько даст → безопасно ли менять`.
+
+## 10.9 Security gate для remote image URL
+
+Первый MCP нельзя публиковать без:
+- только http/https;
+- DNS/IP validation;
+- block localhost/private/link-local/metadata/internal ranges;
+- redirect re-validation на каждом hop;
+- max redirects;
+- max content-length и streamed byte cap;
+- max decoded pixels/dimensions;
+- magic-byte/type validation;
+- response timeout + overall job budget;
+- bounded concurrency/queue;
+- resource cleanup;
+- no arbitrary output path для remote hosted mode;
+- no arbitrary Sharp options passthrough;
+- allowlisted formats/options.
+
+Это отдельный обязательный security contract первого runtime.
+
+## 10.10 Финальная классификация шага 2
+
+| Компонент | Статус | Решение |
+|---|---|---|
+| Sharp/libvips | KEEP | основное processing ядро |
+| IPX | ADAPT PATTERNS | validation/auto-format/security adapter patterns |
+| Squoosh | STUDY | benchmark/WASM/UX, не первый runtime |
+| piephai MCP | STUDY | schemas/packaging, не dependency |
+| sharp-mcp | STUDY | errors/byte metrics, не dependency |
+| ShortPixel MCP | STUDY COMPETITOR | подтверждает commodity single-image optimization |
+| Cleanor MCP | STUDY | remote transport/distribution patterns |
+| собственные кодеки | REJECT | не писать |
+| собственный generic image editor MCP | REJECT | не строить |
+| собственный CDN | REJECT | не строить в MVP |
+
+## 10.11 Архитектурное решение после шага 2
+
+Первый runtime:
+
+`MCP/HTTP boundary → URL/input security → page-context analyzer → policy/decision layer → Sharp adapter → quality/size guards → result/metrics`.
+
+Ключевое конкурентное отличие:
+- контекст страницы;
+- rendered vs intrinsic dimensions;
+- выбор формата по expected gain/cost;
+- responsive variants;
+- LCP-specific handling;
+- no-regression guards;
+- before/after evidence.
+
+### Что категорически не пишем с нуля
+- codecs;
+- resize engine;
+- AVIF/WebP encoder;
+- generic image editor;
+- CDN;
+- arbitrary transform language;
+- browser WASM stack для v1.
