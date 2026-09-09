@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/LP-081-session-2-gate
+      - feat/LP-091-final-pareto-release-gate
   pull_request:
 
 jobs:
