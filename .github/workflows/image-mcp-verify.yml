@@ -5,6 +5,7 @@ on:
     branches:
       - feat/LP-078-image-optimizer-mcp-core
       - feat/LP-081-session-2-gate
+      - feat/LP-085-safe-image-fix
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
