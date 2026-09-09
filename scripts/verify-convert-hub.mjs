@@ -134,7 +134,7 @@ const routes = [
   'psd-to-png','psd-to-jpg','png-to-psd','jpg-to-psd','canva-to-google-slides',
 ];
 const localizedExactRoutes = new Map([
-  ['ru', new Set(['jpg-to-pdf'])],
+  ['ru', new Set(['jpg-to-pdf', 'png-to-psd'])],
   ['pt-br', new Set(['jpg-to-pdf', 'pdf-to-jpg', 'webp-to-jpg', 'favicon-generator', 'png-to-psd', 'jpg-to-psd', 'psd-to-jpg', 'psd-to-png', 'canva-to-google-slides'])],
 ]);
 const expectedRoutePath = (locale, route) =>
@@ -275,7 +275,7 @@ for (const locale of holdLocales) {
     throw new Error(`[${locale.code}] HOLD Convert Hub locale leaked into sitemap`);
   }
 }
-for (const localizedPath of ['/ru/convert/jpg-to-pdf/', '/pt-br/convert/jpg-to-pdf/', '/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/webp-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/png-to-psd/', '/pt-br/convert/jpg-to-psd/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/', '/pt-br/convert/canva-to-google-slides/']) {
+for (const localizedPath of ['/ru/convert/jpg-to-pdf/', '/ru/convert/png-to-psd/', '/pt-br/convert/jpg-to-pdf/', '/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/webp-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/png-to-psd/', '/pt-br/convert/jpg-to-psd/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/', '/pt-br/convert/canva-to-google-slides/']) {
   if (!sitemap.includes(`<loc>https://layerporter.com${localizedPath}</loc>`)) {
     throw new Error(`Missing localized exact-converter in sitemap: ${localizedPath}`);
   }
