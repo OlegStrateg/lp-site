@@ -1,0 +1,134 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import PsdToPngWidgetPtBr from '../../../components/PsdToPngWidgetPtBr.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'pt-br');
+if (!locale) throw new Error('PT-BR converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/pt-br/convert/psd-to-png/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Converter PSD para PNG Grátis no Navegador | LayerPorter';
+const description = 'Converta PSD para PNG grátis no navegador, sem upload e sem cadastro. Exporte o composto do PSD como uma imagem PNG com transparência preservada.';
+const h1 = 'Converter PSD para PNG — grátis, sem upload';
+const answerFirst = 'Use este conversor PSD para PNG para exportar o composto visual salvo no arquivo PSD como uma única imagem PNG diretamente no navegador. A transparência do composto é preservada quando existe, as camadas não continuam editáveis e o PSD não é enviado para um servidor.';
+
+const howTo = [
+  { title: 'Adicione o PSD', text: 'Arraste um arquivo .psd para o conversor ou clique para escolher um arquivo no seu dispositivo.' },
+  { title: 'Converta localmente', text: 'O navegador lê o composto visual salvo no PSD e gera o PNG no seu dispositivo, sem upload do arquivo.' },
+  { title: 'Baixe o PNG', text: 'Quando a conversão terminar, baixe a imagem PNG com as dimensões do composto processado.' },
+];
+
+const faq = [
+  { q: 'Como converter PSD para PNG grátis?', a: 'Escolha um arquivo PSD ou arraste-o para o conversor. O PNG é criado no navegador e fica disponível para download sem cadastro e sem enviar o PSD para um servidor.' },
+  { q: 'A transparência do PSD é mantida no PNG?', a: 'Sim, quando o composto visual salvo no PSD contém transparência. O PNG suporta canal alfa, então pixels transparentes ou semitransparentes podem permanecer transparentes no arquivo final.' },
+  { q: 'As camadas do PSD continuam editáveis no PNG?', a: 'Não. PNG é um formato de imagem plana. O resultado é uma única imagem; camadas, textos, máscaras e objetos editáveis não permanecem como estrutura editável.' },
+  { q: 'Por que alguns PSD podem não abrir neste conversor?', a: 'O mecanismo atual usa o composto visual salvo dentro do PSD. Se o arquivo não tiver essa prévia compatível, a conversão pode pedir que ele seja salvo novamente com a opção Maximize Compatibility ativada.' },
+  { q: 'Qual é o limite de tamanho do PSD?', a: 'Nesta versão, o arquivo PSD pode ter até 60 MB. O limite é verificado no dispositivo antes da conversão.' },
+  { q: 'Posso converter vários PSD para PNG de uma vez?', a: 'Não nesta página. A conversão é feita um arquivo por vez.' },
+  { q: 'Preciso do Photoshop para converter PSD em PNG?', a: 'Não. A conversão acontece no navegador. Photoshop não é necessário para gerar o PNG, desde que o PSD contenha um composto visual compatível.' },
+  { q: 'Meu PSD é enviado para o LayerPorter?', a: 'Não. A leitura do PSD e a criação do PNG acontecem no seu dispositivo durante esta conversão.' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/pt-br/` },
+        { '@type': 'ListItem', position: 2, name: 'Conversores', item: `${site}/pt-br/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Converter PSD para PNG', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter Converter PSD para PNG',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'pt-BR',
+      applicationCategory: 'DesignApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+      featureList: 'Converte PSD para PNG no navegador, exporta o composto visual como imagem plana, preserva transparência quando presente e aceita PSD de até 60 MB',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Como converter PSD para PNG no navegador',
+      inLanguage: 'pt-BR',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'pt-BR',
+      mainEntity: faq.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="pt-BR"
+  dir="ltr"
+  homePath="/pt-br/"
+  extensionsPath="/pt-br/extensions/"
+  learnPath="/pt-br/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/psd-to-png/` },
+    { hreflang: 'pt-BR', href: pageUrl },
+    { hreflang: 'x-default', href: `${site}/convert/psd-to-png/` },
+  ]}
+  ogTitle="Converter PSD para PNG Grátis — sem upload | LayerPorter"
+  ogDescription="Converta PSD em PNG no navegador. Uma imagem plana, transparência preservada quando presente e sem upload do arquivo."
+  ogImage={`${site}/og/psd-to-png.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Sem upload', 'Sem cadastro', 'Transparência preservada', 'PSD até 60 MB']}
+  expectationLeft={{
+    title: 'PSD (entrada)',
+    items: ['Pode conter várias camadas, máscaras e efeitos', 'Até 60 MB nesta versão', 'Precisa ter um composto visual compatível salvo no arquivo'],
+  }}
+  expectationRight={{
+    title: 'PNG (resultado)',
+    items: ['Uma única imagem plana', 'Transparência preservada quando existe no composto', 'Sem camadas ou texto editável'],
+  }}
+  truthNote="Converter PSD para PNG preserva os pixels do composto visual, não a estrutura editável do documento. O PNG final não contém camadas separadas; mantenha o PSD original como arquivo de trabalho."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'PNG pronto para uso', text: 'O composto visual do PSD é exportado como uma imagem PNG que pode ser usada em sites, apresentações e outros fluxos de imagem.' },
+    { title: 'Transparência quando existe', text: 'O mecanismo verifica o canal alfa do resultado e preserva pixels transparentes ou semitransparentes no PNG.' },
+    { title: 'Dimensões do composto', text: 'O PNG é gerado com a largura e a altura do composto visual lido do arquivo PSD.' },
+    { title: 'Processamento local', text: 'O PSD é lido e convertido na memória do navegador; o arquivo não é enviado durante esta conversão.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Conversor no navegador',
+    subtitle: 'No seu dispositivo. Sem upload. Sem conta.',
+    proofAria: 'Garantias do produto',
+    expectationHeading: 'O que esperar',
+    howHeading: 'Como converter PSD para PNG',
+    whatYouGetHeading: 'O que você recebe',
+    faqHeading: 'Perguntas frequentes',
+    moreHeading: 'Mais conversores',
+    allConverters: 'Ver todos os conversores',
+  }}
+  allConvertersHref="/pt-br/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <PsdToPngWidgetPtBr toolHeading="Converter PSD para PNG" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>
