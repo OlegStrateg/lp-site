@@ -40,7 +40,7 @@ const faq = [
   },
   {
     q: 'A qualidade da imagem diminui ao converter para PDF?',
-    a: 'O conversor usa as imagens nas dimensões originais, sem redimensioná-las. A conversão muda o contêiner do arquivo para PDF e não adiciona uma nova etapa de compressão JPEG.',
+    a: 'O conversor mantém as dimensões originais em pixels, sem redimensionar a imagem. Para montar o PDF, cada página é codificada como JPEG com qualidade de 92%, então um JPG já comprimido pode sofrer uma pequena perda adicional; áreas transparentes de PNG ficam brancas.',
   },
   {
     q: 'Posso escolher margens ou tamanho da página?',
