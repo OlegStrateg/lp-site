@@ -7,6 +7,7 @@ on:
       - feat/LP-081-session-2-gate
       - feat/LP-085-safe-image-fix
       - feat/LP-086-safe-fix-verification-gate
+      - feat/LP-087-independent-system-validation
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
