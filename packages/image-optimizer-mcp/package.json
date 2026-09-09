@@ -1,17 +1,50 @@
 {
   "name": "@layerporter/image-optimizer-mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Page-aware MCP server for deterministic website image analysis and safe optimization.",
   "private": true,
   "type": "module",
+  "license": "UNLICENSED",
   "engines": {
     "node": ">=22.12.0"
   },
+  "bin": {
+    "layerporter-image-optimizer-mcp": "src/server.js"
+  },
+  "files": [
+    "src/**",
+    "README.md",
+    "server.json"
+  ],
   "scripts": {
+    "prepare": "node scripts/sync-image-core.mjs",
+    "prepack": "node scripts/sync-image-core.mjs",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
-    "@layerporter/image-core": "file:../image-core",
     "@modelcontextprotocol/server": "^2.0.0",
+    "sharp": "0.35.4",
     "zod": "^4.1.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OlegStrateg/layerporter-site.git",
+    "directory": "packages/image-optimizer-mcp"
+  },
+  "homepage": "https://layerporter.com/mcp/website-image-optimizer/",
+  "bugs": {
+    "url": "https://github.com/OlegStrateg/layerporter-site/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "image-optimization",
+    "webp",
+    "avif",
+    "core-web-vitals",
+    "lcp"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
