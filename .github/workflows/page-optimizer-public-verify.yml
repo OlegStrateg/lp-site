@@ -6,6 +6,7 @@ on:
       - feat/LP-078-image-optimizer-mcp-core
       - feat/LP-081-session-2-gate
       - feat/LP-091-final-pareto-release-gate
+      - integration/LP-092-page-optimizer-current-master
     paths:
       - 'src/pages/mcp/**'
       - 'src/pages/docs/mcp/**'
