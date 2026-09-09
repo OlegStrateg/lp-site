@@ -8,6 +8,6 @@
 - [x] no-upscale guard
 - [x] alpha preservation guard
 - [x] never-increase-bytes policy
-- [ ] CI image-core tests PASS
-- [ ] extension permissions regression PASS
-- [ ] Git branch hygiene verified
+- [x] CI image-core tests PASS — run 34393278524
+- [x] extension permissions regression PASS — run 34393313631
+- [x] Git branch hygiene verified
