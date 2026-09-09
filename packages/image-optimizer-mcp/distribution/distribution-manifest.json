@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "brand": "LayerPorter",
+    "name": "Website Image Optimizer MCP",
+    "fullName": "LayerPorter Website Image Optimizer MCP",
+    "mcpRegistryName": "com.layerporter/website-image-optimizer",
+    "npmPackage": "@layerporter/image-optimizer-mcp",
+    "versionCandidate": "0.1.0",
+    "transport": "stdio",
+    "toolCount": 5,
+    "homepage": "https://layerporter.com/mcp/website-image-optimizer/",
+    "docs": "https://layerporter.com/docs/mcp/website-image-optimizer/",
+    "repositoryCurrent": "https://github.com/OlegStrateg/layerporter-site",
+    "releaseStatus": "technical-candidate-not-publicly-released"
+  },
+  "canonicalDescription": "Page-aware MCP server for deterministic website image analysis and safe image optimization with bounded no-regression guards.",
+  "canonicalCapabilities": [
+    "analyze normalized page-image facts",
+    "optimize one image with bounded format and resize policy",
+    "generate responsive image variants without upscaling",
+    "compare original and candidate image versions",
+    "optimize a bounded batch of preselected safe image items"
+  ],
+  "safetyFacts": [
+    "current MCP layer performs no arbitrary filesystem writes",
+    "current MCP layer performs no network fetches",
+    "batch input is bounded to 20 items",
+    "responsive variant generation is bounded to 6 widths",
+    "image core enforces no-upscale and never-increase-bytes guards",
+    "current MCP package does not write changes to production"
+  ],
+  "channels": [
+    {
+      "id": "official-mcp-registry",
+      "priority": "P0",
+      "role": "canonical-registry",
+      "status": "prepared-blocked",
+      "requires": ["public npm package", "package ownership", "com.layerporter namespace authentication"],
+      "proof": "registry API returns exact server name and version"
+    },
+    {
+      "id": "glama",
+      "priority": "P0",
+      "role": "quality-security-discovery",
+      "status": "prepared-blocked",
+      "requires": ["public GitHub server repository or public hosted connector", "maintainer ownership verification", "successful indexing and health/quality scan"],
+      "proof": "listing is discoverable, ownership claimed, health/quality score present"
+    },
+    {
+      "id": "smithery",
+      "priority": "P0",
+      "role": "distribution-analytics",
+      "status": "prepared-blocked",
+      "requires": ["Streamable HTTP public URL or MCPB bundle", "Smithery namespace/account"],
+      "proof": "server page is discoverable and install/try flow works"
+    },
+    {
+      "id": "mcp-so",
+      "priority": "P1",
+      "role": "community-discovery",
+      "status": "prepared-blocked",
+      "requires": ["public install/source information", "submission issue accepted/indexed"],
+      "proof": "searchable mcp.so listing with correct install/source data"
+    },
+    {
+      "id": "awesome-mcp-servers",
+      "priority": "P1",
+      "role": "developer-discovery-backlink",
+      "status": "prepared-blocked",
+      "requires": ["public repository", "Glama listing", "Glama quality score", "PR matching repository format"],
+      "proof": "merged entry in punkpeye/awesome-mcp-servers"
+    }
+  ],
+  "antiSpamPolicy": {
+    "massDirectorySubmission": false,
+    "duplicateDescriptionsAcrossLowTrustDirectories": false,
+    "paidListingsWithoutIndependentValue": false,
+    "fakeReviewsOrVotes": false,
+    "listingCountsAsIndependentProof": false
+  }
+}

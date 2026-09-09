@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LayerPorter Page Audit</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Page Audit</h1>
+        <p>Read-only deterministic audit of the current tab</p>
+      </div>
+      <button id="runAudit" type="button">Run audit</button>
+    </header>
+    <section id="status" aria-live="polite">Ready</section>
+    <section>
+      <h2>Findings</h2>
+      <div id="summary"></div>
+      <div id="findings"></div>
+    </section>
+    <details>
+      <summary>Normalized snapshot</summary>
+      <pre id="snapshot"></pre>
+    </details>
+  </main>
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

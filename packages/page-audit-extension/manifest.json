@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "LayerPorter Page Audit",
+  "version": "0.1.0",
+  "description": "Read-only deterministic audit of the current page.",
+  "permissions": ["activeTab", "scripting", "sidePanel"],
+  "background": {
+    "service_worker": "src/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Audit current page"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel.html"
+  }
+}
