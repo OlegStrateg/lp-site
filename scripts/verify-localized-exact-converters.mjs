@@ -10,6 +10,7 @@ const expected = [
   ['/pt-br/convert/jpg-to-psd/', 'pt-BR'],
   ['/pt-br/convert/psd-to-jpg/', 'pt-BR'],
   ['/pt-br/convert/psd-to-png/', 'pt-BR'],
+  ['/pt-br/convert/canva-to-google-slides/', 'pt-BR'],
 ];
 
 for (const [route, lang] of expected) {
@@ -23,53 +24,46 @@ for (const [route, lang] of expected) {
 
 const psdJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-jpg', 'index.html');
 const psdJpg = fs.readFileSync(psdJpgFile, 'utf8');
-for (const marker of [
-  'Converter PSD para JPG',
-  'qualidade JPG fixa de 92%',
-  'Adicionar Picture Converter ao Chrome',
-  'oegpbmdpckfdgodnkdnoggedamfflfcl',
-]) {
+for (const marker of ['Converter PSD para JPG', 'qualidade JPG fixa de 92%', 'Adicionar Picture Converter ao Chrome', 'oegpbmdpckfdgodnkdnoggedamfflfcl']) {
   if (!psdJpg.includes(marker)) throw new Error(`PT-BR PSD→JPG missing marker: ${marker}`);
 }
 
 const psdPngFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-png', 'index.html');
 const psdPng = fs.readFileSync(psdPngFile, 'utf8');
-for (const marker of [
-  'Converter PSD para PNG',
-  'Transparência preservada',
-  'Maximize Compatibility',
-  'Adicionar Picture Converter ao Chrome',
-]) {
+for (const marker of ['Converter PSD para PNG', 'Transparência preservada', 'Maximize Compatibility', 'Adicionar Picture Converter ao Chrome']) {
   if (!psdPng.includes(marker)) throw new Error(`PT-BR PSD→PNG missing marker: ${marker}`);
 }
 
 const faviconFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'favicon-generator', 'index.html');
 const favicon = fs.readFileSync(faviconFile, 'utf8');
-for (const marker of [
-  'Gerador de favicon',
-  'favicon.ico',
-  '16, 32, 48, 180, 192 e 512 px',
-  'As tags HTML são mostradas na página',
-  'Adicionar Picture Converter ao Chrome',
-]) {
+for (const marker of ['Gerador de favicon', 'favicon.ico', '16, 32, 48, 180, 192 e 512 px', 'As tags HTML são mostradas na página', 'Adicionar Picture Converter ao Chrome']) {
   if (!favicon.includes(marker)) throw new Error(`PT-BR Favicon missing marker: ${marker}`);
 }
 
 const pdfJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'pdf-to-jpg', 'index.html');
 const pdfJpg = fs.readFileSync(pdfJpgFile, 'utf8');
-for (const marker of [
-  'Converter PDF para JPG',
-  'Até 50 MB e 100 páginas',
-  'ZIP com mais de 3 páginas',
-  'qualidade 92%',
-  'Adicionar Picture Converter ao Chrome',
-]) {
+for (const marker of ['Converter PDF para JPG', 'Até 50 MB e 100 páginas', 'ZIP com mais de 3 páginas', 'qualidade 92%', 'Adicionar Picture Converter ao Chrome']) {
   if (!pdfJpg.includes(marker)) throw new Error(`PT-BR PDF→JPG missing marker: ${marker}`);
+}
+
+const canvaSlidesFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'canva-to-google-slides', 'index.html');
+const canvaSlides = fs.readFileSync(canvaSlidesFile, 'utf8');
+for (const marker of [
+  'Canva para Google Slides',
+  'PPTX até 100 MB',
+  'Arquivo não é modificado',
+  'O Google Slides pode substituir estas fontes',
+  'Esta ferramenta não converte nem modifica o PPTX',
+]) {
+  if (!canvaSlides.includes(marker)) throw new Error(`PT-BR Canva→Slides missing marker: ${marker}`);
+}
+if (canvaSlides.includes('Adicionar Picture Converter ao Chrome')) {
+  throw new Error('PT-BR Canva→Slides must not contain unrelated Picture Converter CTA');
 }
 
 const ptBrHubFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'index.html');
 const ptBrHub = fs.readFileSync(ptBrHubFile, 'utf8');
-for (const route of ['/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/']) {
+for (const route of ['/pt-br/convert/pdf-to-jpg/', '/pt-br/convert/favicon-generator/', '/pt-br/convert/psd-to-jpg/', '/pt-br/convert/psd-to-png/', '/pt-br/convert/canva-to-google-slides/']) {
   if (!ptBrHub.includes(`href="${route}"`)) throw new Error(`PT-BR hub missing localized route: ${route}`);
 }
 
