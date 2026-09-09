@@ -1,6 +1,7 @@
 import { collectPageSnapshot } from './collector.js';
 import { runAuditRules } from './rules.js';
 import { normalizeFindings } from './findings.js';
+import { suggestionReadiness } from './suggestions.js';
 
 const statusEl = document.querySelector('#status');
 const findingsEl = document.querySelector('#findings');
@@ -14,7 +15,11 @@ function renderFinding(item) {
   const evidence = item.evidence?.length
     ? `<details><summary>Evidence (${item.affectedCount})</summary>${item.evidence.map((entry) => `<p>${entry.fact}</p>`).join('')}</details>`
     : '';
-  el.innerHTML = `<div class="finding-head"><strong>${item.title}</strong><span>${item.severity}</span></div><p>${item.fact}</p><p><b>Priority:</b> ${item.priorityScore} · <b>Confidence:</b> ${item.confidence} · <b>Area:</b> ${item.category}</p><p><b>Impact:</b> ${item.impact}</p><p><b>Fixability:</b> ${item.fixability}</p><p><b>Verify:</b> ${item.verification}</p>${evidence}`;
+  const suggestion = suggestionReadiness(item);
+  const suggestionLabel = suggestion.ready
+    ? (suggestion.mode === 'review_required' ? 'AI suggestion: review required' : 'AI suggestion: ready')
+    : `AI suggestion: blocked (${suggestion.reason})`;
+  el.innerHTML = `<div class="finding-head"><strong>${item.title}</strong><span>${item.severity}</span></div><p>${item.fact}</p><p><b>Priority:</b> ${item.priorityScore} · <b>Confidence:</b> ${item.confidence} · <b>Area:</b> ${item.category}</p><p><b>Impact:</b> ${item.impact}</p><p><b>Fixability:</b> ${item.fixability}</p><p><b>Verify:</b> ${item.verification}</p><p><b>${suggestionLabel}</b></p>${evidence}`;
   return el;
 }
 
