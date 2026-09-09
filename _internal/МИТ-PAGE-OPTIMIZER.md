@@ -11,7 +11,6 @@ Master tracker: GitHub Issue #153
 Этот файл является обязательным МИТ-журналом продуктового контура LayerPorter Page Optimizer.
 
 Без отдельного напоминания владельца сюда фиксируются все значимые события по проекту:
-
 - новые продуктовые решения;
 - изменения стратегии и дорожной карты;
 - принятые и отброшенные архитектурные варианты;
@@ -43,7 +42,6 @@ Branch: `research/LP-077-page-optimizer-base`
 `Audit → Prioritize → Explain → Safe Patch → Preview/Test → Before/After → Accept/Rollback`.
 
 Этапы развития:
-
 1. Website Image Optimization MCP.
 2. Page Audit Extension.
 3. AI Fix Suggestions.
@@ -65,7 +63,6 @@ Branch: `research/LP-077-page-optimizer-base`
 ### Safe allowlist первой автономной версии
 
 Разрешено автоматически:
-
 - image compression;
 - resize;
 - WebP / AVIF;
@@ -79,7 +76,6 @@ Branch: `research/LP-077-page-optimizer-base`
 - простые HTML/CSS patches без изменения дизайна.
 
 Запрещено автономно:
-
 - JS business logic;
 - checkout / payments;
 - forms;
@@ -113,11 +109,9 @@ Branch: `research/LP-077-page-optimizer-base`
 Skills не считаются доверенными автоматически.
 
 Для каждого skill:
-
 `SOURCE → MAINTAINER → CONTENT REVIEW → SECURITY REVIEW → METHOD VALUE → ADOPT / EXTRACT METHOD / REJECT`.
 
 Основные компетенции по этапам:
-
 1. Image optimization — image engineering + Core Web Vitals.
 2. Audit — performance engineering + technical SEO + accessibility.
 3. Chrome extension — Manifest V3 + Side Panel + permissions minimization.
@@ -133,8 +127,7 @@ Skills не считаются доверенными автоматически
 
 Цель — максимальная обнаруживаемость продукта без каталогового спама.
 
-Каждое размещение оценивается отдельно по четырём величинам:
-
+Каждое размещение оценивается отдельно по:
 - discovery value;
 - usage value;
 - entity/trust value;
@@ -142,7 +135,6 @@ Skills не считаются доверенными автоматически
 - spam/risk отдельно.
 
 Приоритетные поверхности:
-
 - Official MCP Registry;
 - Claude Connectors Directory;
 - ChatGPT Plugins / Apps directory;
@@ -161,7 +153,6 @@ Skills не считаются доверенными автоматически
 ### Трек обнаружения
 
 Для каждого размещения хранить статус:
-
 `SUBMITTED → APPROVED → INDEXED → DISCOVERABLE → USED → REFERRAL / CITATION`.
 
 Факт публикации без discoverability не считается достигнутой дистрибуцией.
@@ -169,7 +160,6 @@ Skills не считаются доверенными автоматически
 ### AI Search observability
 
 Отдельно измерять:
-
 - ChatGPT / ChatGPT Search;
 - Claude;
 - Gemini / Google AI Overviews / AI Mode;
@@ -178,7 +168,6 @@ Skills не считаются доверенными автоматически
 - другие релевантные surfaces.
 
 Метрики:
-
 - brand mention;
 - citation;
 - cited URL;
@@ -195,11 +184,9 @@ Skills не считаются доверенными автоматически
 ### Главная продуктовая метрика
 
 `Verified Improvement Rate`:
-
 количество применённых исправлений, давших измеримое улучшение без регрессии / все применённые исправления.
 
 Дополнительные:
-
 - bytes saved;
 - page weight reduction;
 - LCP improvement;
@@ -239,29 +226,47 @@ Skills не считаются доверенными автоматически
 2. Практическая: users/issues/forums/case studies/real implementations.
 3. Продуктовая: `Impact × Confidence × Reuse / Cost × Complexity × Risk`.
 
-### Текущая Git-фиксация
+---
 
-Research branch HEAD на момент создания МИТ: `b7959b2bfe8a7811e8efd4588531bacc7827456c`.
+## Execution Tracker — 30 шагов
 
-Существующие research commits LP-077:
+Правило отчёта владельцу: `N/30 → что сделано → что проверено → результат → Git/МИТ → следующий шаг`.
 
-- база референсов;
-- реестр skills;
-- AI/SEO/MCP distribution map;
-- master roadmap.
+Сессии:
+- Сессия 1: 1–5 — Research Gate и архитектура.
+- Сессия 2: 6–10 — дистрибуция, trust и продуктовая спецификация.
+- Сессия 3: 11–15 — Website Image Optimization MCP.
+- Сессия 4: 16–20 — публичная упаковка и AI/MCP distribution.
+- Сессия 5: 21–25 — Page Audit + Findings + first safe fix.
+- Сессия 6: 26–30 — Verification + bounded agent + continuous optimization + release gate.
 
-Код продукта в LP-077 не изменяется.
+Полный канонический список 1–30 хранится в `_internal/PAGE-OPTIMIZER-MASTER-ROADMAP.md`.
 
-### Следующий шаг
+### 1/30 — Зафиксировать 30-шаговый execution tracker
 
-Углубить research-базу по каждому этапу:
+Дата: 2026-09-09
+Статус: DONE
 
-- top GitHub implementations;
-- Issues / Discussions;
-- реальные community pain points;
-- security/licensing;
-- skills и проверенные методики;
-- submission forms / directory requirements;
-- website-link opportunities;
-- фактические результаты AI discovery;
-- затем закрыть LP-077 research gate и только после этого создавать implementation issue для первого модуля Website Image Optimization MCP.
+Что сделано:
+- существующая roadmap преобразована в канонический execution tracker на 30 шагов;
+- 30 шагов разбиты на 6 сессий по 5 шагов;
+- для каждой сессии определён gate;
+- зафиксирован порядок от research к MCP, затем distribution, audit, safe fix, verification, agent и continuous optimization;
+- установлен формат обратного отчёта `N/30`;
+- запрещено перескакивать через gate ради количества выполненных пунктов;
+- сохранён Pareto-порядок: быстрый самостоятельный MCP → distribution → Page Audit → prioritized Findings → first verified safe image fix.
+
+Проверки:
+1. Roadmap не создаёт параллельную LP-нумерацию — всё остаётся внутри LP-077 до implementation issue.
+2. Код продукта не изменён.
+3. SAFE/REVIEW/FORBIDDEN ограничения сохранены.
+4. AI/SEO distribution не отложена «на потом», а встроена как отдельная сессия 4 и baseline в сессии 2.
+5. Каждый этап заканчивается измеримым gate.
+
+Git:
+- Issue: #182 / LP-077.
+- Branch: `research/LP-077-page-optimizer-base`.
+- Roadmap commit: `ab2f066cc4d5dcb896f86c3dafd5e1bae37bd0e9`.
+
+Следующий шаг:
+**2/30 — провести углублённый аудит референсов Website Image Optimization MCP: GitHub/repos/releases/issues/licenses/архитектуры/производительность/конкуренты; классифицировать KEEP / ADAPT / STUDY / REJECT и определить, что именно нельзя писать с нуля.**
