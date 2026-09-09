@@ -7,6 +7,9 @@ type UpsellConfig = {
   inlineBody: string;
   successLabel: string;
   cta: string;
+  kicker?: string;
+  detailsLabel?: string;
+  detailsHref?: string;
   successEnabled?: boolean;
 };
 
@@ -30,6 +33,17 @@ const UPSELLS: Record<string, UpsellConfig> = {
     inlineBody: 'Picture Converter works with website images and local image files in Chrome, and can combine up to 30 images into one ordered PDF.',
     successLabel: 'Next time, keep JPG → PDF in Chrome instead of reopening this page',
     cta: 'Add Picture Converter to Chrome',
+  },
+  '/pt-br/convert/jpg-to-pdf/': {
+    campaign: 'pt-br-jpg-to-pdf-converter',
+    widgetId: 'jpg-pdf-widget',
+    kicker: 'Deixe no Chrome',
+    inlineTitle: 'Na próxima vez, converta imagens direto dos sites — e deixe o Picture Converter sempre à mão no Chrome.',
+    inlineBody: 'O Picture Converter converte imagens de sites ou arquivos locais para JPG, PNG, WebP, PDF ou ICO e pode juntar até 30 imagens em um único PDF.',
+    successLabel: 'Deixe JPG → PDF sempre à mão no Chrome',
+    cta: 'Adicionar Picture Converter ao Chrome',
+    detailsLabel: 'Ver como funciona',
+    detailsHref: '/pt-br/picture-converter/',
   },
   '/convert/favicon-generator/': {
     campaign: 'favicon-generator-converter',
@@ -93,7 +107,7 @@ function installInlineOffer(config: UpsellConfig, track: TrackFn): void {
 
   const kicker = document.createElement('p');
   kicker.className = 'cross-sell-label';
-  kicker.textContent = 'Keep it in Chrome';
+  kicker.textContent = config.kicker ?? 'Keep it in Chrome';
 
   const title = document.createElement('p');
   title.className = 'dz-title';
@@ -121,8 +135,8 @@ function installInlineOffer(config: UpsellConfig, track: TrackFn): void {
 
   const details = document.createElement('a');
   details.className = 'btn secondary';
-  details.href = '/picture-converter/';
-  details.textContent = 'See how it works';
+  details.href = config.detailsHref ?? '/picture-converter/';
+  details.textContent = config.detailsLabel ?? 'See how it works';
 
   actions.append(install, details);
   block.append(kicker, title, body, actions);
