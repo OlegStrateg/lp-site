@@ -151,3 +151,4 @@ export async function optimizeImage(input, options = {}) {
 }
 
 export { DEFAULT_POLICY, validatePolicy, chooseOutputFormat } from './policy.js';
+export { analyzeImageUsage, analyzePageImages } from './page-analysis.js';
