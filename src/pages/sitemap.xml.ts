@@ -71,6 +71,7 @@ const LOCALIZED_EXACT_CONVERTER_PATHS = [
   '/pt-br/convert/webp-to-jpg/',
   '/pt-br/convert/png-to-psd/',
   '/pt-br/convert/jpg-to-psd/',
+  '/pt-br/convert/psd-to-jpg/',
 ];
 
 const STATIC_PATHS = ['/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/', '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/', '/privacy/', '/terms/', '/formats/', '/guides/'];
