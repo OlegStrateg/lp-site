@@ -1,0 +1,1 @@
+Transfer point: current Step 24 implementation commits were prepared on the previous feature branch before branch isolation. The implementation must continue only on the dedicated LP-085 branch and the previous branch must be restored to its Step 23 HEAD.
