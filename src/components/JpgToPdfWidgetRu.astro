@@ -1,0 +1,266 @@
+---
+// RU UI adapter for the existing JPG/PNG -> PDF engine.
+// Visual classes and conversion worker intentionally match JpgToPdfWidget.
+import Icon from './Icon.astro';
+
+interface Props { toolHeading: string }
+const { toolHeading } = Astro.props;
+const pictureStore = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=ru_jpg_to_pdf&utm_content=success_offer';
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div id="jpg-pdf-widget" class="converter-widget" data-state="empty" role="group" aria-label="Конвертер JPG и PNG в PDF">
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="folder" /></div>
+      <p class="dz-title">Перетащите JPG или PNG — или нажмите, чтобы выбрать файлы</p>
+      <p class="dz-sub">Файлы не покидают эту вкладку.</p>
+      <button type="button" class="btn" id="choose-file-btn">Выбрать файлы — бесплатно</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden><p class="dz-title">Отпустите, чтобы добавить в PDF</p></div>
+
+    <div class="dz-state" data-state-view="staged" hidden>
+      <p class="dz-title" id="staged-title">Добавлено изображений: 1</p>
+      <p class="dz-sub">Первое изображение станет страницей 1. Порядок можно изменить до конвертации.</p>
+      <ol class="staged-list" id="staged-list"></ol>
+      <div class="staged-actions">
+        <button type="button" class="btn secondary" id="add-more-btn">Добавить ещё</button>
+        <button type="button" class="btn" id="convert-btn">Конвертировать в PDF</button>
+      </div>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">Создаём PDF…</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title" id="success-title">PDF готов</p>
+      <a class="btn" id="download-link" download>Скачать PDF без регистрации</a>
+      <div><button type="button" class="btn secondary" id="convert-another-btn">Конвертировать ещё</button></div>
+      <div class="cross-sell" id="extension-offer">
+        <p class="cross-sell-label">Часто сохраняете изображения с сайтов?</p>
+        <p class="dz-sub">Picture Converter в Chrome умеет сохранять изображения со страниц и собирать их в PDF без возвращения к отдельному конвертеру.</p>
+        <div class="cross-sell-cards"><a class="cross-sell-card" id="picture-converter-store" href={pictureStore}>Установить Picture Converter в Chrome</a></div>
+      </div>
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">Не удалось обработать файл. Попробуйте ещё раз.</p>
+      <button type="button" class="btn" id="retry-btn">Попробовать снова</button>
+    </div>
+
+    <input type="file" id="file-input" accept="image/jpeg,image/png" multiple hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% на вашем устройстве — файлы не загружаются</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  const MAX_FILES = 40;
+  const MAX_TOTAL_BYTES = 60 * 1024 * 1024;
+  const MAX_DIMENSION = 6000;
+
+  const widget = document.getElementById('jpg-pdf-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const addMoreBtn = document.getElementById('add-more-btn')!;
+  const convertBtn = document.getElementById('convert-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const downloadLink = document.getElementById('download-link') as HTMLAnchorElement;
+  const errorMessage = document.getElementById('error-message')!;
+  const stagedList = document.getElementById('staged-list')!;
+  const stagedTitle = document.getElementById('staged-title')!;
+  const successTitle = document.getElementById('success-title')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const storeLink = document.getElementById('picture-converter-store') as HTMLAnchorElement | null;
+
+  let staged: File[] = [];
+  let currentObjectUrl: string | null = null;
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  type State = 'empty' | 'drag-over' | 'staged' | 'processing' | 'success' | 'error';
+
+  function announce(state: State) {
+    if (state === 'processing') statusEl.textContent = 'Конвертируем…';
+    else if (state === 'success') statusEl.textContent = 'Готово. PDF можно скачать.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: State) {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) el.hidden = el.dataset.stateView !== state;
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function pageBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 5) return '2-5';
+    if (n <= 20) return '6-20';
+    return '>20';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeCurrentUrl() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+  }
+
+  function resetToEmpty() {
+    revokeCurrentUrl();
+    fileInput.value = '';
+    staged = [];
+    setState('empty');
+  }
+
+  async function looksLikeJpegOrPng(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+      const png = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+      return jpeg || png;
+    } catch { return false; }
+  }
+
+  function renderStagedList() {
+    stagedTitle.textContent = `Добавлено изображений: ${staged.length}`;
+    stagedList.innerHTML = '';
+    staged.forEach((file, i) => {
+      const li = document.createElement('li');
+      li.className = 'staged-item';
+      const name = document.createElement('span');
+      name.className = 'staged-name';
+      name.textContent = `${i + 1}. ${file.name}`;
+      li.appendChild(name);
+      const controls = document.createElement('span');
+      controls.className = 'staged-controls';
+
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button'; upBtn.className = 'staged-btn'; upBtn.textContent = '↑';
+      upBtn.setAttribute('aria-label', `Переместить ${file.name} выше`); upBtn.disabled = i === 0;
+      upBtn.addEventListener('click', () => { [staged[i - 1], staged[i]] = [staged[i], staged[i - 1]]; renderStagedList(); });
+      controls.appendChild(upBtn);
+
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button'; downBtn.className = 'staged-btn'; downBtn.textContent = '↓';
+      downBtn.setAttribute('aria-label', `Переместить ${file.name} ниже`); downBtn.disabled = i === staged.length - 1;
+      downBtn.addEventListener('click', () => { [staged[i], staged[i + 1]] = [staged[i + 1], staged[i]]; renderStagedList(); });
+      controls.appendChild(downBtn);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button'; removeBtn.className = 'staged-btn staged-remove'; removeBtn.textContent = '×';
+      removeBtn.setAttribute('aria-label', `Удалить ${file.name}`);
+      removeBtn.addEventListener('click', () => { staged.splice(i, 1); if (staged.length === 0) resetToEmpty(); else renderStagedList(); });
+      controls.appendChild(removeBtn);
+      li.appendChild(controls);
+      stagedList.appendChild(li);
+    });
+  }
+
+  async function addFiles(files: File[]) {
+    logPrivacyEvent('file selected locally');
+    for (const file of files) {
+      if (staged.length >= MAX_FILES) { showError('too_many_files', `Можно добавить не более ${MAX_FILES} изображений в один PDF.`); return; }
+      if (!(await looksLikeJpegOrPng(file))) { showError('unsupported_format', `Файл «${file.name}» не похож на JPG или PNG. Используйте только JPG и PNG.`); return; }
+      staged.push(file);
+    }
+    const totalBytes = staged.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > MAX_TOTAL_BYTES) { showError('too_large', 'Общий размер файлов превышает 60 МБ. Удалите часть изображений и попробуйте снова.'); return; }
+    renderStagedList();
+    setState('staged');
+  }
+
+  async function convert() {
+    if (widget.dataset.state === 'processing') return;
+    const totalBytes = staged.reduce((sum, file) => sum + file.size, 0);
+    track('upload_start', { file_count: staged.length, size_bucket: sizeBucket(totalBytes) });
+    setState('processing');
+
+    const bitmaps: ImageBitmap[] = [];
+    try {
+      for (const file of staged) {
+        const bitmap = await createImageBitmap(file);
+        if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+          bitmap.close();
+          for (const item of bitmaps) item.close();
+          showError('too_large_dimensions', `Файл «${file.name}» больше ${MAX_DIMENSION}×${MAX_DIMENSION} пикселей. Удалите его и попробуйте снова.`);
+          return;
+        }
+        bitmaps.push(bitmap);
+      }
+    } catch {
+      for (const item of bitmaps) item.close();
+      showError('corrupt', 'Не удалось прочитать один из файлов. Возможно, он повреждён.');
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/pdf/jpgToPdf.worker.ts', import.meta.url), { type: 'module' });
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        const blob = new Blob([msg.buffer], { type: 'application/pdf' });
+        revokeCurrentUrl();
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        downloadLink.download = 'images-to-pdf.pdf';
+        successTitle.textContent = `PDF готов — страниц: ${msg.pageCount}`;
+        setState('success');
+        track('convert_success', { duration_bucket: durationBucket(msg.durationMs), page_bucket: pageBucket(msg.pageCount) });
+      } else showError(msg.reason || 'unknown', msg.message || 'Конвертация не удалась. Попробуйте снова.');
+      worker.terminate();
+    };
+    worker.onerror = () => { showError('unknown', 'Во время конвертации произошла ошибка. Попробуйте снова.'); worker.terminate(); };
+    worker.postMessage({ type: 'convert', bitmaps }, bitmaps);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  addMoreBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => { const files = Array.from(fileInput.files ?? []); fileInput.value = ''; if (files.length) addFiles(files); });
+  widget.addEventListener('click', (event) => { if (widget.dataset.state === 'empty' && !(event.target as HTMLElement).closest('button, a')) fileInput.click(); });
+  widget.addEventListener('dragenter', (event) => { event.preventDefault(); dragCounter++; if (widget.dataset.state === 'empty' || widget.dataset.state === 'staged') setState('drag-over'); });
+  widget.addEventListener('dragover', (event) => event.preventDefault());
+  widget.addEventListener('dragleave', (event) => { event.preventDefault(); dragCounter--; if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState(staged.length > 0 ? 'staged' : 'empty'); });
+  widget.addEventListener('drop', (event) => { event.preventDefault(); dragCounter = 0; const files = Array.from(event.dataTransfer?.files ?? []); if (files.length) addFiles(files); else setState(staged.length > 0 ? 'staged' : 'empty'); });
+  convertBtn.addEventListener('click', () => convert());
+  retryBtn.addEventListener('click', () => { track('retry_click'); resetToEmpty(); });
+  convertAnotherBtn.addEventListener('click', () => { track('convert_another_clicked', { surface: 'widget' }); resetToEmpty(); });
+  downloadLink.addEventListener('click', () => track('download_click'));
+  storeLink?.addEventListener('click', () => track('extension_store_click', { product: 'picture_converter', placement: 'ru_jpg_to_pdf_success_offer' }));
+  takeHandoff(['jpg', 'png']).then((file) => { if (file) addFiles([file]); });
+</script>

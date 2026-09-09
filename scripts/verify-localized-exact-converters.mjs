@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const expected = [
+  ['/ru/convert/jpg-to-pdf/', 'ru'],
   ['/pt-br/convert/jpg-to-pdf/', 'pt-BR'],
   ['/pt-br/convert/pdf-to-jpg/', 'pt-BR'],
   ['/pt-br/convert/webp-to-jpg/', 'pt-BR'],
@@ -20,6 +21,18 @@ for (const [route, lang] of expected) {
   if (!html.includes(`lang="${lang}"`)) throw new Error(`Wrong/missing lang on ${route}`);
   if (!html.includes(`<link rel="canonical" href="https://layerporter.com${route}">`)) throw new Error(`Wrong/missing canonical on ${route}`);
   if ((html.match(/<h1\b/g) || []).length !== 1) throw new Error(`Expected exactly one H1 on ${route}`);
+}
+
+const ruJpgPdfFile = path.join(process.cwd(), 'dist', 'ru', 'convert', 'jpg-to-pdf', 'index.html');
+const ruJpgPdf = fs.readFileSync(ruJpgPdfFile, 'utf8');
+for (const marker of [
+  'Конвертер JPG в PDF',
+  'до 40 изображений',
+  'качеством 92%',
+  'прозрачность PNG белым',
+  'Установить Picture Converter в Chrome',
+]) {
+  if (!ruJpgPdf.includes(marker)) throw new Error(`RU JPG→PDF missing marker: ${marker}`);
 }
 
 const psdJpgFile = path.join(process.cwd(), 'dist', 'pt-br', 'convert', 'psd-to-jpg', 'index.html');

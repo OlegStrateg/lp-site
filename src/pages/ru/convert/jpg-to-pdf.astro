@@ -1,0 +1,135 @@
+---
+import LocalizedExactConverterLayout from '../../../layouts/LocalizedExactConverterLayout.astro';
+import JpgToPdfWidgetRu from '../../../components/JpgToPdfWidgetRu.astro';
+import NetworkGuard from '../../../components/NetworkGuard.astro';
+import { CONVERT_HUB_LOCALES } from '../../../data/convertHubLocales';
+
+const locale = CONVERT_HUB_LOCALES.find((item) => item.code === 'ru');
+if (!locale) throw new Error('RU converter locale config is missing');
+
+const site = 'https://layerporter.com';
+const canonicalPath = '/ru/convert/jpg-to-pdf/';
+const pageUrl = `${site}${canonicalPath}`;
+const title = 'Конвертер JPG в PDF бесплатно в браузере | LayerPorter';
+const description = 'Конвертер JPG и картинок в PDF без загрузки на сервер. Объедините до 40 JPG или PNG в один PDF, настройте порядок страниц и скачайте результат.';
+const h1 = 'Конвертер JPG в PDF — бесплатно, без загрузки';
+const answerFirst = 'Этот конвертер JPG в PDF превращает одну или несколько картинок JPG и PNG в один PDF прямо в браузере. Каждое изображение становится отдельной страницей, порядок можно изменить перед конвертацией, а сами файлы не отправляются на сервер LayerPorter.';
+
+const howTo = [
+  { title: 'Добавьте картинки', text: 'Перетащите JPG или PNG в область конвертера либо выберите файлы на устройстве. Можно добавить до 40 изображений общим объёмом до 60 МБ.' },
+  { title: 'Настройте порядок', text: 'Каждая картинка станет отдельной страницей PDF. Перемещайте изображения вверх и вниз или удаляйте лишние до конвертации.' },
+  { title: 'Создайте и скачайте PDF', text: 'PDF собирается на вашем устройстве. После обработки скачайте готовый файл без регистрации и без загрузки исходных изображений на сервер.' },
+];
+
+const faq = [
+  { q: 'Как конвертировать JPG в PDF бесплатно?', a: 'Добавьте один или несколько JPG, настройте порядок страниц и нажмите «Конвертировать в PDF». Файл создаётся прямо в браузере и доступен для скачивания без регистрации.' },
+  { q: 'Можно ли объединить несколько картинок в один PDF?', a: 'Да. Конвертер принимает до 40 файлов JPG или PNG общим объёмом до 60 МБ. Каждое изображение становится отдельной страницей одного PDF.' },
+  { q: 'Можно ли добавить PNG вместе с JPG?', a: 'Да. JPG и PNG можно смешивать в одном документе. Перед созданием PDF вы сами задаёте порядок страниц.' },
+  { q: 'Что происходит с качеством изображения?', a: 'Изображения сохраняют исходные размеры в пикселях, но перед встраиванием в PDF движок перекодирует каждую страницу в JPEG с качеством 92%. Поэтому для уже сжатого JPG возможна небольшая дополнительная потеря качества.' },
+  { q: 'Что происходит с прозрачностью PNG?', a: 'PDF-движок этой страницы встраивает страницы как JPEG. Прозрачные области PNG перед экспортом заполняются белым фоном.' },
+  { q: 'Можно ли выбрать поля, формат бумаги или несколько картинок на одной странице?', a: 'Нет в текущей версии. Одна картинка создаёт одну страницу без добавленных полей, а размер страницы соответствует пропорциям изображения.' },
+  { q: 'Есть ли ограничение по размеру изображения?', a: 'Да. Каждый файл должен быть не больше 6000×6000 пикселей. Общий размер выбранных файлов — до 60 МБ.' },
+  { q: 'Картинки загружаются на сервер?', a: 'Нет. Декодирование изображений и сборка PDF происходят на вашем устройстве в браузере.' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'LayerPorter', item: `${site}/ru/` },
+        { '@type': 'ListItem', position: 2, name: 'Конвертеры', item: `${site}/ru/convert/` },
+        { '@type': 'ListItem', position: 3, name: 'Конвертер JPG в PDF', item: pageUrl },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${pageUrl}#app`,
+      name: 'LayerPorter — конвертер JPG в PDF',
+      url: pageUrl,
+      description: answerFirst,
+      inLanguage: 'ru',
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'RUB' },
+      featureList: 'Объединяет до 40 JPG или PNG в один PDF в браузере, позволяет менять порядок страниц, поддерживает до 60 МБ и не загружает исходные файлы на сервер',
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${pageUrl}#howto`,
+      name: 'Как конвертировать JPG в PDF в браузере',
+      inLanguage: 'ru',
+      step: howTo.map((step) => ({ '@type': 'HowToStep', name: step.title, text: step.text })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${pageUrl}#faq`,
+      inLanguage: 'ru',
+      mainEntity: faq.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })),
+    },
+  ],
+};
+---
+
+<LocalizedExactConverterLayout
+  title={title}
+  description={description}
+  canonicalPath={canonicalPath}
+  lang="ru"
+  dir="ltr"
+  homePath="/ru/"
+  extensionsPath="/ru/extensions/"
+  learnPath="/ru/#workflows"
+  headerLabels={locale.nav}
+  footerLabels={locale.footer}
+  alternates={[
+    { hreflang: 'en', href: `${site}/convert/jpg-to-pdf/` },
+    { hreflang: 'ru', href: pageUrl },
+    { hreflang: 'pt-BR', href: `${site}/pt-br/convert/jpg-to-pdf/` },
+    { hreflang: 'x-default', href: `${site}/convert/jpg-to-pdf/` },
+  ]}
+  ogTitle="Конвертер JPG в PDF бесплатно — без загрузки | LayerPorter"
+  ogDescription="Объедините JPG и PNG в один PDF прямо в браузере. До 40 изображений, без регистрации и без загрузки исходников на сервер."
+  ogImage={`${site}/og/jpg-to-pdf.png`}
+  h1={h1}
+  answerFirst={answerFirst}
+  proofChips={['Без загрузки', 'Без регистрации', 'До 40 изображений', 'Одна картинка = одна страница']}
+  expectationLeft={{
+    title: 'JPG или PNG — на входе',
+    items: ['Одна или несколько картинок', 'Порядок можно менять до конвертации', 'До 60 МБ суммарно и до 6000×6000 пикселей на файл'],
+  }}
+  expectationRight={{
+    title: 'PDF — на выходе',
+    items: ['Один PDF-файл', 'Одна страница на каждое изображение', 'Страницы перекодируются в JPEG с качеством 92%'],
+  }}
+  truthNote="Конвертер делает одну страницу PDF из каждой картинки. Он не размещает несколько изображений на одной странице, не добавляет поля или нумерацию и заполняет прозрачность PNG белым при JPEG-кодировании."
+  howTo={howTo}
+  whatYouGet={[
+    { title: 'Один PDF вместо набора картинок', text: 'Соберите JPG и PNG в один документ, который удобнее отправить, сохранить или распечатать.' },
+    { title: 'Контроль порядка страниц', text: 'Поменяйте последовательность изображений до конвертации и сразу получите страницы в нужном порядке.' },
+    { title: 'Локальная обработка', text: 'Изображения декодируются и PDF собирается в памяти браузера, без очереди загрузки на сервер.' },
+    { title: 'Понятные ограничения', text: 'До 40 изображений, до 60 МБ суммарно и до 6000×6000 пикселей на каждый файл.' },
+  ]}
+  faq={faq}
+  labels={{
+    eyebrow: 'Конвертер в браузере',
+    subtitle: 'На вашем устройстве. Без загрузки. Без аккаунта.',
+    proofAria: 'Гарантии и ограничения конвертера',
+    expectationHeading: 'Что получится',
+    howHeading: 'Как конвертировать JPG в PDF',
+    whatYouGetHeading: 'Что вы получаете',
+    faqHeading: 'Частые вопросы',
+    moreHeading: 'Другие конвертеры',
+    allConverters: 'Все конвертеры',
+  }}
+  allConvertersHref="/ru/convert/"
+  jsonLd={jsonLd}
+>
+  <Fragment slot="tool">
+    <JpgToPdfWidgetRu toolHeading="Конвертер JPG и PNG в PDF" />
+    <NetworkGuard />
+  </Fragment>
+</LocalizedExactConverterLayout>

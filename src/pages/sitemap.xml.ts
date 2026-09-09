@@ -67,6 +67,7 @@ const PINTEREST_LOCALE_PATHS = [
 const PICTURE_CONVERTER_LOCALE_PATHS = PICTURE_CONVERTER_LOCALES.map(pictureConverterPath);
 const CONVERT_HUB_LOCALE_PATHS = CONVERT_HUB_LOCALES.map(convertHubPath);
 const LOCALIZED_EXACT_CONVERTER_PATHS = [
+  '/ru/convert/jpg-to-pdf/',
   '/pt-br/convert/jpg-to-pdf/',
   '/pt-br/convert/pdf-to-jpg/',
   '/pt-br/convert/webp-to-jpg/',
