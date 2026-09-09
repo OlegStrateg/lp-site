@@ -1,9 +1,9 @@
-import { track } from './analytics';
+type TrackFn = (name: string, props?: Record<string, string | number | boolean | undefined>) => void;
 
 const WEBP_TO_JPG_PATH = '/convert/webp-to-jpg/';
 const PICTURE_CONVERTER_STORE_URL = 'https://chromewebstore.google.com/detail/picture-converter/oegpbmdpckfdgodnkdnoggedamfflfcl?utm_source=layerporter&utm_medium=website&utm_campaign=webp-to-jpg-converter';
 
-export function installConverterExtensionUpsell(): void {
+export function installConverterExtensionUpsell(track: TrackFn): void {
   if (typeof window === 'undefined' || window.location.pathname !== WEBP_TO_JPG_PATH) return;
 
   const widget = document.getElementById('converter-widget');
