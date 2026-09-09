@@ -34,6 +34,16 @@ jobs:
       - name: Verify release candidate metadata
         working-directory: packages/image-optimizer-mcp
         run: npm run release:preflight
+      - name: Detect npm bootstrap state
+        run: |
+          PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
+          if npm view "$PKG_NAME" name >/tmp/lp093-npm-name 2>/dev/null; then
+            echo "LP093_NPM_STATE=PACKAGE_EXISTS" | tee -a "$GITHUB_ENV"
+            echo "npm package exists: $(cat /tmp/lp093-npm-name)"
+          else
+            echo "LP093_NPM_STATE=BOOTSTRAP_REQUIRED" | tee -a "$GITHUB_ENV"
+            echo "npm package does not exist yet; first owner+2FA bootstrap publish is required"
+          fi
       - name: Install image-core
         working-directory: packages/image-core
         run: npm install --no-audit --no-fund
