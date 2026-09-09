@@ -1,4 +1,4 @@
-import { analyzePageImages, inspectImage, optimizeImage } from '@layerporter/image-core';
+import { analyzePageImages, inspectImage, optimizeImage } from './image-core/index.js';
 
 function requireBuffer(value, name) {
   if (!Buffer.isBuffer(value) || value.length === 0) throw new TypeError(`${name} must be a non-empty Buffer`);
