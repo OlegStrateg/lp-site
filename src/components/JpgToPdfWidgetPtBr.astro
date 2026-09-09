@@ -1,0 +1,365 @@
+---
+// PT-BR UI adapter for the existing JPG/PNG -> PDF engine.
+// Visual classes and conversion worker are intentionally identical to JpgToPdfWidget.
+import Icon from './Icon.astro';
+
+interface Props {
+  toolHeading: string;
+  related?: { href: string; label: string; target: string }[];
+}
+const { toolHeading, related = [] } = Astro.props;
+---
+
+<section aria-labelledby="tool-heading" class="tool-section">
+  <h2 id="tool-heading" class="tool-heading">{toolHeading}</h2>
+
+  <div
+    id="jpg-pdf-widget"
+    class="converter-widget"
+    data-state="empty"
+    role="group"
+    aria-label="Conversor de arquivos JPG ou PNG para PDF"
+  >
+    <div class="dz-state" data-state-view="empty">
+      <div class="dz-empty-icon"><Icon name="folder" /></div>
+      <p class="dz-title">Solte um ou mais JPGs ou PNGs — ou clique para escolher os arquivos</p>
+      <p class="dz-sub">Os arquivos não saem desta aba.</p>
+      <button type="button" class="btn" id="choose-file-btn">Escolher arquivos — grátis</button>
+    </div>
+
+    <div class="dz-state" data-state-view="drag-over" hidden>
+      <p class="dz-title">Solte para adicionar ao PDF</p>
+    </div>
+
+    <div class="dz-state" data-state-view="staged" hidden>
+      <p class="dz-title" id="staged-title">1 imagem adicionada</p>
+      <p class="dz-sub">A primeira da lista vira a página 1. Reordene antes de converter.</p>
+      <ol class="staged-list" id="staged-list"></ol>
+      <div class="staged-actions">
+        <button type="button" class="btn secondary" id="add-more-btn">Adicionar mais</button>
+        <button type="button" class="btn" id="convert-btn">Converter em PDF</button>
+      </div>
+    </div>
+
+    <div class="dz-state" data-state-view="processing" hidden>
+      <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+      <p class="dz-title">Criando seu PDF&hellip;</p>
+    </div>
+
+    <div class="dz-state" data-state-view="success" hidden>
+      <p class="dz-title" id="success-title">Seu PDF está pronto</p>
+      <a class="btn" id="download-link" download>Baixar PDF (sem cadastro)</a>
+      <div>
+        <button type="button" class="btn secondary" id="convert-another-btn">Converter outro</button>
+      </div>
+      {related.length > 0 && (
+        <div class="cross-sell" id="cross-sell">
+          <p class="cross-sell-label">Conversores relacionados</p>
+          <div class="cross-sell-cards">
+            {related.map((r) => (
+              <a class="cross-sell-card" href={r.href} data-target={r.target}>{r.label}</a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="dz-state" data-state-view="error" hidden>
+      <p class="error-message" id="error-message">Não foi possível processar esse arquivo. Tente novamente.</p>
+      <button type="button" class="btn" id="retry-btn">Tentar novamente</button>
+    </div>
+
+    <input type="file" id="file-input" accept="image/jpeg,image/png" multiple hidden />
+    <div class="sr-only" aria-live="polite" id="widget-status"></div>
+  </div>
+
+  <a class="trust-badge" href="#faq-client-side">100% no seu dispositivo — nada é enviado</a>
+</section>
+
+<script>
+  import { track } from '../lib/analytics';
+  import { takeHandoff } from '../lib/handoff';
+  import { logPrivacyEvent, logRejection } from '../lib/privacyLog';
+
+  const MAX_FILES = 40;
+  const MAX_TOTAL_BYTES = 60 * 1024 * 1024;
+  const MAX_DIMENSION = 6000;
+
+  const widget = document.getElementById('jpg-pdf-widget')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-file-btn')!;
+  const addMoreBtn = document.getElementById('add-more-btn')!;
+  const convertBtn = document.getElementById('convert-btn')!;
+  const retryBtn = document.getElementById('retry-btn')!;
+  const convertAnotherBtn = document.getElementById('convert-another-btn')!;
+  const downloadLink = document.getElementById('download-link') as HTMLAnchorElement;
+  const errorMessage = document.getElementById('error-message')!;
+  const stagedList = document.getElementById('staged-list')!;
+  const stagedTitle = document.getElementById('staged-title')!;
+  const successTitle = document.getElementById('success-title')!;
+  const statusEl = document.getElementById('widget-status')!;
+  const crossSellLinks = document.querySelectorAll<HTMLAnchorElement>('#cross-sell .cross-sell-card');
+
+  let staged: File[] = [];
+  let currentObjectUrl: string | null = null;
+  let dragCounter = 0;
+
+  track('tool_view', {}, { interactive: false });
+
+  type State = 'empty' | 'drag-over' | 'staged' | 'processing' | 'success' | 'error';
+
+  function announce(state: State) {
+    if (state === 'processing') statusEl.textContent = 'Convertendo…';
+    else if (state === 'success') statusEl.textContent = 'Pronto. Seu arquivo já pode ser baixado.';
+    else if (state === 'error') statusEl.textContent = errorMessage.textContent ?? '';
+    else statusEl.textContent = '';
+  }
+
+  function setState(state: State) {
+    widget.dataset.state = state;
+    for (const el of widget.querySelectorAll<HTMLElement>('[data-state-view]')) {
+      el.hidden = el.dataset.stateView !== state;
+    }
+    announce(state);
+    if (state === 'processing') logPrivacyEvent('converting on this device');
+    else if (state === 'success') logPrivacyEvent('done. nothing uploaded');
+  }
+
+  function sizeBucket(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1) return '<1mb';
+    if (mb < 5) return '1-5mb';
+    if (mb < 20) return '5-20mb';
+    return '>20mb';
+  }
+
+  function durationBucket(ms: number): string {
+    if (ms < 1000) return '<1s';
+    if (ms < 3000) return '1-3s';
+    if (ms < 10000) return '3-10s';
+    return '>10s';
+  }
+
+  function pageBucket(n: number): string {
+    if (n <= 1) return '1';
+    if (n <= 5) return '2-5';
+    if (n <= 20) return '6-20';
+    return '>20';
+  }
+
+  function showError(reason: string, message: string) {
+    errorMessage.textContent = message;
+    setState('error');
+    logRejection(reason);
+    track('convert_error', { reason });
+  }
+
+  function revokeCurrentUrl() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+  }
+
+  function resetToEmpty() {
+    revokeCurrentUrl();
+    fileInput.value = '';
+    staged = [];
+    setState('empty');
+  }
+
+  async function looksLikeJpegOrPng(file: File): Promise<boolean> {
+    try {
+      const bytes = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+      const png = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+      return jpeg || png;
+    } catch {
+      return false;
+    }
+  }
+
+  function renderStagedList() {
+    stagedTitle.textContent = `${staged.length} ${staged.length === 1 ? 'imagem adicionada' : 'imagens adicionadas'}`;
+    stagedList.innerHTML = '';
+    staged.forEach((file, i) => {
+      const li = document.createElement('li');
+      li.className = 'staged-item';
+
+      const name = document.createElement('span');
+      name.className = 'staged-name';
+      name.textContent = `${i + 1}. ${file.name}`;
+      li.appendChild(name);
+
+      const controls = document.createElement('span');
+      controls.className = 'staged-controls';
+
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'staged-btn';
+      upBtn.textContent = '↑';
+      upBtn.setAttribute('aria-label', `Mover ${file.name} para cima`);
+      upBtn.disabled = i === 0;
+      upBtn.addEventListener('click', () => {
+        [staged[i - 1], staged[i]] = [staged[i], staged[i - 1]];
+        renderStagedList();
+      });
+      controls.appendChild(upBtn);
+
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'staged-btn';
+      downBtn.textContent = '↓';
+      downBtn.setAttribute('aria-label', `Mover ${file.name} para baixo`);
+      downBtn.disabled = i === staged.length - 1;
+      downBtn.addEventListener('click', () => {
+        [staged[i], staged[i + 1]] = [staged[i + 1], staged[i]];
+        renderStagedList();
+      });
+      controls.appendChild(downBtn);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'staged-btn staged-remove';
+      removeBtn.textContent = '×';
+      removeBtn.setAttribute('aria-label', `Remover ${file.name}`);
+      removeBtn.addEventListener('click', () => {
+        staged.splice(i, 1);
+        if (staged.length === 0) resetToEmpty();
+        else renderStagedList();
+      });
+      controls.appendChild(removeBtn);
+
+      li.appendChild(controls);
+      stagedList.appendChild(li);
+    });
+  }
+
+  async function addFiles(files: File[]) {
+    logPrivacyEvent('file selected locally');
+    for (const file of files) {
+      if (staged.length >= MAX_FILES) {
+        showError('too_many_files', `Você pode converter até ${MAX_FILES} imagens em um PDF.`);
+        return;
+      }
+      if (!(await looksLikeJpegOrPng(file))) {
+        showError('unsupported_format', `“${file.name}” não parece ser JPG ou PNG. Use apenas arquivos JPG ou PNG.`);
+        return;
+      }
+      staged.push(file);
+    }
+
+    const totalBytes = staged.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      showError('too_large', `Os arquivos somam mais de ${MAX_TOTAL_BYTES / (1024 * 1024)} MB. Remova alguns e tente novamente.`);
+      return;
+    }
+
+    renderStagedList();
+    setState('staged');
+  }
+
+  async function convert() {
+    if (widget.dataset.state === 'processing') return;
+
+    const totalBytes = staged.reduce((sum, f) => sum + f.size, 0);
+    track('upload_start', { file_count: staged.length, size_bucket: sizeBucket(totalBytes) });
+    setState('processing');
+
+    const bitmaps: ImageBitmap[] = [];
+    try {
+      for (const file of staged) {
+        const bitmap = await createImageBitmap(file);
+        if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION) {
+          bitmap.close();
+          for (const b of bitmaps) b.close();
+          showError('too_large_dimensions', `“${file.name}” é maior que ${MAX_DIMENSION}×${MAX_DIMENSION}px. Remova o arquivo e tente novamente.`);
+          return;
+        }
+        bitmaps.push(bitmap);
+      }
+    } catch {
+      for (const b of bitmaps) b.close();
+      showError('corrupt', 'Não foi possível ler um dos arquivos. Ele pode estar corrompido.');
+      return;
+    }
+
+    const worker = new Worker(new URL('../lib/pdf/jpgToPdf.worker.ts', import.meta.url), { type: 'module' });
+
+    worker.onmessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg.type === 'success') {
+        const blob = new Blob([msg.buffer], { type: 'application/pdf' });
+        revokeCurrentUrl();
+        currentObjectUrl = URL.createObjectURL(blob);
+        downloadLink.href = currentObjectUrl;
+        downloadLink.download = 'convertido.pdf';
+        successTitle.textContent = `Seu PDF está pronto (${msg.pageCount} ${msg.pageCount === 1 ? 'página' : 'páginas'})`;
+        setState('success');
+        track('convert_success', {
+          duration_bucket: durationBucket(msg.durationMs),
+          page_bucket: pageBucket(msg.pageCount),
+        });
+      } else if (msg.type === 'error') {
+        showError(msg.reason || 'unknown', msg.message || 'A conversão falhou. Tente novamente.');
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = () => {
+      showError('unknown', 'A conversão falhou inesperadamente. Tente novamente.');
+      worker.terminate();
+    };
+
+    worker.postMessage({ type: 'convert', bitmaps }, bitmaps);
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  addMoreBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const files = Array.from(fileInput.files ?? []);
+    fileInput.value = '';
+    if (files.length) addFiles(files);
+  });
+
+  widget.addEventListener('click', (e) => {
+    if (widget.dataset.state === 'empty' && !(e.target as HTMLElement).closest('button, a')) fileInput.click();
+  });
+
+  widget.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (widget.dataset.state === 'empty' || widget.dataset.state === 'staged') setState('drag-over');
+  });
+  widget.addEventListener('dragover', (e) => e.preventDefault());
+  widget.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && widget.dataset.state === 'drag-over') setState(staged.length > 0 ? 'staged' : 'empty');
+  });
+  widget.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    if (files.length) addFiles(files);
+    else setState(staged.length > 0 ? 'staged' : 'empty');
+  });
+
+  convertBtn.addEventListener('click', () => convert());
+  retryBtn.addEventListener('click', () => {
+    track('retry_click');
+    resetToEmpty();
+  });
+  convertAnotherBtn.addEventListener('click', () => {
+    track('convert_another_clicked', { surface: 'widget' });
+    resetToEmpty();
+  });
+  downloadLink.addEventListener('click', () => track('download_click'));
+  crossSellLinks.forEach((link) => {
+    link.addEventListener('click', () => track('cross_sell_click', { target: link.dataset.target ?? '' }));
+  });
+
+  takeHandoff(['jpg', 'png']).then((file) => {
+    if (file) addFiles([file]);
+  });
+</script>
