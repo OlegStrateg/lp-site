@@ -12,6 +12,7 @@ on:
       - integration/LP-092-page-optimizer-current-master
       - release/LP-093-image-mcp-public-prep
       - release/LP-094-proprietary-license
+      - feat/LP-095-artifact-url-ingestion
     paths:
       - 'packages/image-core/**'
       - 'packages/image-optimizer-mcp/**'
@@ -65,6 +66,12 @@ jobs:
       - name: Test MCP contracts
         working-directory: packages/image-optimizer-mcp
         run: npm test
+      - name: Install MCP client for protocol smoke
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --no-save --package-lock=false @modelcontextprotocol/client@^2.0.0 --ignore-scripts --no-audit --no-fund
+      - name: Verify MCP artifact resource protocol
+        working-directory: packages/image-optimizer-mcp
+        run: node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-artifact-protocol.json
       - name: Smoke start stdio server from source package
         working-directory: packages/image-optimizer-mcp
         run: |
@@ -96,6 +103,9 @@ jobs:
           if (!fs.existsSync(licensePath)) throw new Error('packed LICENSE file missing');
           const license = fs.readFileSync(licensePath, 'utf8');
           if (!license.includes('LayerPorter Proprietary Software License')) throw new Error('packed proprietary LICENSE content mismatch');
+          for (const required of ['artifact-store.js', 'artifact-result.js', 'secure-fetch.js', 'url-ingestion.js']) {
+            if (!fs.existsSync(`/tmp/lp078-packed/package/src/${required}`)) throw new Error(`packed LP-095 runtime file missing: ${required}`);
+          }
           NODE
       - name: Install and start packed artifact in clean directory
         run: |
