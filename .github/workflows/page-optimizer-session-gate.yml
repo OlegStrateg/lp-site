@@ -8,6 +8,7 @@ on:
       - integration/LP-092-page-optimizer-current-master
       - release/LP-093-image-mcp-public-prep
       - release/LP-094-proprietary-license
+      - feat/LP-095-artifact-url-ingestion
   pull_request:
 
 jobs:
@@ -37,7 +38,7 @@ jobs:
       - name: Sync shared image-core
         working-directory: packages/image-optimizer-mcp
         run: npm run sync:core
-      - name: Test MCP including binary response contract
+      - name: Test MCP including URL/artifact contracts
         working-directory: packages/image-optimizer-mcp
         run: npm test
       - name: Smoke stdio server
