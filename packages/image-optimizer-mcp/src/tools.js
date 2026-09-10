@@ -1,4 +1,5 @@
 import { analyzePageImages, inspectImage, optimizeImage } from './image-core/index.js';
+import { analyzeRemotePageImages, optimizeRemotePageImages } from './url-ingestion.js';
 
 function requireBuffer(value, name) {
   if (!Buffer.isBuffer(value) || value.length === 0) throw new TypeError(`${name} must be a non-empty Buffer`);
@@ -61,10 +62,20 @@ export async function optimizePageImagesTool(input) {
   };
 }
 
+export async function analyzeUrlImagesTool(input, options = {}) {
+  return analyzeRemotePageImages(input, options);
+}
+
+export async function optimizeUrlImagesTool(input, options = {}) {
+  return optimizeRemotePageImages(input, options);
+}
+
 export const TOOL_HANDLERS = {
   analyze_page_images: analyzePageImagesTool,
   optimize_image: optimizeImageTool,
   generate_responsive_variants: generateResponsiveVariantsTool,
   compare_image_versions: compareImageVersionsTool,
   optimize_page_images: optimizePageImagesTool,
+  analyze_url_images: analyzeUrlImagesTool,
+  optimize_url_images: optimizeUrlImagesTool,
 };

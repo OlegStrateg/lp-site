@@ -1,0 +1,50 @@
+name: LP-095 Live URL Artifact
+
+on:
+  push:
+    branches:
+      - feat/LP-095-artifact-url-ingestion
+    paths:
+      - 'packages/image-optimizer-mcp/**'
+      - 'packages/image-core/**'
+      - '.github/workflows/lp095-live-url-artifact.yml'
+  workflow_dispatch:
+
+jobs:
+  live-url-artifact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+      - name: Install image-core
+        working-directory: packages/image-core
+        run: npm install --no-audit --no-fund
+      - name: Install MCP dependencies
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false @modelcontextprotocol/client@^2.0.0 --ignore-scripts --no-audit --no-fund
+      - name: Sync shared image-core
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
+      - name: Run deterministic tests
+        working-directory: packages/image-optimizer-mcp
+        run: npm test
+      - name: Run MCP artifact protocol smoke
+        working-directory: packages/image-optimizer-mcp
+        run: node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-protocol-smoke.json
+      - name: Run live URL to artifact smoke
+        working-directory: packages/image-optimizer-mcp
+        run: node scripts/live-url-artifact-smoke.mjs | tee /tmp/lp095-live-url-artifact.json
+      - name: Upload non-binary evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lp095-url-artifact-evidence
+          path: |
+            /tmp/lp095-protocol-smoke.json
+            /tmp/lp095-live-url-artifact.json
+          if-no-files-found: error
