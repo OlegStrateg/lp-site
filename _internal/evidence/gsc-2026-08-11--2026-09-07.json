@@ -1,0 +1,545 @@
+{
+  "date": "2026-09-10",
+  "period": {
+    "from": "2026-08-11",
+    "to": "2026-09-07"
+  },
+  "source": "Google Search Console via Windsor.ai, sc-domain:layerporter.com",
+  "daily": [
+    {
+      "date": "2026-08-11",
+      "clicks": 0,
+      "impressions": 50,
+      "position": 55.82
+    },
+    {
+      "date": "2026-08-12",
+      "clicks": 0,
+      "impressions": 67,
+      "position": 65.6716
+    },
+    {
+      "date": "2026-08-13",
+      "clicks": 0,
+      "impressions": 80,
+      "position": 60.725
+    },
+    {
+      "date": "2026-08-14",
+      "clicks": 0,
+      "impressions": 44,
+      "position": 62.1818
+    },
+    {
+      "date": "2026-08-15",
+      "clicks": 0,
+      "impressions": 37,
+      "position": 63.2432
+    },
+    {
+      "date": "2026-08-16",
+      "clicks": 0,
+      "impressions": 58,
+      "position": 64.569
+    },
+    {
+      "date": "2026-08-17",
+      "clicks": 1,
+      "impressions": 71,
+      "position": 62.1408
+    },
+    {
+      "date": "2026-08-18",
+      "clicks": 0,
+      "impressions": 62,
+      "position": 59.5
+    },
+    {
+      "date": "2026-08-19",
+      "clicks": 1,
+      "impressions": 77,
+      "position": 61.974
+    },
+    {
+      "date": "2026-08-20",
+      "clicks": 0,
+      "impressions": 94,
+      "position": 65.6277
+    },
+    {
+      "date": "2026-08-21",
+      "clicks": 0,
+      "impressions": 62,
+      "position": 64.1129
+    },
+    {
+      "date": "2026-08-22",
+      "clicks": 0,
+      "impressions": 64,
+      "position": 66.1094
+    },
+    {
+      "date": "2026-08-23",
+      "clicks": 0,
+      "impressions": 68,
+      "position": 65.7941
+    },
+    {
+      "date": "2026-08-24",
+      "clicks": 0,
+      "impressions": 78,
+      "position": 68.4359
+    },
+    {
+      "date": "2026-08-25",
+      "clicks": 1,
+      "impressions": 91,
+      "position": 65.5055
+    },
+    {
+      "date": "2026-08-26",
+      "clicks": 1,
+      "impressions": 79,
+      "position": 68.8228
+    },
+    {
+      "date": "2026-08-27",
+      "clicks": 0,
+      "impressions": 89,
+      "position": 64.3034
+    },
+    {
+      "date": "2026-08-28",
+      "clicks": 0,
+      "impressions": 98,
+      "position": 63.3673
+    },
+    {
+      "date": "2026-08-29",
+      "clicks": 0,
+      "impressions": 137,
+      "position": 64.4015
+    },
+    {
+      "date": "2026-08-30",
+      "clicks": 1,
+      "impressions": 136,
+      "position": 68.1176
+    },
+    {
+      "date": "2026-08-31",
+      "clicks": 0,
+      "impressions": 104,
+      "position": 65.0288
+    },
+    {
+      "date": "2026-09-01",
+      "clicks": 1,
+      "impressions": 26,
+      "position": 52
+    },
+    {
+      "date": "2026-09-02",
+      "clicks": 1,
+      "impressions": 35,
+      "position": 49.1714
+    },
+    {
+      "date": "2026-09-03",
+      "clicks": 0,
+      "impressions": 71,
+      "position": 51.3099
+    },
+    {
+      "date": "2026-09-04",
+      "clicks": 0,
+      "impressions": 52,
+      "position": 45.3846
+    },
+    {
+      "date": "2026-09-05",
+      "clicks": 0,
+      "impressions": 49,
+      "position": 45.0816
+    },
+    {
+      "date": "2026-09-06",
+      "clicks": 0,
+      "impressions": 63,
+      "position": 47.5714
+    },
+    {
+      "date": "2026-09-07",
+      "clicks": 1,
+      "impressions": 35,
+      "position": 41.7143
+    }
+  ],
+  "pages": [
+    {
+      "page": "https://layerporter.com/guides/export-from-ai-builders/",
+      "clicks": 3,
+      "impressions": 122,
+      "position": 28.8115
+    },
+    {
+      "page": "https://layerporter.com/",
+      "clicks": 2,
+      "impressions": 83,
+      "position": 52.1325
+    },
+    {
+      "page": "https://layerporter.com/extensions/",
+      "clicks": 1,
+      "impressions": 12,
+      "position": 27.9167
+    },
+    {
+      "page": "https://www.layerporter.com/am/pinterest-downloader/",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.layerporter.com/convert/webp-to-jpg/",
+      "clicks": 1,
+      "impressions": 3,
+      "position": 3.6667
+    },
+    {
+      "page": "https://layerporter.com/about/",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 3.6
+    },
+    {
+      "page": "https://layerporter.com/am/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 9
+    },
+    {
+      "page": "https://layerporter.com/ar/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 51
+    },
+    {
+      "page": "https://layerporter.com/bn/picture-converter/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 10
+    },
+    {
+      "page": "https://layerporter.com/convert/",
+      "clicks": 0,
+      "impressions": 36,
+      "position": 52.1389
+    },
+    {
+      "page": "https://layerporter.com/convert/canva-to-google-slides/",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 37.2
+    },
+    {
+      "page": "https://layerporter.com/convert/favicon-generator/",
+      "clicks": 0,
+      "impressions": 55,
+      "position": 71.2182
+    },
+    {
+      "page": "https://layerporter.com/convert/jpg-to-pdf/",
+      "clicks": 0,
+      "impressions": 22,
+      "position": 51.0909
+    },
+    {
+      "page": "https://layerporter.com/convert/jpg-to-psd/",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 76.25
+    },
+    {
+      "page": "https://layerporter.com/convert/pdf-to-jpg/",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 40.8
+    },
+    {
+      "page": "https://layerporter.com/convert/png-to-psd/",
+      "clicks": 0,
+      "impressions": 297,
+      "position": 66.6801
+    },
+    {
+      "page": "https://layerporter.com/convert/psd-to-jpg/",
+      "clicks": 0,
+      "impressions": 34,
+      "position": 78.1471
+    },
+    {
+      "page": "https://layerporter.com/convert/psd-to-png/",
+      "clicks": 0,
+      "impressions": 41,
+      "position": 65.2683
+    },
+    {
+      "page": "https://layerporter.com/es/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://layerporter.com/es/picture-converter/",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 62.5
+    },
+    {
+      "page": "https://layerporter.com/formats/",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 5.4
+    },
+    {
+      "page": "https://layerporter.com/formats/psd/",
+      "clicks": 0,
+      "impressions": 1008,
+      "position": 67.4216
+    },
+    {
+      "page": "https://layerporter.com/fr/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 69.5
+    },
+    {
+      "page": "https://layerporter.com/guides/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 6
+    },
+    {
+      "page": "https://layerporter.com/guides/flat-image-vs-editable-layers/",
+      "clicks": 0,
+      "impressions": 40,
+      "position": 24.45
+    },
+    {
+      "page": "https://layerporter.com/privacy/",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 3.4
+    },
+    {
+      "page": "https://layerporter.com/pt-br/extensions/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 32.5
+    },
+    {
+      "page": "https://layerporter.com/terms/",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 3.5
+    },
+    {
+      "page": "https://www.layerporter.com/convert/jpg-to-psd/",
+      "clicks": 0,
+      "impressions": 24,
+      "position": 71.5
+    },
+    {
+      "page": "https://www.layerporter.com/de/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 47.5385
+    },
+    {
+      "page": "https://www.layerporter.com/es-419/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.layerporter.com/es/extensions/",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 34
+    },
+    {
+      "page": "https://www.layerporter.com/es/picture-converter/",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 79.1875
+    },
+    {
+      "page": "https://www.layerporter.com/es/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 47.8333
+    },
+    {
+      "page": "https://www.layerporter.com/extensions/picture-converter/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8
+    },
+    {
+      "page": "https://www.layerporter.com/fr/picture-converter/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 16
+    },
+    {
+      "page": "https://www.layerporter.com/fr/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 35,
+      "position": 51.2571
+    },
+    {
+      "page": "https://www.layerporter.com/he/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 27
+    },
+    {
+      "page": "https://www.layerporter.com/hu/picture-converter/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 15
+    },
+    {
+      "page": "https://www.layerporter.com/hu/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 33
+    },
+    {
+      "page": "https://www.layerporter.com/id/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 42.8333
+    },
+    {
+      "page": "https://www.layerporter.com/it/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 18,
+      "position": 45
+    },
+    {
+      "page": "https://www.layerporter.com/ja/picture-converter/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 27.5
+    },
+    {
+      "page": "https://www.layerporter.com/kn/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 6
+    },
+    {
+      "page": "https://www.layerporter.com/ko/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 54
+    },
+    {
+      "page": "https://www.layerporter.com/ml/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.layerporter.com/nl/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 45
+    },
+    {
+      "page": "https://www.layerporter.com/pl/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 40.6667
+    },
+    {
+      "page": "https://www.layerporter.com/pt-br/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 32,
+      "position": 48.375
+    },
+    {
+      "page": "https://www.layerporter.com/pt-pt/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 64.75
+    },
+    {
+      "page": "https://www.layerporter.com/ro/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 25
+    },
+    {
+      "page": "https://www.layerporter.com/ru/extensions/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 29
+    },
+    {
+      "page": "https://www.layerporter.com/th/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 9.75
+    },
+    {
+      "page": "https://www.layerporter.com/tr/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 23
+    },
+    {
+      "page": "https://www.layerporter.com/uk/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 37
+    },
+    {
+      "page": "https://www.layerporter.com/vi/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 50.7143
+    },
+    {
+      "page": "https://www.layerporter.com/zh-tw/pinterest-downloader/",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 55
+    }
+  ],
+  "devices": {
+    "DESKTOP": {
+      "clicks": 8,
+      "impressions": 1858
+    },
+    "MOBILE": {
+      "clicks": 0,
+      "impressions": 118
+    },
+    "TABLET": {
+      "clicks": 0,
+      "impressions": 1
+    }
+  },
+  "totals": {
+    "clicks": 8,
+    "impressions": 1977
+  },
+  "notes": [
+    "Page rows contain www and non-www variants; count is not current indexed URL count.",
+    "Query data omits anonymized queries; do not reconcile query sums to site totals.",
+    "Public audit findings are sampled, not full crawl or end-to-end converter test."
+  ]
+}
