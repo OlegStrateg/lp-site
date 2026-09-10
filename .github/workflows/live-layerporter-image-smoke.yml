@@ -1,0 +1,39 @@
+name: Live LayerPorter Image Smoke
+
+on:
+  push:
+    branches:
+      - test/LP-094-live-layerporter-smoke
+    paths:
+      - 'packages/image-core/**'
+      - 'packages/image-optimizer-mcp/**'
+      - '.github/workflows/live-layerporter-image-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+      - name: Install image-core
+        working-directory: packages/image-core
+        run: npm install --no-audit --no-fund
+      - name: Install MCP dependencies
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Sync shared image-core
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
+      - name: Run live layerporter.com smoke
+        run: node packages/image-optimizer-mcp/scripts/live-layerporter-smoke.mjs | tee /tmp/layerporter-live-smoke.json
+      - name: Upload live smoke report
+        uses: actions/upload-artifact@v4
+        with:
+          name: layerporter-live-image-smoke
+          path: /tmp/layerporter-live-smoke.json
+          if-no-files-found: error
