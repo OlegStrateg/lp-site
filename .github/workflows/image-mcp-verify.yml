@@ -67,6 +67,7 @@ jobs:
         working-directory: packages/image-optimizer-mcp
         run: npm test
       - name: Verify clean source setup
+        shell: bash
         working-directory: packages/image-optimizer-mcp
         run: node scripts/verify-source-setup.mjs | tee "$RUNNER_TEMP/lp097-source-setup.json"
       - name: Install MCP client for protocol smoke
@@ -76,6 +77,7 @@ jobs:
         working-directory: packages/image-optimizer-mcp
         run: node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-artifact-protocol.json
       - name: Verify clean tarball through MCP client and decoded resource
+        shell: bash
         working-directory: packages/image-optimizer-mcp
         env:
           LP096_PROOF_DIR: ${{ runner.temp }}/lp097-release-proof
