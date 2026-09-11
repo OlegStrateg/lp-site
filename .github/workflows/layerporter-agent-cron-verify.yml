@@ -2,17 +2,22 @@ name: Verify LayerPorter Agent Runtime
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    paths:
-      - '.github/workflows/layerporter-agent-cron-verify.yml'
+  workflow_run:
+    workflows:
+      - Deploy LayerPorter Agent
+    types:
+      - completed
 
 permissions:
   contents: read
 
+concurrency:
+  group: layerporter-agent-control-plane
+  cancel-in-progress: false
+
 jobs:
   verify-runtime:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -22,8 +27,10 @@ jobs:
       SCRIPT_NAME: layerporter-agent
 
     steps:
-      - name: Checkout
+      - name: Checkout deployed revision
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -48,6 +55,7 @@ jobs:
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           KV_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces"
           curl -fsS "$KV_BASE?per_page=100&direction=asc&order=title" -H "$AUTH" -H 'Accept: application/json' -o /tmp/lp-agent-kv-list.json
+          jq -e '.success == true and (.result | type == "array")' /tmp/lp-agent-kv-list.json >/dev/null
           KV_ID="$(jq -r --arg title "$KV_TITLE" '.result[] | select(.title == $title) | .id' /tmp/lp-agent-kv-list.json | head -n1)"
           test -n "$KV_ID" || { echo 'Dedicated LayerPorter Agent KV was not found'; exit 1; }
           echo "KV_ID=$KV_ID" >> "$GITHUB_ENV"
@@ -62,16 +70,11 @@ jobs:
           SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
           printf '[{"cron":"* * * * *"}]' > /tmp/lp-agent-schedule.json
           curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-schedule.json -o /tmp/lp-agent-schedule-result.json
-          node - <<'NODE'
-          const fs = require('fs');
-          const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-schedule-result.json', 'utf8'));
-          if (x.success !== true || !Array.isArray(x.result?.schedules)) process.exit(1);
-          if (!x.result.schedules.some(s => s.cron === '* * * * *')) process.exit(1);
-          NODE
+          jq -e '.success == true and any(.result.schedules[]?; .cron == "* * * * *")' /tmp/lp-agent-schedule-result.json >/dev/null
           rm -f /tmp/lp-agent-schedule.json /tmp/lp-agent-schedule-result.json
           echo 'Temporary dry-run cron accepted by Cloudflare control plane'
 
-      - name: Wait for a fresh verified dry-run heartbeat
+      - name: Wait for fresh verified dry-run heartbeat
         shell: bash
         run: |
           set -euo pipefail
@@ -89,6 +92,7 @@ jobs:
               node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-heartbeat.json "$VERIFY_STARTED_MS"
               gate_status=$?
               set -e
+
               if [ "$gate_status" -eq 0 ]; then
                 verified=1
                 break
@@ -103,7 +107,7 @@ jobs:
             fi
 
             if [ $((attempt % 12)) -eq 0 ]; then
-              echo "Runtime heartbeat still pending after control-plane schedule update (attempt $attempt/100)"
+              echo "Runtime heartbeat still pending after schedule update (attempt $attempt/100)"
             fi
             sleep 10
           done
@@ -111,18 +115,15 @@ jobs:
           if [ "$verified" -eq 1 ]; then
             printf '[{"cron":"0 * * * *"}]' > /tmp/lp-agent-final-schedule.json
             curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-final-schedule.json -o /tmp/lp-agent-final-result.json
-            node - <<'NODE'
-            const fs = require('fs');
-            const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-final-result.json', 'utf8'));
-            if (x.success !== true || !x.result?.schedules?.some(s => s.cron === '0 * * * *')) process.exit(1);
-            NODE
+            jq -e '.success == true and any(.result.schedules[]?; .cron == "0 * * * *")' /tmp/lp-agent-final-result.json >/dev/null
             echo 'REAL RUNTIME PASS: fresh dry-run heartbeat verified, writes=0; hourly dry-run schedule accepted'
             rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-final-schedule.json /tmp/lp-agent-final-result.json
             exit 0
           fi
 
           printf '[]' > /tmp/lp-agent-disable-schedule.json
-          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-disable-schedule.json -o /tmp/lp-agent-disable-result.json || true
-          echo "REAL RUNTIME FAIL-CLOSED: $failure_reason; schedule disabled in control plane"
+          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-disable-schedule.json -o /tmp/lp-agent-disable-result.json
+          jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-disable-result.json >/dev/null
+          echo "REAL RUNTIME FAIL-CLOSED: $failure_reason; schedule disabled in Cloudflare control plane"
           rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-disable-schedule.json /tmp/lp-agent-disable-result.json
           exit 1
