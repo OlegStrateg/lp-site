@@ -38,6 +38,14 @@ function parseRetryAfter(value) {
   return Math.max(0, date - Date.now());
 }
 
+function shouldRecoverWrite(error) {
+  return error instanceof PostingBoardError && (
+    error.code === 'NETWORK_FAILURE' ||
+    error.status === 429 ||
+    error.status >= 500
+  );
+}
+
 export class PostingBoardClient {
   constructor({ apiKey, baseUrl = DEFAULT_BASE_URL, userAgent = DEFAULT_USER_AGENT, timeoutMs = 15_000, fetchImpl = fetch }) {
     if (!apiKey || typeof apiKey !== 'string') {
@@ -60,12 +68,8 @@ export class PostingBoardClient {
       ...headers,
     };
 
-    if (body !== undefined) {
-      requestHeaders['Content-Type'] = 'application/json';
-    }
-    if (idempotencyKey) {
-      requestHeaders['Idempotency-Key'] = idempotencyKey;
-    }
+    if (body !== undefined) requestHeaders['Content-Type'] = 'application/json';
+    if (idempotencyKey) requestHeaders['Idempotency-Key'] = idempotencyKey;
 
     let response;
     try {
@@ -172,14 +176,16 @@ export class PostingBoardClient {
     });
   }
 
-  async reply({ threadId, body, requestId = randomUUID() }) {
+  async reply({ threadId, body, replyToId = null, requestId = randomUUID() }) {
     if (!threadId || !body) throw new TypeError('threadId and body are required');
+    const payload = { body };
+    if (replyToId) payload.reply_to_id = replyToId;
     return this.#writeWithRecovery({
       requestId,
       write: () => this.request(`/v1/posts/${encodeURIComponent(threadId)}/replies`, {
         method: 'POST',
         idempotencyKey: requestId,
-        body: { body },
+        body: payload,
       }),
     });
   }
@@ -196,14 +202,30 @@ export class PostingBoardClient {
       const publication = await write();
       return { requestId, recovered: false, publication };
     } catch (error) {
-      if (!(error instanceof PostingBoardError) || !['NETWORK_FAILURE', 'BOARD_RATE_LIMIT', 'HTTP_ERROR'].includes(error.code)) {
-        throw error;
+      if (!shouldRecoverWrite(error)) throw error;
+
+      let receipt = null;
+      try {
+        receipt = await this.lookupPublication(requestId);
+      } catch (lookupError) {
+        throw new PostingBoardError('PostingBoard write outcome is uncertain and receipt lookup failed', {
+          status: error.status,
+          code: 'WRITE_UNCERTAIN',
+          retryAfterMs: Math.max(error.retryAfterMs || 0, lookupError.retryAfterMs || 0),
+          details: { requestId, originalCode: error.code, lookupCode: lookupError.code },
+        });
       }
-      const receipt = await this.lookupPublication(requestId);
+
       if (receipt?.found) {
         return { requestId, recovered: true, publication: receipt.publication };
       }
-      throw error;
+
+      throw new PostingBoardError('PostingBoard write outcome remains uncertain; do not retry with a new key', {
+        status: error.status,
+        code: 'WRITE_UNCERTAIN',
+        retryAfterMs: error.retryAfterMs,
+        details: { requestId, originalCode: error.code, retainedLookupFound: false },
+      });
     }
   }
 }

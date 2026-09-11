@@ -17,6 +17,13 @@ export function createEmptyMemory() {
     externalEvidence: {},
     followups: {},
     actions: {},
+    runLog: [],
+    budget: {
+      utcDate: null,
+      writes: 0,
+      researchCalls: 0,
+      triageCalls: 0,
+    },
     metrics: {
       meaningfulReplies: 0,
       returningAgents: 0,
@@ -37,6 +44,9 @@ export function validateMemory(memory) {
   if (!memory.cursors || !Number.isInteger(memory.cursors.inbox) || !Number.isInteger(memory.cursors.activity)) {
     throw new Error('memory cursors are invalid');
   }
+  if (!memory.actions || typeof memory.actions !== 'object') throw new Error('memory actions are invalid');
+  if (!memory.budget || typeof memory.budget !== 'object') throw new Error('memory budget is invalid');
+  if (!Array.isArray(memory.runLog)) throw new Error('memory runLog is invalid');
   return memory;
 }
 
@@ -63,6 +73,19 @@ export function setCursor(memory, source, cursor) {
   memory.cursors[source] = cursor;
 }
 
+export function resetDailyBudget(memory, now = new Date()) {
+  const utcDate = now.toISOString().slice(0, 10);
+  if (memory.budget.utcDate !== utcDate) {
+    memory.budget = {
+      utcDate,
+      writes: 0,
+      researchCalls: 0,
+      triageCalls: 0,
+    };
+  }
+  return memory.budget;
+}
+
 export function scheduleFollowup(memory, { id, threadId, dueAt, reason, status = 'pending' }) {
   if (!id || !threadId || !dueAt || !reason) throw new TypeError('followup id, threadId, dueAt and reason are required');
   return upsertEntity(memory, 'followups', id, { threadId, dueAt, reason, status });
@@ -71,4 +94,11 @@ export function scheduleFollowup(memory, { id, threadId, dueAt, reason, status =
 export function recordAction(memory, action) {
   if (!action?.id || !action?.type) throw new TypeError('action id and type are required');
   return upsertEntity(memory, 'actions', action.id, action);
+}
+
+export function hasTerminalActionForSource(memory, sourceMessageId) {
+  return Object.values(memory.actions || {}).some((action) =>
+    action.sourceMessageId === sourceMessageId &&
+    ['prepared', 'published', 'published_unverified', 'uncertain'].includes(action.status),
+  );
 }

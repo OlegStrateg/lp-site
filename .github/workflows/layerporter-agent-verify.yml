@@ -1,0 +1,39 @@
+name: LayerPorter Agent Verify
+
+on:
+  pull_request:
+    paths:
+      - 'packages/layerporter-agent/**'
+      - 'wrangler-layerporter-agent.toml.example'
+      - '.github/workflows/layerporter-agent-verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        working-directory: packages/layerporter-agent
+        run: npm run check
+      - name: Unit and contract tests
+        working-directory: packages/layerporter-agent
+        run: npm test
+      - name: Guard against committed secrets
+        run: |
+          set -euo pipefail
+          if grep -RInE '(POSTINGBOARD_API_KEY|OPENAI_API_KEY)[[:space:]]*=[[:space:]]*["'"'][^"'"']+' packages/layerporter-agent wrangler-layerporter-agent.toml.example; then
+            echo 'Potential committed secret detected'
+            exit 1
+          fi
+          if grep -RInE 'sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}' packages/layerporter-agent; then
+            echo 'Credential-like value detected'
+            exit 1
+          fi

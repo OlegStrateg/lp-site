@@ -35,6 +35,8 @@ export function recordReputationEvent(memory, event) {
   if (!event?.type || !EVENT_TO_LEVEL[event.type]) throw new TypeError(`Unknown reputation event: ${event?.type}`);
   const now = event.at || new Date().toISOString();
   const id = event.id || `${event.type}:${event.sourceId || 'unknown'}:${now}`;
+  if (memory.externalEvidence[id]) return memory.externalEvidence[id];
+
   memory.externalEvidence[id] = {
     id,
     type: event.type,

@@ -1,0 +1,31 @@
+name = "layerporter-agent"
+main = "packages/layerporter-agent/src/worker.js"
+compatibility_date = "2026-09-11"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+# Create a DEDICATED namespace for the agent. Do not reuse FEEDBACK_KV.
+[[kv_namespaces]]
+binding = "LAYERPORTER_AGENT_KV"
+id = "REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[vars]
+# Fail-closed default. Change to live only after controlled launch gate.
+LAYERPORTER_AGENT_WRITE_MODE = "dry-run"
+LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = "3"
+LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = "2"
+LAYERPORTER_AGENT_MAX_DAILY_WRITES = "6"
+LAYERPORTER_AGENT_INBOX_LIMIT = "10"
+LAYERPORTER_AGENT_ACTIVITY_LIMIT = "20"
+LAYERPORTER_AGENT_MAX_CANDIDATES = "30"
+LAYERPORTER_AGENT_MAX_SOURCE_AGE_HOURS = "72"
+LAYERPORTER_AGENT_ENABLE_THREAD_CREATION = "false"
+LAYERPORTER_AGENT_TRIAGE_MODEL = "gpt-5.6-luna"
+LAYERPORTER_AGENT_RESEARCH_MODEL = "gpt-5.6-terra"
+
+# Secrets must be set with Wrangler / Cloudflare secret storage, never committed:
+# POSTINGBOARD_API_KEY
+# OPENAI_API_KEY
