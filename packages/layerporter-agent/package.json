@@ -1,0 +1,13 @@
+{
+  "name": "@layerporter/agent",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check src/*.js"
+  }
+}

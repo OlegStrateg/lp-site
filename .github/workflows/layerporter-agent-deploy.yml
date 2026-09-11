@@ -1,0 +1,238 @@
+name: Deploy LayerPorter Agent
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'packages/layerporter-agent/**'
+      - 'wrangler-layerporter-agent.toml.example'
+      - '.github/workflows/layerporter-agent-deploy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CF_API: https://api.cloudflare.com/client/v4
+      KV_TITLE: layerporter-agent-state
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Preflight secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID'; exit 1; }
+          test -n "${OPENAI_API_KEY:-}" || { echo 'Missing OPENAI_API_KEY'; exit 1; }
+          echo 'Required bootstrap secrets are present'
+
+      - name: Find or create dedicated KV namespace
+        id: kv
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces"
+
+          curl -fsS "$BASE?per_page=100&direction=asc&order=title" \
+            -H "$AUTH" \
+            -H 'Accept: application/json' \
+            -o /tmp/lp-agent-kv-list.json
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-kv-list.json', 'utf8'));
+          if (x.success !== true || !Array.isArray(x.result)) process.exit(1);
+          NODE
+
+          KV_ID="$(jq -r --arg title "$KV_TITLE" '.result[] | select(.title == $title) | .id' /tmp/lp-agent-kv-list.json | head -n1)"
+          if [ -z "$KV_ID" ]; then
+            jq -n --arg title "$KV_TITLE" '{title:$title}' > /tmp/lp-agent-kv-create-request.json
+            STATUS="$(curl -sS -o /tmp/lp-agent-kv-create.json -w '%{http_code}' \
+              -X POST "$BASE" \
+              -H "$AUTH" \
+              -H 'Accept: application/json' \
+              -H 'Content-Type: application/json' \
+              --data-binary @/tmp/lp-agent-kv-create-request.json)"
+            if [ "$STATUS" != '200' ]; then
+              echo "KV namespace creation failed with HTTP $STATUS"
+              exit 1
+            fi
+            KV_ID="$(jq -r '.result.id // empty' /tmp/lp-agent-kv-create.json)"
+          fi
+
+          test -n "$KV_ID" || { echo 'Dedicated KV namespace id is missing'; exit 1; }
+          echo "kv_id=$KV_ID" >> "$GITHUB_OUTPUT"
+          echo "KV_ID=$KV_ID" >> "$GITHUB_ENV"
+          rm -f /tmp/lp-agent-kv-list.json /tmp/lp-agent-kv-create.json /tmp/lp-agent-kv-create-request.json
+          echo "Dedicated agent KV is ready: $KV_TITLE"
+
+      - name: Generate fail-closed Worker configs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" \
+            wrangler-layerporter-agent.toml.example > /tmp/wrangler-layerporter-agent.toml
+          sed '/^\[triggers\]$/,+1d' /tmp/wrangler-layerporter-agent.toml \
+            > /tmp/wrangler-layerporter-agent-bootstrap.toml
+
+          grep -F 'name = "layerporter-agent"' /tmp/wrangler-layerporter-agent.toml
+          grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "dry-run"' /tmp/wrangler-layerporter-agent.toml
+          grep -F 'crons = ["0 * * * *"]' /tmp/wrangler-layerporter-agent.toml
+          grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "dry-run"' /tmp/wrangler-layerporter-agent-bootstrap.toml
+
+          if grep -Fq 'REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID' /tmp/wrangler-layerporter-agent.toml; then
+            echo 'KV placeholder was not replaced'
+            exit 1
+          fi
+          if grep -Fq '[triggers]' /tmp/wrangler-layerporter-agent-bootstrap.toml; then
+            echo 'Bootstrap config must not have a cron trigger'
+            exit 1
+          fi
+
+      - name: Deploy unscheduled dry-run Worker before external registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler@3.90.0 deploy --config /tmp/wrangler-layerporter-agent-bootstrap.toml
+          echo 'LayerPorter Agent bootstrap Worker deployed without a cron trigger'
+
+      - name: Upload OpenAI Worker secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$OPENAI_API_KEY" | npx wrangler@3.90.0 secret put OPENAI_API_KEY --config /tmp/wrangler-layerporter-agent-bootstrap.toml
+          echo 'OpenAI Worker secret uploaded'
+
+      - name: Bootstrap PostingBoard identity once
+        id: postingboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          VALUE_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values"
+          MARKER_KEY='bootstrap-postingboard-registered'
+
+          MARKER_STATUS="$(curl -sS -o /tmp/lp-agent-pb-marker -w '%{http_code}' \
+            "$VALUE_BASE/$MARKER_KEY" -H "$AUTH" -H 'Accept: application/json')"
+
+          if [ "$MARKER_STATUS" = '200' ]; then
+            echo 'PostingBoard bootstrap marker already exists; registration will not be repeated'
+            echo 'new_registration=false' >> "$GITHUB_OUTPUT"
+            rm -f /tmp/lp-agent-pb-marker
+            exit 0
+          fi
+
+          if [ "$MARKER_STATUS" != '404' ]; then
+            echo "Could not verify PostingBoard bootstrap marker, HTTP $MARKER_STATUS"
+            exit 1
+          fi
+          rm -f /tmp/lp-agent-pb-marker
+
+          jq -n \
+            --arg name 'layerporter-agent' \
+            --arg description 'Technical research agent for LayerPorter: website image optimization, page audit, SEO/CRO verification, MCP tooling and safe measurable fixes.' \
+            --arg via 'LayerPorter LP-097 controlled pilot' \
+            '{name:$name,description:$description,discovered_via:$via,participation_basis:"owner_directed"}' \
+            > /tmp/lp-agent-pb-register-request.json
+
+          STATUS="$(curl -sS -o /tmp/lp-agent-pb-register.json -w '%{http_code}' \
+            -X POST 'https://getpostingboard.dev/v1/agents' \
+            -H 'Accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -H 'X-Agent-Protocol: getpostingboard/1' \
+            -H 'User-Agent: layerporter-agent/0.0.1' \
+            --data-binary @/tmp/lp-agent-pb-register-request.json)"
+
+          if [ "$STATUS" != '201' ]; then
+            echo "PostingBoard registration failed with HTTP $STATUS; no alternate identity will be created automatically"
+            rm -f /tmp/lp-agent-pb-register.json /tmp/lp-agent-pb-register-request.json
+            exit 1
+          fi
+
+          PB_KEY="$(jq -r '.api_key // empty' /tmp/lp-agent-pb-register.json)"
+          PB_ID="$(jq -r '.id // empty' /tmp/lp-agent-pb-register.json)"
+          PB_NAME="$(jq -r '.name // empty' /tmp/lp-agent-pb-register.json)"
+          test -n "$PB_KEY" || { echo 'PostingBoard registration did not return a key'; exit 1; }
+          test "$PB_NAME" = 'layerporter-agent' || { echo 'Unexpected PostingBoard identity'; exit 1; }
+
+          printf '%s' "$PB_KEY" | npx wrangler@3.90.0 secret put POSTINGBOARD_API_KEY --config /tmp/wrangler-layerporter-agent-bootstrap.toml
+
+          MARKER="$(jq -nc --arg id "$PB_ID" --arg name "$PB_NAME" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{agent_id:$id,agent_name:$name,registered_at:$at}')"
+          curl -fsS -X PUT "$VALUE_BASE/$MARKER_KEY" \
+            -H "$AUTH" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$MARKER" >/dev/null
+
+          echo 'new_registration=true' >> "$GITHUB_OUTPUT"
+          printf '%s' "$PB_KEY" > /tmp/lp-agent-pb-key
+          chmod 600 /tmp/lp-agent-pb-key
+          unset PB_KEY
+          rm -f /tmp/lp-agent-pb-register.json /tmp/lp-agent-pb-register-request.json
+          echo 'PostingBoard identity registered and secret transferred to Cloudflare without log output'
+
+      - name: First real PostingBoard + OpenAI dry-run
+        if: steps.postingboard.outputs.new_registration == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PB_KEY="$(cat /tmp/lp-agent-pb-key)"
+          RESULT="$(POSTINGBOARD_API_KEY="$PB_KEY" \
+            OPENAI_API_KEY="$OPENAI_API_KEY" \
+            LAYERPORTER_AGENT_WRITE_MODE='dry-run' \
+            node packages/layerporter-agent/src/cli.js --memory /tmp/layerporter-agent-first-run.json)"
+          unset PB_KEY
+
+          node -e '
+            const x = JSON.parse(process.argv[1]);
+            if (x.ok !== true || x.writeMode !== "dry-run" || Number(x.writesThisRun) !== 0) process.exit(1);
+          ' "$RESULT"
+
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          VALUE_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values"
+          SAFE_RESULT="$(node -e '
+            const x=JSON.parse(process.argv[1]);
+            process.stdout.write(JSON.stringify({
+              ok:x.ok,
+              runId:x.runId,
+              candidates:x.candidates,
+              researched:x.researched,
+              writesThisRun:x.writesThisRun,
+              writeMode:x.writeMode,
+              cursors:x.cursors,
+              verifiedAt:new Date().toISOString()
+            }));
+          ' "$RESULT")"
+          curl -fsS -X PUT "$VALUE_BASE/bootstrap-first-dry-run" \
+            -H "$AUTH" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$SAFE_RESULT" >/dev/null
+
+          echo "$SAFE_RESULT"
+          rm -f /tmp/layerporter-agent-first-run.json /tmp/lp-agent-pb-key
+          echo 'First real dry-run PASS: external writes = 0'
+
+      - name: Final hourly dry-run deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler@3.90.0 deploy --config /tmp/wrangler-layerporter-agent.toml
+          rm -f /tmp/wrangler-layerporter-agent.toml /tmp/wrangler-layerporter-agent-bootstrap.toml
+          echo 'LayerPorter Agent hourly Worker deployed; live writes remain OFF'
