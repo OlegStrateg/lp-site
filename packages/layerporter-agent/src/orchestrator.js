@@ -12,6 +12,7 @@ import { triageMessages, researchOpportunity, verifySourceUnchanged } from './re
 import { assertActionAllowed } from './action-policy.js';
 import { appendRunLog, makeRunRecord } from './observability.js';
 import { recordReputationEvent } from './reputation-ledger.js';
+import { preparePilotMeasurement, recordPilotRun } from './pilot-measurement.js';
 
 const PUBLIC_PRODUCT_CONTEXT = Object.freeze({
   website: 'https://layerporter.com/',
@@ -28,6 +29,13 @@ function sha256(text) {
 function trim(value, limit) {
   const text = String(value || '');
   return text.length <= limit ? text : `${text.slice(0, limit)}…`;
+}
+
+function providerUsage(provider) {
+  if (typeof provider?.getUsage !== 'function') {
+    return { requests: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  }
+  return provider.getUsage();
 }
 
 function relationshipContext(memory, message) {
@@ -250,7 +258,17 @@ export async function runAgentCycle({ client, provider, store, config, now = new
   const startedAt = now.toISOString();
   const memory = await store.load();
   resetDailyBudget(memory, now);
+  preparePilotMeasurement(memory, { now, writeMode: config.writeMode });
   await recoverPreparedActions({ client, memory, store, nowIso: startedAt });
+
+  const runCounters = {
+    inboxSeen: 0,
+    activitySeen: 0,
+    hydrated: 0,
+    candidates: 0,
+    researched: 0,
+    writesThisRun: 0,
+  };
 
   try {
     const account = await client.getMe();
@@ -267,6 +285,7 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       agentName: LAYERPORTER_AGENT_IDENTITY.name,
       now,
     });
+    Object.assign(runCounters, discovery.counts);
     recordInboxSignals(memory, discovery.messages, startedAt);
     await store.save(memory);
 
@@ -275,6 +294,7 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       messages: discovery.messages,
       memoryContext: { metrics: memory.metrics },
     });
+    runCounters.candidates = candidates.length;
     memory.budget.triageCalls += discovery.messages.length;
 
     let researched = 0;
@@ -304,6 +324,7 @@ export async function runAgentCycle({ client, provider, store, config, now = new
         publicProductContext: PUBLIC_PRODUCT_CONTEXT,
       });
       researched += 1;
+      runCounters.researched = researched;
       memory.budget.researchCalls += 1;
 
       const proposal = result.proposal;
@@ -332,6 +353,7 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       if (proposal.action === 'reply') {
         const action = await executeReply({ client, memory, store, proposal, candidate, config });
         if (['published', 'published_unverified', 'uncertain'].includes(action.status)) writesThisRun += 1;
+        runCounters.writesThisRun = writesThisRun;
         continue;
       }
 
@@ -353,18 +375,20 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       status: 'ok',
       startedAt,
       finishedAt,
-      counters: {
-        ...discovery.counts,
-        candidates: candidates.length,
-        researched,
-        writesThisRun,
-      },
+      counters: { ...runCounters },
       metadata: {
         writeMode: config.writeMode,
         inboxCursor: memory.cursors.inbox,
         activityCursor: memory.cursors.activity,
       },
     }));
+    const pilotSnapshot = recordPilotRun(memory, {
+      at: new Date(finishedAt),
+      writeMode: config.writeMode,
+      status: 'ok',
+      counters: runCounters,
+      usage: providerUsage(provider),
+    });
     await store.save(memory);
 
     return {
@@ -375,6 +399,7 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       writesThisRun,
       writeMode: config.writeMode,
       cursors: { ...memory.cursors },
+      pilot: pilotSnapshot,
     };
   } catch (error) {
     const finishedAt = new Date().toISOString();
@@ -385,8 +410,17 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       startedAt,
       finishedAt,
       error,
+      counters: { ...runCounters },
       metadata: { writeMode: config.writeMode },
     }));
+    recordPilotRun(memory, {
+      at: new Date(finishedAt),
+      writeMode: config.writeMode,
+      status: 'error',
+      counters: runCounters,
+      usage: providerUsage(provider),
+      errorCode: error.code || error.name,
+    });
     await store.save(memory);
     throw error;
   }
