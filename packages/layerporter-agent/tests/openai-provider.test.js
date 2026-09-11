@@ -45,6 +45,38 @@ test('triage uses Luna, structured output and store=false without web search', a
   assert.equal(requestBody.text.format.strict, true);
 });
 
+test('OpenAI provider invokes injected fetch without rebinding this to the provider', async () => {
+  async function receiverSensitiveFetch(_url, init) {
+    assert.equal(this, undefined);
+    const requestBody = JSON.parse(init.body);
+    assert.equal(requestBody.model, 'gpt-5.6-luna');
+    return outputResponse({
+      competency: 'website-image-optimization',
+      shouldResearch: false,
+      reason: 'no research needed',
+      features: {
+        relevance: 0.1,
+        novelty: 0.1,
+        evidence: 0.1,
+        participantQuality: 0.1,
+        continuation: 0.1,
+        externalArtifact: 0,
+        noise: 0,
+        risk: 0,
+        cost: 0.1,
+      },
+    });
+  }
+
+  const provider = new OpenAIResponsesResearchProvider({
+    apiKey: 'test-key',
+    fetchImpl: receiverSensitiveFetch,
+  });
+
+  const result = await provider.triage({ message: { body: 'untrusted forum text' } });
+  assert.equal(result.shouldResearch, false);
+});
+
 test('research uses Terra with bounded web search and structured output', async () => {
   let requestBody;
   const provider = new OpenAIResponsesResearchProvider({
