@@ -7,11 +7,11 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
-# Extract Audio worker lazily loads only the pinned Mediabunny runtime used by the existing extension.
-# The page itself keeps the global self-only CSP; this exception applies only to the worker response.
+# Extract Audio worker loads pinned Mediabunny runtime from the same origin.
+# MP3 encoding uses LAME WebAssembly; wasm-unsafe-eval is scoped only to this worker response.
 /tools/extract-audio-from-video/processor.js
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
 
 # Home V3: внешние фото разрешены только на корневой странице.
 /
@@ -36,7 +36,7 @@ https://:version.:project.pages.dev/*
 
 /pinterest-downloader/welcome/*
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://mc.yandex.ru https://*.yandex.ru https://*.webvisor.com https://*.webvisor.org; connect-src 'self' https://*.yandex.ru https://*.yandex.az https://*.yandex.by https://*.yandex.co.il https://*.yandex.com https://*.yandex.com.am https://*.yandex.com.ge https://*.yandex.com.tr https://*.yandex.ee https://*.yandex.fr https://*.yandex.kg https://*.yandex.kz https://*.yandex.lt https://*.yandex.lv https://*.yandex.md https://*.yandex.tj https://*.yandex.tm https://*.yandex.uz https://*.webvisor.com https://*.webvisor.org https://yastatic.net wss://*.yandex.ru wss://*.yandex.az wss://*.yandex.by wss://*.yandex.co.il wss://*.yandex.com wss://*.yandex.com.am wss://*.yandex.com.ge wss://*.yandex.com.tr wss://*.yandex.ee wss://*.yandex.fr wss://*.yandex.kg wss://*.yandex.kz wss://*.yandex.lt wss://*.yandex.lv wss://*.yandex.md wss://*.yandex.tj wss://*.yandex.tm wss://*.yandex.uz wss://*.webvisor.com wss://*.webvisor.org; worker-src 'self' blob:; child-src 'self' blob: https://mc.yandex.ru https://*.webvisor.com https://*.webvisor.org; frame-src 'self' blob: https://mc.yandex.ru https://*.webvisor.com https://*.webvisor.org; frame-ancestors https://*.yandex.ru https://*.yandex.by https://*.yandex.com https://*.yandex.com.tr https://*.yandex.kz https://*.ya.ru https://*.yandex.uz https://*.yandex; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://mc.yandex.ru https://*.yandex.ru https://*.webvisor.com https://*.webvisor.org; connect-src 'self' https://*.yandex.ru https://*.yandex.az https://*.yandex.by https://*.yandex.co.il https://*.yandex.com https://*.yandex.com.am https://*.yandex.com.ge https://*.yandex.com.tr https://*.yandex.ee https://*.yandex.fr https://*.yandex.kg https://*.yandex.kz https://*.yandex.lt https://*.yandex.lv https://*.yandex.md https://*.yandex.tj https://*.yandex.tm https://*.yandex.uz https://*.webvisor.com https://*.webvisor.org https://yastatic.net wss://*.yandex.ru wss://*.yandex.az wss://*.yandex.by wss://*.yandex.co.il wss://*.yandex.com wss://*.yandex.com.am wss://*.yandex.com.ge wss://*.yandex.com.tr wss://*.yandex.ee wss://*.yandex.fr wss://*.yandex.kg wss://*.yandex.kz wss://*.yandex.lt wss://*.yandex.lv wss://*.yandex.md wss://*.yandex.tj wss://*.yandex.tm wss://*.yandex.uz wss://*.webvisor.com wss://*.webvisor.org https://yastatic.net; worker-src 'self' blob:; child-src 'self' blob: https://mc.yandex.ru https://*.webvisor.com https://*.webvisor.org; frame-src 'self' blob: https://mc.yandex.ru https://*.webvisor.com https://*.webvisor.org; frame-ancestors https://*.yandex.ru https://*.yandex.by https://*.yandex.com https://*.yandex.com.tr https://*.yandex.kz https://*.ya.ru https://*.yandex.uz https://*.yandex; base-uri 'self'; form-action 'self'
 
 # Pinterest Downloader landing: одинаковый scoped CSP для EN и всех языковых URL.
 # Inline script нужен только здесь для утверждённого motion-demo; глобальный CSP не меняется.
