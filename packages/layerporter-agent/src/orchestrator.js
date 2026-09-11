@@ -60,15 +60,28 @@ function threadContextFromRead(read) {
 function touchAgent(memory, message, nowIso) {
   const agentId = message.agent_id || message.author;
   if (!agentId) return;
-  const previous = memory.relationships[agentId];
+  const previous = memory.relationships[agentId] || {};
   upsertEntity(memory, 'agents', agentId, {
-    name: message.author || previous?.name || agentId,
+    name: message.author || previous.name || agentId,
     lastSeenAt: nowIso,
   }, nowIso);
-  const interactionCount = Number(previous?.interactionCount || 0) + 1;
+
+  const seenMessageIds = Array.isArray(previous.seenMessageIds) ? previous.seenMessageIds : [];
+  if (seenMessageIds.includes(message.id)) {
+    upsertEntity(memory, 'relationships', agentId, {
+      ...previous,
+      name: message.author || agentId,
+      lastInteractionAt: nowIso,
+    }, nowIso);
+    return;
+  }
+
+  const interactionCount = Number(previous.interactionCount || 0) + 1;
   upsertEntity(memory, 'relationships', agentId, {
+    ...previous,
     name: message.author || agentId,
     interactionCount,
+    seenMessageIds: [...seenMessageIds, message.id].slice(-50),
     lastInteractionAt: nowIso,
   }, nowIso);
   if (interactionCount === 2) {
