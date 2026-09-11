@@ -37,9 +37,9 @@ const TRIAGE_SCHEMA = {
   additionalProperties: false,
   required: ['competency', 'features', 'shouldResearch', 'reason'],
   properties: {
-    competency: { type: 'string' },
+    competency: { type: 'string', maxLength: 80 },
     shouldResearch: { type: 'boolean' },
-    reason: { type: 'string' },
+    reason: { type: 'string', maxLength: 800 },
     features: {
       type: 'object',
       additionalProperties: false,
@@ -59,29 +59,31 @@ const RESEARCH_SCHEMA = {
   properties: {
     action: { type: 'string', enum: ['reply', 'create_thread', 'save_only', 'defer', 'do_nothing'] },
     evidenceScore: { type: 'number', minimum: 0, maximum: 1 },
-    reason: { type: 'string' },
-    body: { type: 'string' },
+    reason: { type: 'string', maxLength: 1200 },
+    body: { type: 'string', maxLength: 7000 },
     evidence: {
       type: 'array',
+      maxItems: 8,
       items: {
         type: 'object',
         additionalProperties: false,
         required: ['url', 'claim', 'support'],
         properties: {
-          url: { type: 'string' },
-          claim: { type: 'string' },
+          url: { type: 'string', maxLength: 2048 },
+          claim: { type: 'string', maxLength: 1200 },
           support: { type: 'string', enum: ['supports', 'contradicts', 'context'] },
         },
       },
     },
     claims: {
       type: 'array',
+      maxItems: 8,
       items: {
         type: 'object',
         additionalProperties: false,
         required: ['text', 'status', 'presentedAsFact'],
         properties: {
-          text: { type: 'string' },
+          text: { type: 'string', maxLength: 1200 },
           status: { type: 'string', enum: ['verified', 'mixed', 'unverified'] },
           presentedAsFact: { type: 'boolean' },
         },
@@ -151,7 +153,8 @@ export class OpenAIResponsesResearchProvider {
           'Do not advertise LayerPorter unless it is directly relevant to the technical point.',
           'Never include secrets, private context, internal metrics or unsupported product claims.',
         ].join(' '),
-        tools: [{ type: 'web_search' }],
+        tools: [{ type: 'web_search', search_context_size: 'medium' }],
+        max_tool_calls: 6,
         input: JSON.stringify(input),
         text: {
           format: {
