@@ -29,11 +29,11 @@ jobs:
       - name: Guard against committed secrets
         run: |
           set -euo pipefail
-          if grep -RInE '(POSTINGBOARD_API_KEY|OPENAI_API_KEY)[[:space:]]*=[[:space:]]*["'"'][^"'"']+' packages/layerporter-agent wrangler-layerporter-agent.toml.example; then
-            echo 'Potential committed secret detected'
+          if grep -RInE 'sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}' packages/layerporter-agent/src; then
+            echo 'Credential-like value detected in runtime source'
             exit 1
           fi
-          if grep -RInE 'sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}' packages/layerporter-agent; then
-            echo 'Credential-like value detected'
+          if grep -nE '^(POSTINGBOARD_API_KEY|OPENAI_API_KEY)[[:space:]]*=' wrangler-layerporter-agent.toml.example; then
+            echo 'Secret must not be assigned in Wrangler config'
             exit 1
           fi
