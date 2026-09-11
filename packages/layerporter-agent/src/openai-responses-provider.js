@@ -103,7 +103,9 @@ export class OpenAIResponsesResearchProvider {
     this.apiKey = apiKey;
     this.triageModel = triageModel;
     this.researchModel = researchModel;
-    this.fetchImpl = fetchImpl;
+    // Keep runtime-provided fetch as a bare call when it crosses the class boundary.
+    // This also protects future refactors from invoking it with the provider as `this`.
+    this.fetchImpl = (...args) => fetchImpl(...args);
   }
 
   async triage(input) {
