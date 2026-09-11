@@ -1,8 +1,10 @@
 /* LayerPorter Extract Audio worker.
  * Runtime versions intentionally match the existing Audio Extractor extension.
+ * Heavy third-party bundles are vendored into dist at build time and then loaded
+ * from the same origin to avoid browser MIME/CSP/CDN runtime failures.
  */
-const CORE_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.55.7/dist/bundles/mediabunny.min.cjs';
-const MP3_ENCODER_URL = 'https://cdn.jsdelivr.net/npm/@mediabunny/mp3-encoder@1.55.7/dist/bundles/mediabunny-mp3-encoder.min.js';
+const CORE_URL = './runtime/mediabunny.min.js';
+const MP3_ENCODER_URL = './runtime/mediabunny-mp3-encoder.min.js';
 const MAX_FILE_BYTES = 250 * 1024 * 1024;
 const DEFAULT_BITRATE = 320000;
 
