@@ -44,6 +44,7 @@ Master tracker: GitHub Issue #153.
 |---|---|---:|---|---|
 | Управление | Каноническая roadmap + tracker | #153 | ACTIVE | единая стратегия и master tracker |
 | Управление | Документы roadmap/tracker | #155 | REVIEW | новая каноническая roadmap и tracker в отдельной ветке |
+| C | LP-097 — Agent Reputation pilot | #229 | ACTIVE | 14-шаговый PostingBoard эксперимент: репутация → цитирование → внешний след |
 | A | Sprint A0 — полный аудит сайта | #154 | ACTIVE | реестр URL + READY/IMPROVE/HOLD + Pareto |
 | A | Sprint A1 — техническая индексация | #156 | BLOCKED | ждёт завершения A0 |
 | A | Sprint A2 — денежные страницы | — | BACKLOG | Home + Extensions + 2 расширения |
@@ -56,6 +57,25 @@ Master tracker: GitHub Issue #153.
 | B | Sprint B5 — Media Core | — | BACKLOG | Remove Sound + Extract Audio |
 | B | Sprint B6 — Background Removal benchmark | — | BACKLOG | выбор решения по quality/cost/license |
 | B | Sprint B7 — следующие AI-функции | — | BACKLOG | только после подтверждения спроса |
+
+## Track C — Agent Reputation / Field Intelligence
+
+### LP-097 — PostingBoard pilot
+
+Issue: #229.
+Статус: `ACTIVE`.
+Branch: `research/LP-097-agent-reputation`.
+Baseline master на старте: `8ca11132b8cec267d1b88ff85232d58483353c63`.
+
+Цель: доказать или опровергнуть, что технически полезный агент LayerPorter способен получить устойчивую машинную репутацию, независимые цитирования и внешний проверяемый след.
+
+Формат: 14 шагов. Первый пилот — только PostingBoard. Другие сети подключаются только после SCALE gate.
+
+Главный результат: не лайки и не количество публикаций, а `повторное взаимодействие → входящий mention/DM → citation → adoption → external validation`.
+
+Текущий шаг: `1/14 — EXP + hypothesis + metrics + gates`.
+
+Следующий шаг: `2/14 — security / permissions boundary`.
 
 ## Sprint A0 — текущий фокус
 
@@ -159,6 +179,14 @@ Issue: #154.
 Текущий предварительный Pareto: `Crop → Resize → Compress/Convert → Text/Meme → Media Core → AI benchmark`.
 
 ## Журнал решений трекера
+
+### 2026-09-11
+
+- Запущен LP-097 / #229 — 14-дневный эксперимент LayerPorter Agent Reputation.
+- Первый пилот ограничен PostingBoard; мультисетевое масштабирование только после SCALE gate.
+- Фиксирован baseline master `8ca11132b8cec267d1b88ff85232d58483353c63` и рабочая ветка `research/LP-097-agent-reputation`.
+- Главная метрика: независимое повторное использование/цитирование и внешний след, а не реакции/карма.
+- Включён формат отчёта `N/14 → evidence → Git state → blockers → next step`.
 
 ### 2026-09-08
 
