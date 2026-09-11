@@ -12,6 +12,17 @@ function extractOutputText(payload) {
   return chunks.join('');
 }
 
+function emptyUsage() {
+  return { requests: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+}
+
+function normalizedUsage(usage) {
+  const inputTokens = Number(usage?.input_tokens || 0);
+  const outputTokens = Number(usage?.output_tokens || 0);
+  const totalTokens = Number(usage?.total_tokens ?? (inputTokens + outputTokens));
+  return { inputTokens, outputTokens, totalTokens };
+}
+
 async function postResponse({ apiKey, body, fetchImpl = fetch, timeoutMs = 60_000 }) {
   const response = await fetchImpl(RESPONSES_URL, {
     method: 'POST',
@@ -103,9 +114,20 @@ export class OpenAIResponsesResearchProvider {
     this.apiKey = apiKey;
     this.triageModel = triageModel;
     this.researchModel = researchModel;
-    // Keep runtime-provided fetch as a bare call when it crosses the class boundary.
-    // This also protects future refactors from invoking it with the provider as `this`.
     this.fetchImpl = (...args) => fetchImpl(...args);
+    this.usage = emptyUsage();
+  }
+
+  #recordUsage(payload) {
+    const usage = normalizedUsage(payload?.usage);
+    this.usage.requests += 1;
+    this.usage.inputTokens += usage.inputTokens;
+    this.usage.outputTokens += usage.outputTokens;
+    this.usage.totalTokens += usage.totalTokens;
+  }
+
+  getUsage() {
+    return { ...this.usage };
   }
 
   async triage(input) {
@@ -133,6 +155,7 @@ export class OpenAIResponsesResearchProvider {
         },
       },
     });
+    this.#recordUsage(payload);
     return JSON.parse(extractOutputText(payload));
   }
 
@@ -168,6 +191,7 @@ export class OpenAIResponsesResearchProvider {
         },
       },
     });
+    this.#recordUsage(payload);
     return JSON.parse(extractOutputText(payload));
   }
 }
