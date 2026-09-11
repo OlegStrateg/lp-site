@@ -35,6 +35,16 @@ jobs:
           chrome-version: stable
           install-dependencies: true
 
+      - name: Pin smoke Chrome binary
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/lp-chrome-bin
+          ln -sf "$CHROME_PATH" /tmp/lp-chrome-bin/google-chrome-stable
+          echo "/tmp/lp-chrome-bin" >> "$GITHUB_PATH"
+          /tmp/lp-chrome-bin/google-chrome-stable --version
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
@@ -47,18 +57,14 @@ jobs:
           fi
           command -v ffmpeg
           command -v ffprobe
-          test -x "$CHROME_PATH"
-          "$CHROME_PATH" --version
-        env:
-          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          test "$(command -v google-chrome-stable)" = "/tmp/lp-chrome-bin/google-chrome-stable"
+          google-chrome-stable --version
 
       - name: Build branch with vendored runtimes
         run: npm run build
 
       - name: Run forced FFmpeg browser smoke
         run: node scripts/smoke-extract-audio-ffmpeg-fallback.mjs
-        env:
-          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
 
       - name: Upload evidence
         if: always()
