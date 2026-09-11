@@ -3,7 +3,7 @@
  * Fallback engine: self-hosted single-thread @ffmpeg/core.
  * Both engines are loaded lazily and only from the LayerPorter origin.
  */
-const RUNTIME_BUILD = 'lp078-20260911-ffmpeg1';
+const RUNTIME_BUILD = 'lp078-20260911-ffmpeg2';
 const MEDIABUNNY_CORE_URL = `./runtime/mediabunny.min.js?v=${RUNTIME_BUILD}`;
 const MEDIABUNNY_MP3_URL = `./runtime/mediabunny-mp3-encoder.min.js?v=${RUNTIME_BUILD}`;
 const FFMPEG_CORE_JS_URL = `./runtime/ffmpeg-core.js?v=${RUNTIME_BUILD}`;
@@ -18,6 +18,7 @@ let mediabunny = null;
 let ffmpeg = null;
 let ffmpegLoadPromise = null;
 let ffmpegProgressId = '';
+let ffmpegLogs = [];
 let busy = false;
 
 function send(message, transfer = []) {
@@ -36,6 +37,14 @@ function absoluteUrl(relative) {
 
 function safeFsUnlink(core, path) {
   try { core.FS.unlink(path); } catch {}
+}
+
+function clearFfmpegLogs() {
+  ffmpegLogs = [];
+}
+
+function recentFfmpegLogs() {
+  return ffmpegLogs.slice(-20).map((entry) => entry.message).join('\n').trim();
 }
 
 function loadMediabunnyCore() {
@@ -80,9 +89,7 @@ async function loadFfmpegCore() {
       });
       if (!response.ok) throw new Error(`FFmpeg WASM part ${part.file} HTTP ${response.status}`);
       const buffer = await response.arrayBuffer();
-      if (Number(part.bytes) && buffer.byteLength !== Number(part.bytes)) {
-        throw new Error(`FFmpeg WASM part ${part.file} has unexpected size`);
-      }
+      if (Number(part.bytes) && buffer.byteLength !== Number(part.bytes)) throw new Error(`FFmpeg WASM part ${part.file} has unexpected size`);
       return new Uint8Array(buffer);
     }));
 
@@ -94,12 +101,13 @@ async function loadFfmpegCore() {
       wasmBinary.set(part, offset);
       offset += part.byteLength;
     }
-    if (wasmBinary[0] !== 0x00 || wasmBinary[1] !== 0x61 || wasmBinary[2] !== 0x73 || wasmBinary[3] !== 0x6d) {
-      throw new Error('FFmpeg WASM signature is invalid');
-    }
+    if (wasmBinary[0] !== 0x00 || wasmBinary[1] !== 0x61 || wasmBinary[2] !== 0x73 || wasmBinary[3] !== 0x6d) throw new Error('FFmpeg WASM signature is invalid');
 
     const core = await self.createFFmpegCore({ wasmBinary });
-    core.setLogger(() => {});
+    core.setLogger((data) => {
+      ffmpegLogs.push({ type: String(data?.type || ''), message: String(data?.message || '') });
+      if (ffmpegLogs.length > 200) ffmpegLogs.shift();
+    });
     core.setProgress((data) => {
       if (!ffmpegProgressId) return;
       const value = Math.max(0, Math.min(1, Number(data?.progress) || 0));
@@ -139,10 +147,7 @@ async function processWithMediabunny(id, file) {
     if (!audioTrack) throw new Error('No audio track was found in this video');
     if (!await audioTrack.canDecode()) throw new Error('Mediabunny cannot decode this audio codec');
 
-    const output = new mediabunny.Output({
-      format: new mediabunny.Mp3OutputFormat(),
-      target: new mediabunny.BufferTarget(),
-    });
+    const output = new mediabunny.Output({ format: new mediabunny.Mp3OutputFormat(), target: new mediabunny.BufferTarget() });
     const conversion = await mediabunny.Conversion.init({
       input,
       output,
@@ -150,21 +155,14 @@ async function processWithMediabunny(id, file) {
       video: { discard: true },
       audio: { quality: new mediabunny.Quality({ bitrate: DEFAULT_BITRATE }) },
     });
-
     if (!conversion.isValid) {
-      const reasons = Array.isArray(conversion.discardedTracks)
-        ? conversion.discardedTracks.map((entry) => entry?.reason || '').filter(Boolean).join(', ')
-        : '';
+      const reasons = Array.isArray(conversion.discardedTracks) ? conversion.discardedTracks.map((entry) => entry?.reason || '').filter(Boolean).join(', ') : '';
       throw new Error(reasons ? `Mediabunny conversion rejected: ${reasons}` : 'Mediabunny conversion rejected');
     }
-
     conversion.onProgress = (value) => send({ type: 'progress', id, progress: Number(value) || 0 });
     await conversion.execute();
-
     const raw = output.target.buffer;
-    const buffer = raw instanceof ArrayBuffer
-      ? raw
-      : raw?.buffer?.slice(raw.byteOffset || 0, (raw.byteOffset || 0) + raw.byteLength);
+    const buffer = raw instanceof ArrayBuffer ? raw : raw?.buffer?.slice(raw.byteOffset || 0, (raw.byteOffset || 0) + raw.byteLength);
     if (!(buffer instanceof ArrayBuffer) || buffer.byteLength === 0) throw new Error('Mediabunny MP3 encoder returned an empty file');
     return buffer;
   } finally {
@@ -173,36 +171,40 @@ async function processWithMediabunny(id, file) {
 }
 
 async function writeFfmpegInput(core, path, file) {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  core.FS.writeFile(path, bytes);
+  core.FS.writeFile(path, new Uint8Array(await file.arrayBuffer()));
+}
+
+function parseFfprobeJson(logText) {
+  const start = logText.indexOf('{');
+  const end = logText.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try { return JSON.parse(logText.slice(start, end + 1)); } catch { return null; }
 }
 
 async function probeWithFfmpeg(file, id) {
   const core = await loadFfmpegCore();
   const inputPath = `probe-${id}.bin`;
-  const outputPath = `probe-${id}.json`;
   try {
     await writeFfmpegInput(core, inputPath, file);
-    core.ffprobe(
+    clearFfmpegLogs();
+    const ret = core.ffprobe(
       '-v', 'error',
       '-select_streams', 'a:0',
       '-show_entries', 'stream=codec_name:format=duration',
       '-of', 'json',
-      '-o', outputPath,
       inputPath,
     );
-    const ret = core.ret;
+    const logText = ffmpegLogs.map((entry) => entry.message).join('\n');
     core.reset();
-    if (ret !== 0) throw new Error(`FFmpeg probe exited with code ${ret}`);
-    const raw = core.FS.readFile(outputPath, { encoding: 'utf8' });
-    const info = JSON.parse(String(raw || '{}'));
+    if (ret !== 0) throw new Error(`FFmpeg probe exited with code ${ret}${recentFfmpegLogs() ? `: ${recentFfmpegLogs()}` : ''}`);
+    const info = parseFfprobeJson(logText);
+    if (!info) throw new Error(`FFmpeg probe returned no readable JSON${recentFfmpegLogs() ? `: ${recentFfmpegLogs()}` : ''}`);
     const streams = Array.isArray(info.streams) ? info.streams : [];
     const hasAudio = streams.length > 0;
     const duration = Number(info.format?.duration) || 0;
     return { hasAudio, decodable: hasAudio, duration };
   } finally {
     safeFsUnlink(core, inputPath);
-    safeFsUnlink(core, outputPath);
   }
 }
 
@@ -213,7 +215,8 @@ async function processWithFfmpeg(id, file) {
   ffmpegProgressId = id;
   try {
     await writeFfmpegInput(core, inputPath, file);
-    core.exec(
+    clearFfmpegLogs();
+    const ret = core.exec(
       '-hide_banner', '-loglevel', 'error',
       '-i', inputPath,
       '-map', '0:a:0',
@@ -223,9 +226,9 @@ async function processWithFfmpeg(id, file) {
       '-b:a', '320k',
       outputPath,
     );
-    const ret = core.ret;
+    const logs = recentFfmpegLogs();
     core.reset();
-    if (ret !== 0) throw new Error(`FFmpeg conversion exited with code ${ret}`);
+    if (ret !== 0) throw new Error(`FFmpeg conversion exited with code ${ret}${logs ? `: ${logs}` : ''}`);
     const raw = core.FS.readFile(outputPath, { encoding: 'binary' });
     if (!(raw instanceof Uint8Array) || raw.byteLength === 0) throw new Error('FFmpeg returned an empty MP3');
     const copy = new Uint8Array(raw.byteLength);
@@ -252,7 +255,6 @@ async function probe(id, file) {
         }
       } catch {}
     }
-
     const fallback = await probeWithFfmpeg(file, id);
     send({ type: 'probe-result', id, ...fallback, engine: 'ffmpeg' });
   } finally {
@@ -275,7 +277,6 @@ async function processFile(id, file) {
         primaryError = error;
       }
     }
-
     try {
       const buffer = await processWithFfmpeg(id, file);
       send({ type: 'result', id, buffer, engine: 'ffmpeg' }, [buffer]);
@@ -293,11 +294,7 @@ self.addEventListener('message', (event) => {
   const message = event.data || {};
   const id = String(message.id || '');
   if (!id) return;
-  const task = message.type === 'probe'
-    ? probe(id, message.file)
-    : message.type === 'process'
-      ? processFile(id, message.file)
-      : null;
+  const task = message.type === 'probe' ? probe(id, message.file) : message.type === 'process' ? processFile(id, message.file) : null;
   if (!task) return;
   task.catch((error) => {
     busy = false;
