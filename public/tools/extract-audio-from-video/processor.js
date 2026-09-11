@@ -183,14 +183,15 @@ async function probeWithFfmpeg(file, id) {
   const outputPath = `probe-${id}.json`;
   try {
     await writeFfmpegInput(core, inputPath, file);
-    const ret = core.ffprobe(
+    core.ffprobe(
       '-v', 'error',
       '-select_streams', 'a:0',
       '-show_entries', 'stream=codec_name:format=duration',
       '-of', 'json',
-      inputPath,
       '-o', outputPath,
+      inputPath,
     );
+    const ret = core.ret;
     core.reset();
     if (ret !== 0) throw new Error(`FFmpeg probe exited with code ${ret}`);
     const raw = core.FS.readFile(outputPath, { encoding: 'utf8' });
@@ -212,7 +213,7 @@ async function processWithFfmpeg(id, file) {
   ffmpegProgressId = id;
   try {
     await writeFfmpegInput(core, inputPath, file);
-    const ret = core.exec(
+    core.exec(
       '-hide_banner', '-loglevel', 'error',
       '-i', inputPath,
       '-map', '0:a:0',
@@ -222,6 +223,7 @@ async function processWithFfmpeg(id, file) {
       '-b:a', '320k',
       outputPath,
     );
+    const ret = core.ret;
     core.reset();
     if (ret !== 0) throw new Error(`FFmpeg conversion exited with code ${ret}`);
     const raw = core.FS.readFile(outputPath, { encoding: 'binary' });
