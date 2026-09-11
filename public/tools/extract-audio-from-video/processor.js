@@ -1,7 +1,7 @@
 /* LayerPorter Extract Audio worker.
  * Runtime versions intentionally match the existing Audio Extractor extension.
  */
-const CORE_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.55.7/dist/bundles/mediabunny.min.js';
+const CORE_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.55.7/dist/bundles/mediabunny.min.cjs';
 const MP3_ENCODER_URL = 'https://cdn.jsdelivr.net/npm/@mediabunny/mp3-encoder@1.55.7/dist/bundles/mediabunny-mp3-encoder.min.js';
 const MAX_FILE_BYTES = 250 * 1024 * 1024;
 const DEFAULT_BITRATE = 320000;
@@ -62,7 +62,7 @@ async function probe(id, file) {
   }
 }
 
-async function processFile(id, file, bitrate) {
+async function processFile(id, file) {
   assertFile(file);
   if (busy) throw new Error('Audio processor is busy');
   busy = true;
@@ -78,13 +78,12 @@ async function processFile(id, file, bitrate) {
       format: new api.Mp3OutputFormat(),
       target: new api.BufferTarget(),
     });
-    const targetBitrate = Number(bitrate) === DEFAULT_BITRATE ? DEFAULT_BITRATE : DEFAULT_BITRATE;
     const conversion = await api.Conversion.init({
       input,
       output,
       tracks: 'primary',
       video: { discard: true },
-      audio: { quality: new api.Quality({ bitrate: targetBitrate }) },
+      audio: { quality: new api.Quality({ bitrate: DEFAULT_BITRATE }) },
     });
 
     if (!conversion.isValid) {
@@ -116,7 +115,7 @@ self.addEventListener('message', (event) => {
   const task = message.type === 'probe'
     ? probe(id, message.file)
     : message.type === 'process'
-      ? processFile(id, message.file, message.bitrate)
+      ? processFile(id, message.file)
       : null;
   if (!task) return;
   task.catch((error) => {
