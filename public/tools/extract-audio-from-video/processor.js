@@ -3,7 +3,7 @@
  * Fallback engine: self-hosted single-thread @ffmpeg/core.
  * Both engines are loaded lazily and only from the LayerPorter origin.
  */
-const RUNTIME_BUILD = 'lp078-20260911-ffmpeg2';
+const RUNTIME_BUILD = 'lp078-20260911-ffmpeg3';
 const MEDIABUNNY_CORE_URL = `./runtime/mediabunny.min.js?v=${RUNTIME_BUILD}`;
 const MEDIABUNNY_MP3_URL = `./runtime/mediabunny-mp3-encoder.min.js?v=${RUNTIME_BUILD}`;
 const FFMPEG_CORE_JS_URL = `./runtime/ffmpeg-core.js?v=${RUNTIME_BUILD}`;
@@ -187,18 +187,18 @@ async function probeWithFfmpeg(file, id) {
   try {
     await writeFfmpegInput(core, inputPath, file);
     clearFfmpegLogs();
-    const ret = core.ffprobe(
+    core.ffprobe(
       '-v', 'error',
       '-select_streams', 'a:0',
       '-show_entries', 'stream=codec_name:format=duration',
       '-of', 'json',
       inputPath,
     );
+    const ret = Number(core.ret);
     const logText = ffmpegLogs.map((entry) => entry.message).join('\n');
-    core.reset();
-    if (ret !== 0) throw new Error(`FFmpeg probe exited with code ${ret}${recentFfmpegLogs() ? `: ${recentFfmpegLogs()}` : ''}`);
     const info = parseFfprobeJson(logText);
-    if (!info) throw new Error(`FFmpeg probe returned no readable JSON${recentFfmpegLogs() ? `: ${recentFfmpegLogs()}` : ''}`);
+    core.reset();
+    if (!info) throw new Error(`FFmpeg probe returned no readable JSON (code ${ret})${recentFfmpegLogs() ? `: ${recentFfmpegLogs()}` : ''}`);
     const streams = Array.isArray(info.streams) ? info.streams : [];
     const hasAudio = streams.length > 0;
     const duration = Number(info.format?.duration) || 0;
@@ -216,7 +216,7 @@ async function processWithFfmpeg(id, file) {
   try {
     await writeFfmpegInput(core, inputPath, file);
     clearFfmpegLogs();
-    const ret = core.exec(
+    core.exec(
       '-hide_banner', '-loglevel', 'error',
       '-i', inputPath,
       '-map', '0:a:0',
@@ -226,11 +226,14 @@ async function processWithFfmpeg(id, file) {
       '-b:a', '320k',
       outputPath,
     );
+    const ret = Number(core.ret);
     const logs = recentFfmpegLogs();
+    let raw = null;
+    try { raw = core.FS.readFile(outputPath, { encoding: 'binary' }); } catch {}
     core.reset();
-    if (ret !== 0) throw new Error(`FFmpeg conversion exited with code ${ret}${logs ? `: ${logs}` : ''}`);
-    const raw = core.FS.readFile(outputPath, { encoding: 'binary' });
-    if (!(raw instanceof Uint8Array) || raw.byteLength === 0) throw new Error('FFmpeg returned an empty MP3');
+    if (!(raw instanceof Uint8Array) || raw.byteLength === 0) {
+      throw new Error(`FFmpeg returned no MP3 output (code ${ret})${logs ? `: ${logs}` : ''}`);
+    }
     const copy = new Uint8Array(raw.byteLength);
     copy.set(raw);
     return copy.buffer;
