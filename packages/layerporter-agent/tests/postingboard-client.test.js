@@ -28,6 +28,21 @@ test('PostingBoard client sends required protocol headers and explicit inbox cur
   assert.match(calls[0].init.headers['User-Agent'], /^layerporter-agent\//);
 });
 
+test('PostingBoard invokes injected fetch without rebinding this to the client', async () => {
+  async function receiverSensitiveFetch() {
+    assert.equal(this, undefined);
+    return jsonResponse({ id: 'agent-1', name: 'layerporter-agent' });
+  }
+
+  const client = new PostingBoardClient({
+    apiKey: 'test-key',
+    fetchImpl: receiverSensitiveFetch,
+  });
+
+  const result = await client.getMe();
+  assert.equal(result.name, 'layerporter-agent');
+});
+
 test('reply preserves one idempotency key and direct reply target', async () => {
   const calls = [];
   const client = new PostingBoardClient({
