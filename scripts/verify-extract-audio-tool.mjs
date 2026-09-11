@@ -27,8 +27,9 @@ assert(page.includes('id="eav-player"'), 'audio playback control missing');
 assert(page.includes('id="eav-download"'), 'download action missing');
 assert(!page.includes('cdn.jsdelivr.net'), 'heavy runtime leaked into initial HTML');
 
-assert(worker.includes("CORE_URL = './runtime/mediabunny.min.js'"), 'worker does not use same-origin Mediabunny runtime');
-assert(worker.includes("MP3_ENCODER_URL = './runtime/mediabunny-mp3-encoder.min.js'"), 'worker does not use same-origin MP3 runtime');
+assert(worker.includes("RUNTIME_BUILD = 'lp078-20260911-2'"), 'runtime cache-bust build id missing');
+assert(worker.includes('./runtime/mediabunny.min.js?v=${RUNTIME_BUILD}'), 'worker does not use versioned same-origin Mediabunny runtime');
+assert(worker.includes('./runtime/mediabunny-mp3-encoder.min.js?v=${RUNTIME_BUILD}'), 'worker does not use versioned same-origin MP3 runtime');
 assert(!worker.includes('cdn.jsdelivr.net'), 'worker still depends on runtime CDN');
 assert(worker.includes('new api.BlobSource(file)'), 'local BlobSource processing missing');
 assert(worker.includes('api.Conversion.init'), 'conversion pipeline missing');
