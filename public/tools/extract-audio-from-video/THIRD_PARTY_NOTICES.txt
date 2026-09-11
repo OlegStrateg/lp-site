@@ -9,6 +9,14 @@ Source: https://github.com/Vanilagy/mediabunny
 License: Mozilla Public License 2.0 (MPL-2.0)
 Source: https://github.com/Vanilagy/mediabunny/tree/v1.55.7/packages/mp3-encoder
 
-The MP3 encoder package uses a WebAssembly build of LAME 3.100.
+The Mediabunny MP3 encoder package uses a WebAssembly build of LAME 3.100.
 LAME is licensed under the GNU Lesser General Public License (LGPL).
 Project: https://lame.sourceforge.io/
+
+@ffmpeg/core 0.12.10
+Used only as the browser-side fallback media engine when the primary engine cannot process a file.
+License: GNU General Public License v2.0 or later (GPL-2.0-or-later)
+Source: https://github.com/ffmpegwasm/ffmpeg.wasm
+Package: https://www.npmjs.com/package/@ffmpeg/core
+
+The @ffmpeg/core build contains FFmpeg and enabled codec libraries, including libmp3lame for MP3 encoding. The fallback runtime is self-hosted by LayerPorter and executes locally in the browser.
