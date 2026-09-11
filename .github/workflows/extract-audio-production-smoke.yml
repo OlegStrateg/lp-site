@@ -1,5 +1,5 @@
 name: Extract Audio Production Smoke
-# Rerun production verification after master 5770b16e878c97a709330287c1223ecd492b8c4c.
+# Rerun production verification after master 2edd23accaba9aada7b8cc153e1c20e0ab8b42b9.
 
 on:
   pull_request:
