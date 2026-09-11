@@ -27,9 +27,9 @@ jobs:
       - name: Check browser and media tools
         run: |
           set -euxo pipefail
-          command -v google-chrome || command -v chromium || command -v chromium-browser
-          ffmpeg -version
-          ffprobe -version
+          command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser
+          command -v ffmpeg
+          command -v ffprobe
 
       - name: Run real production Extract Audio scenario
         env:
