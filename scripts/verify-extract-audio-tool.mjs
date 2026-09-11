@@ -31,7 +31,7 @@ assert(page.includes('id="eav-player"'), 'audio playback control missing');
 assert(page.includes('id="eav-download"'), 'download action missing');
 assert(!page.includes('cdn.jsdelivr.net'), 'heavy runtime leaked into initial HTML');
 
-assert(worker.includes("RUNTIME_BUILD = 'lp078-20260911-ffmpeg1'"), 'runtime build id missing');
+assert(worker.includes("RUNTIME_BUILD = 'lp078-20260911-ffmpeg2'"), 'runtime build id missing');
 assert(worker.includes('./runtime/mediabunny.min.js?v=${RUNTIME_BUILD}'), 'versioned same-origin Mediabunny runtime missing');
 assert(worker.includes('./runtime/mediabunny-mp3-encoder.min.js?v=${RUNTIME_BUILD}'), 'versioned same-origin Mediabunny MP3 runtime missing');
 assert(worker.includes('./runtime/ffmpeg-core.js?v=${RUNTIME_BUILD}'), 'same-origin FFmpeg fallback JS missing');
