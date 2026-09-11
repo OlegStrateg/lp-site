@@ -66,12 +66,20 @@ jobs:
       - name: Test MCP contracts
         working-directory: packages/image-optimizer-mcp
         run: npm test
+      - name: Verify clean source setup
+        working-directory: packages/image-optimizer-mcp
+        run: node scripts/verify-source-setup.mjs | tee "$RUNNER_TEMP/lp097-source-setup.json"
       - name: Install MCP client for protocol smoke
         working-directory: packages/image-optimizer-mcp
         run: npm install --no-save --package-lock=false @modelcontextprotocol/client@^2.0.0 --ignore-scripts --no-audit --no-fund
       - name: Verify MCP artifact resource protocol
         working-directory: packages/image-optimizer-mcp
         run: node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-artifact-protocol.json
+      - name: Verify clean tarball through MCP client and decoded resource
+        working-directory: packages/image-optimizer-mcp
+        env:
+          LP096_PROOF_DIR: ${{ runner.temp }}/lp097-release-proof
+        run: node scripts/release-tarball-client-smoke.mjs | tee "$RUNNER_TEMP/lp097-tarball-smoke.json"
       - name: Smoke start stdio server from source package
         working-directory: packages/image-optimizer-mcp
         run: |
@@ -123,3 +131,13 @@ jobs:
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
           ./mcp-publisher validate packages/image-optimizer-mcp/server.json
+      - name: Upload MCP release proof
+        uses: actions/upload-artifact@v7
+        with:
+          name: lp097-mcp-release-proof-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/lp097-source-setup.json
+            ${{ runner.temp }}/lp097-tarball-smoke.json
+            ${{ runner.temp }}/lp097-release-proof/
+          if-no-files-found: error
+          retention-days: 30

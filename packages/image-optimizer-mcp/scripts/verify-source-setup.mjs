@@ -57,7 +57,6 @@ async function assertServerStarts(cwd) {
 try {
   await copyPackage('image-core');
   await copyPackage('image-optimizer-mcp');
-  await copyPackage('page-audit-extension');
 
   const coreDir = path.join(tmpPackages, 'image-core');
   const mcpDir = path.join(tmpPackages, 'image-optimizer-mcp');
