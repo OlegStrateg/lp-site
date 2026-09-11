@@ -26,7 +26,7 @@
         "ownershipClaimed": false,
         "healthPass": false,
         "qualityScorePresent": false,
-        "fiveToolsMatch": false
+        "toolCountMatch": false
       },
       "evidence": []
     },
@@ -37,7 +37,7 @@
       "indexedAt": null,
       "checks": {
         "bundleOrEndpointVerified": false,
-        "fiveToolsMatch": false,
+        "toolCountMatch": false,
         "installFlowPass": false
       },
       "evidence": []

@@ -134,10 +134,12 @@ export async function loadUrlImages(input, options = {}) {
       if (response.status < 200 || response.status >= 300) return { status: 'SKIP', sourceUrl: ref.url, reason: `image_http_${response.status}`, html: ref };
       const mimeType = contentType(response.headers).split(';')[0].trim().toLowerCase();
       if (!mimeType.startsWith('image/')) return { status: 'SKIP', sourceUrl: ref.url, reason: 'image_content_type_invalid', html: ref };
-      if (acceptedImageBytes + response.body.length > cfg.maxTotalImageBytes) return { status: 'SKIP', sourceUrl: ref.url, reason: 'total_image_byte_budget', html: ref };
 
       const metadata = await inspectImage(response.body, { policy: input.policy });
-      acceptedImageBytes += response.body.length;
+      const responseBytes = response.body.length;
+      if (acceptedImageBytes + responseBytes > cfg.maxTotalImageBytes) return { status: 'SKIP', sourceUrl: ref.url, reason: 'total_image_byte_budget', html: ref };
+      acceptedImageBytes += responseBytes;
+
       return {
         status: 'FETCHED',
         sourceUrl: response.url,

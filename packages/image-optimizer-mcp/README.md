@@ -17,11 +17,19 @@ The npm package carries `mcpName: com.layerporter/website-image-optimizer`, matc
 
 ## Tools
 
+The current server registers seven bounded tools:
+
 - `analyze_page_images`
 - `optimize_image`
 - `generate_responsive_variants`
 - `compare_image_versions`
 - `optimize_page_images`
+- `analyze_url_images`
+- `optimize_url_images`
+
+The first five operate on caller-provided image data or normalized page facts. The two URL tools perform bounded read-only HTTP(S) fetching through a dedicated SSRF-protected network boundary. URL mode is intentionally a fast static-HTML mode: it does not claim browser-rendered size, `currentSrc`, LCP, CSS-background discovery, or JavaScript-driven lazy content.
+
+Accepted optimized binaries are exposed as temporary MCP `resource_link` values and are read separately with `resources/read`; they are not embedded in the initial tool text response.
 
 ## Runtime
 
@@ -32,7 +40,7 @@ The npm package carries `mcpName: com.layerporter/website-image-optimizer`, matc
 
 ## Local source setup
 
-From this repository branch:
+A source checkout does not contain the generated `src/image-core` copy. Sync it explicitly before MCP tests or direct server startup:
 
 ```bash
 cd packages/image-core
@@ -40,13 +48,14 @@ npm install --no-audit --no-fund
 npm test
 
 cd ../image-optimizer-mcp
-npm install --no-audit --no-fund
+npm install --ignore-scripts --no-audit --no-fund
 npm run release:preflight
+npm run sync:core
 npm test
 node src/server.js
 ```
 
-The last command starts the stdio MCP server and waits for a client connection.
+The last command starts the stdio MCP server and waits for a client connection. `npm pack` also runs `sync:core` through `prepack`; source setup and packed-artifact setup are verified separately.
 
 ## Installation after public release
 
@@ -70,16 +79,19 @@ Official MCP Registry publication happens only **after** the matching npm versio
 
 ## Safety boundary
 
-The MCP package intentionally contains no:
+The current MCP package:
 
-- remote URL fetch;
-- arbitrary filesystem write/delete/rename;
-- shell execution;
-- direct website or production mutation.
+- performs bounded public HTTP(S) reads only through `analyze_url_images` and `optimize_url_images`;
+- blocks unsafe URL schemes, URL credentials, localhost/private/link-local/reserved targets, unsafe DNS answers and redirects to prohibited addresses;
+- caps page bytes, per-image bytes, accepted total image bytes, redirects, image count, timeouts and concurrency;
+- writes accepted image artifacts only to its isolated temporary artifact store;
+- does not perform arbitrary filesystem write/delete/rename operations;
+- does not execute shell commands;
+- does not write to a website or production environment.
 
-Inputs are caller-provided image buffers or normalized page facts. Batch and responsive operations are bounded.
+Local transform tools consume caller-provided image buffers or normalized page facts. URL tools are read-only open-world operations. Hard safety comes from implementation controls, not only from MCP metadata.
 
-Hard safety comes from implementation controls, not only from MCP metadata.
+Temporary artifacts are process-local and ephemeral. Their default TTL is 30 minutes, but cleanup occurs during store operations/disposal rather than as a guarantee of physical deletion at an exact wall-clock instant. `resources/read` returns the resource blob separately; whether a client places that blob into model context is client-specific.
 
 ## Verification
 
@@ -90,7 +102,8 @@ Release preparation verifies:
 - image-core and MCP tests;
 - packed npm artifact metadata;
 - clean installation of the packed tarball;
-- real stdio startup from the packed artifact;
+- real stdio startup and client handshake from the packed artifact;
+- `tools/list`, transform calls, temporary `resource_link` and `resources/read`;
 - Official MCP Registry `server.json` validation;
 - full LayerPorter Astro build in the integrated repository tree.
 
@@ -106,6 +119,6 @@ Canonical product pages after site release:
 - confirmed public npm release;
 - confirmed Official MCP Registry publication;
 - hosted endpoint;
-- remote URL ingestion;
+- full browser crawler/runtime metrics collection;
 - production apply/write tool;
 - universal performance or quality claims.

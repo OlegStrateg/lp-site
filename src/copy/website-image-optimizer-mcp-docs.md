@@ -4,7 +4,7 @@
 
 Current status: **technical candidate**.
 
-The server and image core have passed the technical verification gate. Public npm publication, Official MCP Registry publication, and a hosted endpoint are separate release steps and are not represented here as completed.
+The server and image core have passed technical verification gates. Public npm publication, Official MCP Registry publication, and a hosted endpoint are separate release steps and are not represented here as completed.
 
 ## Runtime
 
@@ -17,126 +17,98 @@ The server and image core have passed the technical verification gate. Public np
 ## Architecture
 
 ```text
-caller / browser collector
-        ↓
-normalized page facts
-        ↓
-analyze_page_images
-        ↓
-normalized Findings
-        ↓
-caller selects SAFE image work
-        ↓
-image-core policy + Sharp/libvips
-        ↓
-optimized artifacts + before/after evidence
+caller-provided image/page facts ─┐
+                                 ├→ deterministic image policy → verified candidate → temporary MCP resource
+public HTTP(S) page URL ─────────┘
+          ↓
+SSRF-protected bounded fetch
+          ↓
+static HTML <img> discovery only
 ```
 
-The MCP layer is deliberately thin. Browser collection, crawling, production writes, and general-purpose image editing do not live inside image-core.
+Browser-aware facts and URL fast mode are intentionally separate. URL mode does not claim rendered dimensions, browser-selected `currentSrc`, LCP, CSS background images, or JavaScript-driven lazy content.
 
 ## Tools
 
+The current stdio server registers seven tools.
+
 ### `analyze_page_images`
-
-Purpose: analyze normalized page-image facts.
-
-Input concept:
-
-```json
-{
-  "snapshot": {
-    "pageUrl": "https://example.com/",
-    "images": [
-      {
-        "src": "https://example.com/hero.jpg",
-        "intrinsicWidth": 2400,
-        "intrinsicHeight": 1600,
-        "renderedWidth": 960,
-        "renderedHeight": 640,
-        "devicePixelRatio": 1,
-        "bytes": 420000,
-        "format": "jpeg",
-        "loading": "lazy",
-        "fetchPriority": "auto",
-        "widthAttr": 2400,
-        "heightAttr": 1600,
-        "lcp": true
-      }
-    ]
-  }
-}
-```
-
-Possible deterministic Findings include:
-
-- `oversized_image`;
-- `missing_srcset`;
-- `missing_sizes`;
-- `missing_dimension_attributes`;
-- `lcp_lazy_loaded`;
-- `lcp_missing_fetchpriority`.
-
-Important distinction: a visually prominent hero candidate is not treated as confirmed LCP unless the caller supplies confirmed LCP evidence.
+Analyzes normalized page-image facts supplied by the caller. Browser-only facts such as rendered size or confirmed LCP are trusted only when explicitly supplied by the collector.
 
 ### `optimize_image`
-
-Purpose: optimize one image using bounded policy.
-
-Conceptual input:
-
-```json
-{
-  "imageBase64": "...",
-  "target": { "width": 1280 },
-  "policy": {
-    "format": "webp",
-    "quality": 82,
-    "neverIncreaseBytes": true,
-    "withoutEnlargement": true
-  }
-}
-```
-
-Core decisions are deterministic. The MCP server does not ask an LLM to choose encoder internals.
+Optimizes one caller-provided image using bounded policy. Accepted output is exposed as a temporary `resource_link` rather than embedded in the initial tool text.
 
 ### `generate_responsive_variants`
-
-Purpose: produce a bounded responsive set from one source image.
-
-Limits:
-
-- maximum requested widths: 6;
-- widths above the original are discarded;
-- duplicate widths are removed;
-- no-upscale remains active.
+Produces up to 6 responsive variants without upscaling. Each accepted variant is associated with its own temporary resource URI.
 
 ### `compare_image_versions`
-
-Purpose: compare original and candidate image versions.
-
-Checks include:
-
-- bytes saved;
-- savings percentage;
-- alpha regression;
-- dimension regression.
-
-A smaller file is not automatically accepted if a guard regression is detected.
+Compares original and candidate versions for bytes saved and guard regressions.
 
 ### `optimize_page_images`
+Processes up to 20 already-selected image items. It does not crawl or write to production.
 
-Purpose: bounded batch orchestration over items already selected for image optimization.
+### `analyze_url_images`
+Performs bounded read-only HTTP(S) ingestion of a public page and selected static `<img>` resources. It reports static HTML/image facts only.
 
-Limits:
+### `optimize_url_images`
+Performs the same bounded URL ingestion, then recompresses fetched images at their original dimensions. HTML width/height hints are not used as an automatic resize target. Accepted candidates are exposed as temporary MCP resources and are never written back to the site.
 
-- maximum 20 items per call;
-- sequential processing in the current implementation;
-- no production writes;
-- no crawling or remote fetch inside the tool.
+## Artifact contract
+
+For accepted binary outputs the tool result contains:
+
+- text/structured metadata describing status, source/output facts and savings;
+- an MCP `resource_link` URI such as `layerporter-artifact://artifact/<id>`.
+
+A compatible client calls `resources/read` for that URI. The resource response contains the blob plus MIME type and metadata including SHA-256, size and expiry. The store rechecks size and SHA-256 before returning a resource.
+
+Important limits:
+
+- resources are process-local and temporary;
+- default TTL is 30 minutes;
+- cleanup is opportunistic during store operations/disposal, not a promise of deletion at an exact wall-clock second;
+- the in-memory index is not recovered after process restart;
+- `resources/read` returns base64 as required by the resource response shape, so downstream model-context use depends on the client.
+
+REJECT results remain diagnostics and are not exposed as improved artifacts.
+
+## Local source setup
+
+A source checkout does not contain the generated MCP-local image-core copy. Run sync explicitly before tests or direct server startup:
+
+```bash
+cd packages/image-core
+npm install --no-audit --no-fund
+npm test
+
+cd ../image-optimizer-mcp
+npm install --ignore-scripts --no-audit --no-fund
+npm run release:preflight
+npm run sync:core
+npm test
+node src/server.js
+```
+
+`npm pack` independently runs `sync:core` through the package `prepack` hook, so source setup and packed-artifact setup are separate verification paths.
+
+## URL security boundary
+
+Network access exists only in the URL tools and passes through the dedicated secure fetch layer. The current controls include:
+
+- HTTP(S) only;
+- URL credentials rejected;
+- localhost/private/link-local/reserved targets rejected;
+- DNS answers validated at connection lookup time;
+- redirects handled manually and each destination revalidated;
+- page-byte and per-image-byte caps;
+- bounded accepted total-image byte budget;
+- request timeout and redirect limits;
+- bounded image count and concurrency;
+- required HTML/image content types plus image decoding before acceptance.
+
+The accepted-total-image byte budget limits the set retained for analysis/optimization. It is not advertised as a strict cap on aggregate network bytes already downloaded before the final accepted-set decision.
 
 ## Default image policy
-
-The current image-core policy includes:
 
 ```text
 format: auto
@@ -152,90 +124,45 @@ maxHeight: 8192
 maxPixels: 40,000,000
 ```
 
-Automatic format policy is intentionally conservative:
-
-- JPEG → WebP;
-- PNG → WebP;
-- WebP stays WebP;
-- AVIF stays AVIF;
-- alpha-bearing PNG defaults to WebP;
-- AVIF is not automatically forced onto JPEG/PNG solely because it may compress smaller.
-
-## Safety and privacy boundary
-
-### Current local stdio server
-
-The current verified server receives data from the MCP client and performs local processing. The MCP layer itself contains no HTTP fetch, arbitrary filesystem write, shell execution, rename/delete operation, or direct production mutation.
-
-This means the current code path does **not** claim to upload image data to a LayerPorter hosted service.
-
-### Hosted mode
-
-A public hosted service is not yet released. Therefore no hosted retention duration, authentication scheme, quota, or data-location promise is published as fact yet. Those items require a separate hosted deployment/security review.
-
-### Remote URL processing
-
-The image-core does not fetch remote URLs. If remote URL ingestion is added later, it must sit behind a dedicated security boundary with SSRF protection, redirect revalidation, private-address blocking, byte caps, decoded-pixel caps, timeout budgets, and bounded concurrency.
+Automatic format selection remains conservative. AVIF support does not imply automatic AVIF conversion for every input.
 
 ## MCP risk metadata
 
-The tools are designed as closed-domain, non-destructive transformations: they operate on caller-provided data and return analysis or transformed results rather than modifying an external environment.
+Caller-buffer transforms are closed-domain, read-only/non-destructive operations. URL tools are explicitly open-world but remain read-only. MCP annotations are metadata hints; enforcement comes from the code paths and limits above.
 
-MCP tool annotations are metadata hints, not enforcement. The hard safety boundary remains the implementation: no production write path, no network fetch in the MCP layer, bounded inputs, and deterministic image policy.
+## Verification expectations
 
-## Verification evidence
+A release candidate is not accepted merely because the server starts. The release smoke must cover:
 
-Final technical gate:
-
-- GitHub Actions Run ID: `34341457360`;
-- commit verified by the run: `3f1e48409f297c49c54fe0d678f29422f0d37649`;
-- image-core: 17/17 PASS;
-- MCP contracts: 4/4 PASS;
-- stdio server startup: PASS.
-
-The gate found and fixed three real implementation problems before it passed:
-
-1. MCP v2 tool registration API mismatch;
-2. Sharp/libvips reporting AVIF as HEIF + AV1;
-3. EXIF orientation causing a false no-upscale failure.
+1. source setup without a pre-generated MCP-local core;
+2. `npm pack` and clean tarball installation outside the monorepo;
+3. real stdio client initialize and `tools/list`;
+4. accepted `optimize_image` → `resource_link` → `resources/read`;
+5. decoded file SHA-256, byte length, MIME and image dimensions;
+6. batch and responsive variants with correct URI association;
+7. REJECT behavior without exposing an unverified artifact;
+8. unknown/expired/repeated resource reads and store limits;
+9. URL security tests and controlled URL-mode partial/no-image cases;
+10. package identity/files/secrets checks before any authorized publication.
 
 ## Engineering benchmark
 
-The current benchmark uses a deterministic synthetic 960×640 fixture and resizes to 640 px width.
-
-| Source | Target | Source bytes | Output bytes | Savings | Time |
-| --- | --- | ---: | ---: | ---: | ---: |
-| JPEG | WebP | 375456 | 79846 | 78.73% | ~32 ms |
-| JPEG | AVIF | 375456 | 39946 | 89.36% | ~234 ms |
-| PNG | WebP | 509201 | 80452 | 84.20% | ~28 ms |
-| PNG | AVIF | 509201 | 42222 | 91.71% | ~240 ms |
-| WebP | WebP | 185262 | 76114 | 58.92% | ~41 ms |
-| WebP | AVIF | 185262 | 39074 | 78.91% | ~219 ms |
-| AVIF | WebP | 151848 | 80184 | 47.19% | ~79 ms |
-| AVIF | AVIF | 151848 | 41803 | 72.47% | ~261 ms |
-
-These values are engineering evidence for this fixture only. They must not be presented as universal expected savings or quality results.
+Synthetic fixture benchmark values are engineering evidence only. They must not be presented as universal savings, visual-quality or SEO/Core Web Vitals results.
 
 ## Known limitations
 
-- no page crawler inside the MCP server;
-- no remote URL fetch;
+- URL mode is static-HTML fast mode, not a full browser crawler;
+- no CSS background-image discovery in URL mode;
+- no JavaScript-driven lazy-content discovery in URL mode;
+- no rendered-size/currentSrc/LCP measurement inside URL mode;
 - no hosted endpoint yet;
-- no public npm/registry release yet;
+- no public npm/Official Registry release yet;
 - no production write/apply step;
-- no visual quality metric such as SSIM/Butteraugli in the current gate;
-- no large real-world corpus benchmark yet;
-- current batch orchestration is intentionally bounded and simple;
-- page facts must currently be collected by the caller/collector layer.
+- no universal visual-quality guarantee;
+- current batch and URL orchestration remain intentionally bounded.
 
 ## Release sequence
 
-The next public release work is separate from this documentation:
-
-1. prepare package/repository metadata;
-2. publish the first public package/artifact;
-3. create Official MCP Registry metadata;
-4. verify installation from the public artifact;
-5. only then change release status from technical candidate to public release.
+Public-release status changes only after external evidence exists for the exact published package/version and, separately, the exact Official MCP Registry entry.
 
 Return to the [Website Image Optimizer MCP product page](/mcp/website-image-optimizer/).
