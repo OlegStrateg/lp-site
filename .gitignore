@@ -6,6 +6,9 @@ dist/
 # dependencies
 node_modules/
 
+# generated package-only shared core
+packages/image-optimizer-mcp/src/image-core/
+
 # cloudflare local dev state
 .wrangler/
 

@@ -1,0 +1,162 @@
+name: LP-079 Image MCP Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Release mode
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - stage-npm
+          - publish-registry
+      version:
+        description: Expected release version
+        required: true
+        default: 0.1.0
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Install release-capable npm CLI
+        run: npm install --global npm@11.15.0
+      - name: Verify release remains explicitly enabled
+        run: |
+          if [ "${{ inputs.mode }}" != "dry-run" ] && [ "${{ vars.LP_MCP_RELEASE_ENABLED }}" != "true" ]; then
+            echo "Release blocked: repository variable LP_MCP_RELEASE_ENABLED must equal true"
+            exit 1
+          fi
+      - name: Verify candidate metadata contract
+        working-directory: packages/image-optimizer-mcp
+        run: npm run release:preflight
+      - name: Verify publication metadata contract
+        if: inputs.mode != 'dry-run'
+        working-directory: packages/image-optimizer-mcp
+        run: npm run release:preflight -- --publishable
+      - name: Verify version lock
+        run: |
+          PKG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/package.json').version")
+          REG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/server.json').version")
+          test "$PKG_VERSION" = "${{ inputs.version }}"
+          test "$REG_VERSION" = "${{ inputs.version }}"
+      - name: Require existing npm package for staged or Registry release
+        if: inputs.mode != 'dry-run'
+        run: |
+          PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
+          npm view "$PKG_NAME" name >/dev/null 2>&1 || {
+            echo "Release blocked: $PKG_NAME does not exist on npm yet. Bootstrap the first public version manually with the package owner and 2FA, then configure npm Trusted Publishing."
+            exit 1
+          }
+      - name: Require exact npm version before MCP Registry publication
+        if: inputs.mode == 'publish-registry'
+        run: |
+          PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
+          PKG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/package.json').version")
+          npm view "$PKG_NAME@$PKG_VERSION" version | grep -Fx "$PKG_VERSION"
+      - name: Install and test image-core
+        working-directory: packages/image-core
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+      - name: Install MCP dependencies
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --no-audit --no-fund
+      - name: Sync shared image-core
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
+      - name: Test MCP contracts
+        working-directory: packages/image-optimizer-mcp
+        run: npm test
+      - name: Pack candidate
+        working-directory: packages/image-optimizer-mcp
+        run: npm pack --json > /tmp/lp079-pack.json
+      - name: Verify packed metadata
+        run: |
+          TARBALL=$(node -e "const x=require('/tmp/lp079-pack.json'); console.log(x[0].filename)")
+          mkdir -p /tmp/lp079-packed
+          tar -xzf "packages/image-optimizer-mcp/$TARBALL" -C /tmp/lp079-packed
+          node <<'NODE'
+          const p = require('/tmp/lp079-packed/package/package.json');
+          const s = require('/tmp/lp079-packed/package/server.json');
+          if (p.private === true) throw new Error('packed package unexpectedly private');
+          if (p.mcpName !== s.name) throw new Error('packed mcpName does not match server name');
+          if (p.name !== s.packages[0].identifier) throw new Error('packed npm identifier mismatch');
+          if (p.version !== s.version || p.version !== s.packages[0].version) throw new Error('packed version mismatch');
+          NODE
+      - name: Clean-install packed candidate
+        run: |
+          TARBALL=$(node -e "const x=require('/tmp/lp079-pack.json'); console.log(x[0].filename)")
+          mkdir -p /tmp/lp079-clean
+          cd /tmp/lp079-clean
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE/packages/image-optimizer-mcp/$TARBALL" --no-audit --no-fund
+          timeout 3s ./node_modules/.bin/layerporter-image-optimizer-mcp >/tmp/lp079-mcp.out 2>/tmp/lp079-mcp.err || code=$?
+          if [ "${code:-0}" != "0" ] && [ "${code:-0}" != "124" ]; then
+            cat /tmp/lp079-mcp.err
+            exit "$code"
+          fi
+      - name: Validate Official MCP Registry metadata
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher validate server.json
+
+  stage-npm:
+    if: inputs.mode == 'stage-npm' && vars.LP_MCP_RELEASE_ENABLED == 'true'
+    needs: validate
+    runs-on: ubuntu-24.04
+    environment: mcp-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Install staged-publishing capable npm CLI
+        run: npm install --global npm@11.15.0
+      - name: Stage npm package via Trusted Publishing
+        working-directory: packages/image-optimizer-mcp
+        run: npm stage publish
+
+  publish-registry:
+    if: inputs.mode == 'publish-registry' && vars.LP_MCP_RELEASE_ENABLED == 'true'
+    needs: validate
+    runs-on: ubuntu-24.04
+    environment: mcp-release
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Require domain-auth private key
+        env:
+          MCP_PRIVATE_KEY: ${{ secrets.MCP_PRIVATE_KEY }}
+        run: |
+          test -n "$MCP_PRIVATE_KEY" || (echo 'Release blocked: MCP_PRIVATE_KEY missing' && exit 1)
+      - name: Publish to Official MCP Registry using layerporter.com ownership
+        working-directory: packages/image-optimizer-mcp
+        env:
+          MCP_PRIVATE_KEY: ${{ secrets.MCP_PRIVATE_KEY }}
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher validate server.json
+          ./mcp-publisher login dns --domain layerporter.com --private-key "$MCP_PRIVATE_KEY"
+          ./mcp-publisher publish server.json

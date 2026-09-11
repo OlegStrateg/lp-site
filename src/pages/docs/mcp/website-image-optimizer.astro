@@ -1,0 +1,15 @@
+---
+import PageLayout from '../../../layouts/PageLayout.astro';
+import * as docs from '../../../copy/website-image-optimizer-mcp-docs.md';
+
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
+---
+
+<PageLayout
+  title="Website Image Optimizer MCP Documentation — LayerPorter"
+  description="Technical documentation for LayerPorter Website Image Optimizer MCP: tools, inputs, safety boundaries, format policy, verification evidence, benchmark, and limitations."
+  canonicalPath="/docs/mcp/website-image-optimizer/"
+  ogImage={`${site}/og/home.png`}
+>
+  <docs.Content />
+</PageLayout>

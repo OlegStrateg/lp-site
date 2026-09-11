@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "product": "com.layerporter/website-image-optimizer",
+  "versionCandidate": "0.1.0",
+  "channels": {
+    "official-mcp-registry": {
+      "status": "PREPARED",
+      "submittedAt": null,
+      "submissionId": null,
+      "listingUrl": null,
+      "indexedAt": null,
+      "checks": {
+        "canonicalName": false,
+        "packageIdentifier": false,
+        "versionMatch": false,
+        "publicInstallSmoke": false
+      },
+      "evidence": []
+    },
+    "glama": {
+      "status": "BLOCKED_PUBLIC_SOURCE_SURFACE",
+      "submittedAt": null,
+      "listingUrl": null,
+      "indexedAt": null,
+      "checks": {
+        "ownershipClaimed": false,
+        "healthPass": false,
+        "qualityScorePresent": false,
+        "toolCountMatch": false
+      },
+      "evidence": []
+    },
+    "smithery": {
+      "status": "BLOCKED_MCPB_OR_HTTP",
+      "submittedAt": null,
+      "listingUrl": null,
+      "indexedAt": null,
+      "checks": {
+        "bundleOrEndpointVerified": false,
+        "toolCountMatch": false,
+        "installFlowPass": false
+      },
+      "evidence": []
+    },
+    "mcp-so": {
+      "status": "BLOCKED_PUBLIC_RELEASE_LINKS",
+      "submittedAt": null,
+      "submissionId": null,
+      "listingUrl": null,
+      "indexedAt": null,
+      "checks": {
+        "canonicalName": false,
+        "installDataCorrect": false,
+        "noDuplicateListing": false
+      },
+      "evidence": []
+    },
+    "awesome-mcp-servers": {
+      "status": "BLOCKED_GLAMA",
+      "submittedAt": null,
+      "submissionId": null,
+      "listingUrl": null,
+      "indexedAt": null,
+      "checks": {
+        "glamaListing": false,
+        "glamaScoreBadge": false,
+        "publicRepository": false,
+        "prMerged": false
+      },
+      "evidence": []
+    }
+  }
+}

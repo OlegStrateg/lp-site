@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.layerporter/website-image-optimizer",
+  "title": "LayerPorter Website Image Optimizer",
+  "description": "Page-aware website image analysis and safe optimization MCP server.",
+  "websiteUrl": "https://layerporter.com/mcp/website-image-optimizer/",
+  "repository": {
+    "url": "https://github.com/OlegStrateg/layerporter-site",
+    "source": "github",
+    "subfolder": "packages/image-optimizer-mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@layerporter/image-optimizer-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

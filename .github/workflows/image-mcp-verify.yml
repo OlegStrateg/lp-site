@@ -1,0 +1,145 @@
+name: LP-078 Image MCP Verify
+
+on:
+  push:
+    branches:
+      - feat/LP-078-image-optimizer-mcp-core
+      - feat/LP-081-session-2-gate
+      - feat/LP-085-safe-image-fix
+      - feat/LP-086-safe-fix-verification-gate
+      - feat/LP-087-independent-system-validation
+      - feat/LP-091-final-pareto-release-gate
+      - integration/LP-092-page-optimizer-current-master
+      - release/LP-093-image-mcp-public-prep
+      - release/LP-094-proprietary-license
+      - feat/LP-095-artifact-url-ingestion
+    paths:
+      - 'packages/image-core/**'
+      - 'packages/image-optimizer-mcp/**'
+      - '.github/workflows/image-mcp-verify.yml'
+  pull_request:
+    paths:
+      - 'packages/image-core/**'
+      - 'packages/image-optimizer-mcp/**'
+      - '.github/workflows/image-mcp-verify.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+      - name: Verify release candidate metadata
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          npm run release:preflight
+          npm run release:preflight -- --publishable
+      - name: Detect npm bootstrap state
+        run: |
+          PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
+          if npm view "$PKG_NAME" name >/tmp/lp-release-npm-name 2>/dev/null; then
+            echo "LP_RELEASE_NPM_STATE=PACKAGE_EXISTS" | tee -a "$GITHUB_ENV"
+            echo "npm package exists: $(cat /tmp/lp-release-npm-name)"
+          else
+            echo "LP_RELEASE_NPM_STATE=BOOTSTRAP_REQUIRED" | tee -a "$GITHUB_ENV"
+            echo "npm package does not exist yet; first owner+2FA bootstrap publish is required"
+          fi
+      - name: Install image-core
+        working-directory: packages/image-core
+        run: npm install --no-audit --no-fund
+      - name: Test image-core
+        working-directory: packages/image-core
+        run: npm test
+      - name: Benchmark image-core
+        working-directory: packages/image-core
+        run: npm run benchmark | tee /tmp/lp078-benchmark.json
+      - name: Install MCP dependencies
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Sync shared image-core into package artifact
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
+      - name: Test MCP contracts
+        working-directory: packages/image-optimizer-mcp
+        run: npm test
+      - name: Verify clean source setup
+        shell: bash
+        working-directory: packages/image-optimizer-mcp
+        run: node scripts/verify-source-setup.mjs | tee "$RUNNER_TEMP/lp097-source-setup.json"
+      - name: Install MCP client for protocol smoke
+        working-directory: packages/image-optimizer-mcp
+        run: npm install --no-save --package-lock=false @modelcontextprotocol/client@^2.0.0 --ignore-scripts --no-audit --no-fund
+      - name: Verify MCP artifact resource protocol
+        working-directory: packages/image-optimizer-mcp
+        run: node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-artifact-protocol.json
+      - name: Verify clean tarball through MCP client and decoded resource
+        shell: bash
+        working-directory: packages/image-optimizer-mcp
+        env:
+          LP096_PROOF_DIR: ${{ runner.temp }}/lp097-release-proof
+        run: node scripts/release-tarball-client-smoke.mjs | tee "$RUNNER_TEMP/lp097-tarball-smoke.json"
+      - name: Smoke start stdio server from source package
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          timeout 3s node src/server.js >/tmp/lp078-mcp.out 2>/tmp/lp078-mcp.err || code=$?
+          if [ "${code:-0}" != "0" ] && [ "${code:-0}" != "124" ]; then
+            cat /tmp/lp078-mcp.err
+            exit "${code}"
+          fi
+      - name: Pack distributable tarball
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          mkdir -p /tmp/lp078-pack
+          npm pack --pack-destination /tmp/lp078-pack
+          ls -lh /tmp/lp078-pack
+      - name: Verify packed package identity and license
+        run: |
+          mkdir -p /tmp/lp078-packed
+          tar -xzf /tmp/lp078-pack/*.tgz -C /tmp/lp078-packed
+          node <<'NODE'
+          const fs = require('node:fs');
+          const p = require('/tmp/lp078-packed/package/package.json');
+          const s = require('/tmp/lp078-packed/package/server.json');
+          if (p.private === true) throw new Error('packed package unexpectedly private');
+          if (p.mcpName !== s.name) throw new Error('packed mcpName mismatch');
+          if (p.name !== s.packages[0].identifier) throw new Error('packed package identifier mismatch');
+          if (p.version !== s.version || p.version !== s.packages[0].version) throw new Error('packed version mismatch');
+          if (p.license !== 'SEE LICENSE IN LICENSE') throw new Error('packed proprietary license metadata mismatch');
+          const licensePath = '/tmp/lp078-packed/package/LICENSE';
+          if (!fs.existsSync(licensePath)) throw new Error('packed LICENSE file missing');
+          const license = fs.readFileSync(licensePath, 'utf8');
+          if (!license.includes('LayerPorter Proprietary Software License')) throw new Error('packed proprietary LICENSE content mismatch');
+          for (const required of ['artifact-store.js', 'artifact-result.js', 'secure-fetch.js', 'url-ingestion.js']) {
+            if (!fs.existsSync(`/tmp/lp078-packed/package/src/${required}`)) throw new Error(`packed LP-095 runtime file missing: ${required}`);
+          }
+          NODE
+      - name: Install and start packed artifact in clean directory
+        run: |
+          mkdir -p /tmp/lp078-install
+          cd /tmp/lp078-install
+          npm init -y >/dev/null
+          npm install /tmp/lp078-pack/*.tgz --ignore-scripts --no-audit --no-fund
+          test -x node_modules/.bin/layerporter-image-optimizer-mcp
+          timeout 3s node_modules/.bin/layerporter-image-optimizer-mcp >/tmp/lp078-packed.out 2>/tmp/lp078-packed.err || code=$?
+          if [ "${code:-0}" != "0" ] && [ "${code:-0}" != "124" ]; then
+            cat /tmp/lp078-packed.err
+            exit "${code}"
+          fi
+      - name: Validate Official MCP Registry server.json
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher validate packages/image-optimizer-mcp/server.json
+      - name: Upload MCP release proof
+        uses: actions/upload-artifact@v7
+        with:
+          name: lp097-mcp-release-proof-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/lp097-source-setup.json
+            ${{ runner.temp }}/lp097-tarball-smoke.json
+            ${{ runner.temp }}/lp097-release-proof/
+          if-no-files-found: error
+          retention-days: 30
