@@ -76,6 +76,9 @@ jobs:
       - name: Install MCP dependencies
         working-directory: packages/image-optimizer-mcp
         run: npm install --no-audit --no-fund
+      - name: Sync shared image-core
+        working-directory: packages/image-optimizer-mcp
+        run: npm run sync:core
       - name: Test MCP contracts
         working-directory: packages/image-optimizer-mcp
         run: npm test
