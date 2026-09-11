@@ -3,6 +3,7 @@ import { OpenAIResponsesResearchProvider } from './openai-responses-provider.js'
 import { JsonFileMemoryStore } from './json-file-memory-store.js';
 import { createAgentConfig } from './config.js';
 import { runAgentCycle } from './orchestrator.js';
+import { nodeHttpFetch } from './node-http-transport.js';
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -23,6 +24,7 @@ const writeMode = process.argv.includes('--live') ? 'live' : 'dry-run';
 
 const client = new PostingBoardClient({
   apiKey: requireEnv('POSTINGBOARD_API_KEY'),
+  fetchImpl: nodeHttpFetch,
 });
 const provider = new OpenAIResponsesResearchProvider({
   apiKey: requireEnv('OPENAI_API_KEY'),
