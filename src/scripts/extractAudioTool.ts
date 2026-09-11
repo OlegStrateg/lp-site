@@ -76,6 +76,7 @@ export function initExtractAudioTool(): void {
   let worker: Worker | null = null;
   let workerReady: Promise<void> | null = null;
   let workerReadyResolve: (() => void) | null = null;
+  let workerReadyReject: ((reason?: unknown) => void) | null = null;
   let selectedFile: File | null = null;
   let currentId = '';
   let resultUrl = '';
@@ -100,13 +101,20 @@ export function initExtractAudioTool(): void {
 
   function createWorker(): Promise<void> {
     if (worker && workerReady) return workerReady;
-    workerReady = new Promise<void>((resolve) => { workerReadyResolve = resolve; });
+    workerReady = new Promise<void>((resolve, reject) => {
+      workerReadyResolve = resolve;
+      workerReadyReject = reject;
+    });
     worker = new Worker(WORKER_URL);
     worker.addEventListener('message', onWorkerMessage);
     worker.addEventListener('error', () => {
-      setStatus('The audio engine could not start. Reload the page and try again.', 'error');
-      extractButton.disabled = true;
-      track('convert_error', { tool: 'extract_audio', source, error_type: 'runtime_load_failed' });
+      workerReadyReject?.(new Error('worker_load_failed'));
+      workerReadyResolve = null;
+      workerReadyReject = null;
+      workerReady = null;
+      worker?.terminate();
+      worker = null;
+      fail('The audio engine could not start. Reload the page and try again.', 'runtime_load_failed');
     });
     return workerReady;
   }
@@ -122,6 +130,7 @@ export function initExtractAudioTool(): void {
     progress.hidden = true;
     progress.value = 0;
     extractButton.disabled = true;
+    changeButton.disabled = false;
     root.dataset.state = 'empty';
     if (openPicker) input.click();
   }
@@ -131,6 +140,7 @@ export function initExtractAudioTool(): void {
     setStatus(message, 'error');
     progress.hidden = true;
     extractButton.disabled = true;
+    changeButton.disabled = false;
     track('convert_error', {
       tool: 'extract_audio',
       source,
@@ -183,6 +193,7 @@ export function initExtractAudioTool(): void {
     progress.hidden = false;
     progress.removeAttribute('value');
     extractButton.disabled = true;
+    changeButton.disabled = false;
 
     track('upload_start', {
       tool: 'extract_audio',
@@ -195,7 +206,7 @@ export function initExtractAudioTool(): void {
       await createWorker();
       worker?.postMessage({ type: 'probe', id: currentId, file });
     } catch {
-      fail('The audio engine could not start. Reload the page and try again.', 'runtime_load_failed');
+      if (root.dataset.state !== 'error') fail('The audio engine could not start. Reload the page and try again.', 'runtime_load_failed');
     }
   }
 
@@ -204,6 +215,7 @@ export function initExtractAudioTool(): void {
     if (message.type === 'ready') {
       workerReadyResolve?.();
       workerReadyResolve = null;
+      workerReadyReject = null;
       return;
     }
     if (!message.id || message.id !== currentId) return;
@@ -262,8 +274,25 @@ export function initExtractAudioTool(): void {
     if (message.type === 'error') {
       const raw = String(message.error || 'Audio extraction failed');
       const lower = raw.toLowerCase();
-      const errorType = lower.includes('no audio track') ? 'no_audio_track' : lower.includes('250 mb') ? 'file_too_large' : 'unsupported_or_corrupt';
-      fail(errorType === 'no_audio_track' ? 'No audio track was found in this video.' : 'This video could not be processed. It may be damaged or use an unsupported codec.', errorType);
+      if (lower.includes('runtime') || lower.includes('importscripts') || lower.includes('mediabunny') || lower.includes('encoder did not load')) {
+        fail('The audio engine could not load. Reload the page and try again.', 'runtime_load_failed');
+        return;
+      }
+      const errorType = lower.includes('no audio track')
+        ? 'no_audio_track'
+        : lower.includes('250 mb')
+          ? 'file_too_large'
+          : lower.includes('cannot decode')
+            ? 'unsupported_audio_codec'
+            : 'unsupported_or_corrupt';
+      const messageText = errorType === 'no_audio_track'
+        ? 'No audio track was found in this video.'
+        : errorType === 'unsupported_audio_codec'
+          ? 'This video has an audio track, but your browser cannot decode its audio codec.'
+          : errorType === 'file_too_large'
+            ? 'This web version accepts videos up to 250 MB.'
+            : 'This video could not be processed. It may be damaged or use an unsupported codec.';
+      fail(messageText, errorType);
     }
   }
 
@@ -295,7 +324,7 @@ export function initExtractAudioTool(): void {
     }
   });
 
-  extractButton.addEventListener('click', async () => {
+  extractButton.addEventListener('click', () => {
     if (!selectedFile || !worker || extractButton.disabled) return;
     clearResult();
     root.dataset.state = 'processing';
@@ -307,10 +336,7 @@ export function initExtractAudioTool(): void {
     worker.postMessage({ type: 'process', id: currentId, file: selectedFile, bitrate: OUTPUT_BITRATE });
   });
 
-  changeButton.addEventListener('click', () => {
-    changeButton.disabled = false;
-    resetUi(true);
-  });
+  changeButton.addEventListener('click', () => resetUi(true));
   againButton.addEventListener('click', () => resetUi(true));
   download.addEventListener('click', () => {
     track('download_click', {
