@@ -1,0 +1,76 @@
+name: Extract Audio FFmpeg Fallback Smoke
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'public/tools/extract-audio-from-video/**'
+      - 'src/scripts/extractAudioTool.ts'
+      - 'scripts/vendor-extract-audio-runtime.mjs'
+      - 'scripts/verify-extract-audio-tool.mjs'
+      - 'scripts/smoke-extract-audio-ffmpeg-fallback.mjs'
+      - '.github/workflows/extract-audio-ffmpeg-fallback-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ffmpeg-fallback-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Setup Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+          install-dependencies: true
+
+      - name: Pin smoke Chrome binary
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/lp-chrome-bin
+          ln -sf "$CHROME_PATH" /tmp/lp-chrome-bin/google-chrome-stable
+          echo "/tmp/lp-chrome-bin" >> "$GITHUB_PATH"
+          /tmp/lp-chrome-bin/google-chrome-stable --version
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Ensure ffmpeg and ffprobe
+        run: |
+          set -euxo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y ffmpeg
+          fi
+          command -v ffmpeg
+          command -v ffprobe
+          test "$(command -v google-chrome-stable)" = "/tmp/lp-chrome-bin/google-chrome-stable"
+          google-chrome-stable --version
+
+      - name: Build branch with vendored runtimes
+        run: npm run build
+
+      - name: Run forced FFmpeg browser smoke
+        run: node scripts/smoke-extract-audio-ffmpeg-fallback.mjs
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extract-audio-ffmpeg-fallback-smoke
+          path: artifacts/extract-audio-ffmpeg-fallback/
+          if-no-files-found: warn
+          retention-days: 14
