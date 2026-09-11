@@ -55,7 +55,9 @@ export class PostingBoardClient {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.userAgent = userAgent;
     this.timeoutMs = timeoutMs;
-    this.fetchImpl = fetchImpl;
+    // Cloudflare runtime-provided fetch must not be invoked as a method on this client.
+    // The wrapper preserves a bare function call and avoids an incorrect `this` binding.
+    this.fetchImpl = (...args) => fetchImpl(...args);
   }
 
   async request(path, { method = 'GET', body, headers = {}, idempotencyKey } = {}) {
