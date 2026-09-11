@@ -7,6 +7,11 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
+# Extract Audio worker lazily loads only the pinned Mediabunny runtime used by the existing extension.
+# The page itself keeps the global self-only CSP; this exception applies only to the worker response.
+/tools/extract-audio-from-video/processor.js
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:; child-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
 
 # Home V3: внешние фото разрешены только на корневой странице.
 /

@@ -1,0 +1,14 @@
+LayerPorter — Extract Audio from Video — third-party notices
+
+Mediabunny 1.55.7
+Copyright (c) 2026-present, Vanilagy and contributors
+License: Mozilla Public License 2.0 (MPL-2.0)
+Source: https://github.com/Vanilagy/mediabunny
+
+@mediabunny/mp3-encoder 1.55.7
+License: Mozilla Public License 2.0 (MPL-2.0)
+Source: https://github.com/Vanilagy/mediabunny/tree/v1.55.7/packages/mp3-encoder
+
+The MP3 encoder package uses a WebAssembly build of LAME 3.100.
+LAME is licensed under the GNU Lesser General Public License (LGPL).
+Project: https://lame.sourceforge.io/

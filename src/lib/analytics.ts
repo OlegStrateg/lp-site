@@ -61,7 +61,7 @@ function routeBucket(pathname: string): string {
   // Only retain public LayerPorter route shapes. Unknown/ad-hoc paths are bucketed
   // instead of being recorded verbatim, so pasted URLs cannot leak arbitrary text.
   const locale = '[a-z]{2,3}(?:-[a-z0-9]{2,4})?';
-  const route = '(?:extensions|convert(?:/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:/[a-z0-9-]+)?|guides(?:/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)';
+  const route = '(?:extensions|convert(?:/[a-z0-9-]+)?|tools(?:/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:/[a-z0-9-]+)?|guides(?:/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)';
   const knownRoute = new RegExp(`^/(?:${locale}/)?${route}/$`, 'i');
   const localeHome = new RegExp(`^/${locale}/$`, 'i');
   if (knownRoute.test(path) || localeHome.test(path)) return path.toLowerCase();

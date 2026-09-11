@@ -118,7 +118,7 @@ function safeSiteRoute(value) {
   if (route === '/') return '/';
   if (route === '/other/') return '/other/';
   const locale = '[a-z]{2,3}(?:-[a-z0-9]{2,4})?';
-  const page = '(?:extensions|convert(?:/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:/[a-z0-9-]+)?|guides(?:/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)';
+  const page = '(?:extensions|convert(?:/[a-z0-9-]+)?|tools(?:/[a-z0-9-]+)?|picture-converter|pinterest-downloader|formats(?:/[a-z0-9-]+)?|guides(?:/[a-z0-9-]+)?|about|privacy|terms|feedback|uninstall)';
   const knownRoute = new RegExp(`^/(?:${locale}/)?${page}/$`, 'i');
   const localeHome = new RegExp(`^/${locale}/$`, 'i');
   if (knownRoute.test(route) || localeHome.test(route)) return route.toLowerCase();
