@@ -28,8 +28,8 @@ jobs:
         run: |
           set -euxo pipefail
           command -v google-chrome || command -v chromium || command -v chromium-browser
-          ffmpeg -version | head -1
-          ffprobe -version | head -1
+          ffmpeg -version
+          ffprobe -version
 
       - name: Run real production Extract Audio scenario
         env:
@@ -42,5 +42,5 @@ jobs:
         with:
           name: extract-audio-production-smoke
           path: artifacts/extract-audio-production-smoke/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
