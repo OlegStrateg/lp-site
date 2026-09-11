@@ -3,8 +3,9 @@
  * Heavy third-party bundles are vendored into dist at build time and then loaded
  * from the same origin to avoid browser MIME/CSP/CDN runtime failures.
  */
-const CORE_URL = './runtime/mediabunny.min.js';
-const MP3_ENCODER_URL = './runtime/mediabunny-mp3-encoder.min.js';
+const RUNTIME_BUILD = 'lp078-20260911-2';
+const CORE_URL = `./runtime/mediabunny.min.js?v=${RUNTIME_BUILD}`;
+const MP3_ENCODER_URL = `./runtime/mediabunny-mp3-encoder.min.js?v=${RUNTIME_BUILD}`;
 const MAX_FILE_BYTES = 250 * 1024 * 1024;
 const DEFAULT_BITRATE = 320000;
 
