@@ -1,0 +1,128 @@
+name: Verify LayerPorter Agent Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/layerporter-agent-cron-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_API: https://api.cloudflare.com/client/v4
+      KV_TITLE: layerporter-agent-state
+      SCRIPT_NAME: layerporter-agent
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Resolve Cloudflare account and KV
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo 'Missing CLOUDFLARE_API_TOKEN'; exit 1; }
+          npx wrangler@4.131.1 whoami --json > /tmp/lp-agent-whoami.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-whoami.json', 'utf8'));
+          if (x.loggedIn !== true || !Array.isArray(x.accounts) || x.accounts.length !== 1 || !x.accounts[0]?.id) process.exit(1);
+          fs.writeFileSync('/tmp/lp-agent-account-id', String(x.accounts[0].id), { mode: 0o600 });
+          NODE
+          CLOUDFLARE_ACCOUNT_ID="$(cat /tmp/lp-agent-account-id)"
+          echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> "$GITHUB_ENV"
+
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          KV_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces"
+          curl -fsS "$KV_BASE?per_page=100&direction=asc&order=title" -H "$AUTH" -H 'Accept: application/json' -o /tmp/lp-agent-kv-list.json
+          KV_ID="$(jq -r --arg title "$KV_TITLE" '.result[] | select(.title == $title) | .id' /tmp/lp-agent-kv-list.json | head -n1)"
+          test -n "$KV_ID" || { echo 'Dedicated LayerPorter Agent KV was not found'; exit 1; }
+          echo "KV_ID=$KV_ID" >> "$GITHUB_ENV"
+          rm -f /tmp/lp-agent-whoami.json /tmp/lp-agent-account-id /tmp/lp-agent-kv-list.json
+          echo 'Cloudflare account and dedicated agent KV resolved'
+
+      - name: Install temporary one-minute dry-run schedule
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
+          printf '[{"cron":"* * * * *"}]' > /tmp/lp-agent-schedule.json
+          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-schedule.json -o /tmp/lp-agent-schedule-result.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-schedule-result.json', 'utf8'));
+          if (x.success !== true || !Array.isArray(x.result?.schedules)) process.exit(1);
+          if (!x.result.schedules.some(s => s.cron === '* * * * *')) process.exit(1);
+          NODE
+          rm -f /tmp/lp-agent-schedule.json /tmp/lp-agent-schedule-result.json
+          echo 'Temporary dry-run cron accepted by Cloudflare control plane'
+
+      - name: Wait for a fresh verified dry-run heartbeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
+          HEARTBEAT_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values/layerporter-agent%3Aheartbeat%3Av1"
+          VERIFY_STARTED_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
+          verified=0
+          failure_reason='no_fresh_heartbeat'
+
+          for attempt in {1..100}; do
+            STATUS="$(curl -sS -o /tmp/lp-agent-heartbeat.json -w '%{http_code}' "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
+            if [ "$STATUS" = '200' ]; then
+              set +e
+              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-heartbeat.json "$VERIFY_STARTED_MS"
+              gate_status=$?
+              set -e
+              if [ "$gate_status" -eq 0 ]; then
+                verified=1
+                break
+              fi
+              if [ "$gate_status" -eq 2 ]; then
+                failure_reason='fresh_runtime_error_or_unsafe_state'
+                break
+              fi
+            elif [ "$STATUS" != '404' ]; then
+              failure_reason="heartbeat_http_${STATUS}"
+              break
+            fi
+
+            if [ $((attempt % 12)) -eq 0 ]; then
+              echo "Runtime heartbeat still pending after control-plane schedule update (attempt $attempt/100)"
+            fi
+            sleep 10
+          done
+
+          if [ "$verified" -eq 1 ]; then
+            printf '[{"cron":"0 * * * *"}]' > /tmp/lp-agent-final-schedule.json
+            curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-final-schedule.json -o /tmp/lp-agent-final-result.json
+            node - <<'NODE'
+            const fs = require('fs');
+            const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-final-result.json', 'utf8'));
+            if (x.success !== true || !x.result?.schedules?.some(s => s.cron === '0 * * * *')) process.exit(1);
+            NODE
+            echo 'REAL RUNTIME PASS: fresh dry-run heartbeat verified, writes=0; hourly dry-run schedule accepted'
+            rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-final-schedule.json /tmp/lp-agent-final-result.json
+            exit 0
+          fi
+
+          printf '[]' > /tmp/lp-agent-disable-schedule.json
+          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-disable-schedule.json -o /tmp/lp-agent-disable-result.json || true
+          echo "REAL RUNTIME FAIL-CLOSED: $failure_reason; schedule disabled in control plane"
+          rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-disable-schedule.json /tmp/lp-agent-disable-result.json
+          exit 1
