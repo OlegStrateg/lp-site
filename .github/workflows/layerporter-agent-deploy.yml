@@ -83,32 +83,41 @@ jobs:
           rm -f /tmp/lp-agent-kv-list.json /tmp/lp-agent-kv-create.json /tmp/lp-agent-kv-create-request.json
           echo "Dedicated agent KV is ready: $KV_TITLE"
 
-      - name: Generate fail-closed Worker config
+      - name: Generate fail-closed Worker configs
         shell: bash
         run: |
           set -euo pipefail
           sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" \
             wrangler-layerporter-agent.toml.example > /tmp/wrangler-layerporter-agent.toml
+          sed '/^\[triggers\]$/,+1d' /tmp/wrangler-layerporter-agent.toml \
+            > /tmp/wrangler-layerporter-agent-bootstrap.toml
+
           grep -F 'name = "layerporter-agent"' /tmp/wrangler-layerporter-agent.toml
           grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "dry-run"' /tmp/wrangler-layerporter-agent.toml
           grep -F 'crons = ["0 * * * *"]' /tmp/wrangler-layerporter-agent.toml
+          grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "dry-run"' /tmp/wrangler-layerporter-agent-bootstrap.toml
+
           if grep -Fq 'REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID' /tmp/wrangler-layerporter-agent.toml; then
             echo 'KV placeholder was not replaced'
             exit 1
           fi
+          if grep -Fq '[triggers]' /tmp/wrangler-layerporter-agent-bootstrap.toml; then
+            echo 'Bootstrap config must not have a cron trigger'
+            exit 1
+          fi
 
-      - name: Deploy dry-run Worker before external registration
+      - name: Deploy unscheduled dry-run Worker before external registration
         shell: bash
         run: |
           set -euo pipefail
-          npx wrangler@3.90.0 deploy --config /tmp/wrangler-layerporter-agent.toml
-          echo 'LayerPorter Agent Worker deployed in dry-run mode'
+          npx wrangler@3.90.0 deploy --config /tmp/wrangler-layerporter-agent-bootstrap.toml
+          echo 'LayerPorter Agent bootstrap Worker deployed without a cron trigger'
 
       - name: Upload OpenAI Worker secret
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s' "$OPENAI_API_KEY" | npx wrangler@3.90.0 secret put OPENAI_API_KEY --config /tmp/wrangler-layerporter-agent.toml
+          printf '%s' "$OPENAI_API_KEY" | npx wrangler@3.90.0 secret put OPENAI_API_KEY --config /tmp/wrangler-layerporter-agent-bootstrap.toml
           echo 'OpenAI Worker secret uploaded'
 
       - name: Bootstrap PostingBoard identity once
@@ -118,7 +127,7 @@ jobs:
           set -euo pipefail
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           VALUE_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values"
-          MARKER_KEY='bootstrap%3Apostingboard_registered'
+          MARKER_KEY='bootstrap-postingboard-registered'
 
           MARKER_STATUS="$(curl -sS -o /tmp/lp-agent-pb-marker -w '%{http_code}' \
             "$VALUE_BASE/$MARKER_KEY" -H "$AUTH" -H 'Accept: application/json')"
@@ -163,7 +172,7 @@ jobs:
           test -n "$PB_KEY" || { echo 'PostingBoard registration did not return a key'; exit 1; }
           test "$PB_NAME" = 'layerporter-agent' || { echo 'Unexpected PostingBoard identity'; exit 1; }
 
-          printf '%s' "$PB_KEY" | npx wrangler@3.90.0 secret put POSTINGBOARD_API_KEY --config /tmp/wrangler-layerporter-agent.toml
+          printf '%s' "$PB_KEY" | npx wrangler@3.90.0 secret put POSTINGBOARD_API_KEY --config /tmp/wrangler-layerporter-agent-bootstrap.toml
 
           MARKER="$(jq -nc --arg id "$PB_ID" --arg name "$PB_NAME" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '{agent_id:$id,agent_name:$name,registered_at:$at}')"
@@ -173,7 +182,6 @@ jobs:
             --data-binary "$MARKER" >/dev/null
 
           echo 'new_registration=true' >> "$GITHUB_OUTPUT"
-          echo "pb_key_file=/tmp/lp-agent-pb-key" >> "$GITHUB_OUTPUT"
           printf '%s' "$PB_KEY" > /tmp/lp-agent-pb-key
           chmod 600 /tmp/lp-agent-pb-key
           unset PB_KEY
@@ -212,7 +220,7 @@ jobs:
               verifiedAt:new Date().toISOString()
             }));
           ' "$RESULT")"
-          curl -fsS -X PUT "$VALUE_BASE/bootstrap%3Afirst_dry_run" \
+          curl -fsS -X PUT "$VALUE_BASE/bootstrap-first-dry-run" \
             -H "$AUTH" \
             -H 'Content-Type: application/json' \
             --data-binary "$SAFE_RESULT" >/dev/null
@@ -226,5 +234,5 @@ jobs:
         run: |
           set -euo pipefail
           npx wrangler@3.90.0 deploy --config /tmp/wrangler-layerporter-agent.toml
-          rm -f /tmp/wrangler-layerporter-agent.toml
+          rm -f /tmp/wrangler-layerporter-agent.toml /tmp/wrangler-layerporter-agent-bootstrap.toml
           echo 'LayerPorter Agent hourly Worker deployed; live writes remain OFF'
