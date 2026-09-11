@@ -41,3 +41,48 @@ Reference: https://docs.github.com/en/actions/reference/workflows-and-actions/wo
 Minimal correction: add explicit shell: bash to the two new smoke steps, enabling GitHub's -eo pipefail invocation. Demonstrate a failing node command piped to tee returns nonzero under the same shell, then run the normal PR checks on the updated head. Keep this fix to the existing workflow; no runtime changes, new features or workflow proliferation. Record the result in PR 222 / issue 220.
 
 Integration acceptance remains pending I2; prior package/runtime acceptance is unchanged. No merge/deploy/npm/Registry publish authorized or performed.
+
+## Final integration acceptance — 3882582427b24776f5a93fcf5433438419ccb49f
+
+I1: ACCEPTED / CLOSED.
+I2: ACCEPTED / CLOSED.
+
+I2 final diff adds only `shell: bash` to `Verify clean source setup` and `Verify clean tarball through MCP client and decoded resource`. The proof run demonstrated a non-zero pipeline result for an intentionally failing Node process piped through `tee`; the temporary proof step was removed from the final PR. Final PR checks on 3882582427b24776f5a93fcf5433438419ccb49f completed successfully, including the clean source setup and full tarball/client/resource proof.
+
+PR #222 was subsequently merged to master as bdfeb1c320527ba6d5cd401f00d8422d1e87dcd3.
+
+## RELEASE DRY-RUN — 2026-09-11
+
+Current master checked before release validation: `8ca11132b8cec267d1b88ff85232d58483353c63`.
+
+Compared with the MCP integration merge `bdfeb1c320527ba6d5cd401f00d8422d1e87dcd3`: the two later master commits change only Extract Audio files (`public/_headers`, `public/tools/extract-audio-from-video/processor.js`, `scripts/verify-extract-audio-tool.mjs`, `src/scripts/extractAudioTool.ts`). No `packages/image-core/**`, `packages/image-optimizer-mcp/**`, or MCP release workflow files changed after the accepted integration.
+
+Native workflow `LP-079 Image MCP Release` was already executed and was not duplicated:
+
+- run: https://github.com/OlegStrateg/layerporter-site/actions/runs/34636849459
+- run id: `34636849459`
+- ref: `master`
+- actual checkout SHA: `8ca11132b8cec267d1b88ff85232d58483353c63`
+- mode: `dry-run`
+- expected version: `0.1.0`
+- result: `SUCCESS`
+- validate job: `SUCCESS`
+- `stage-npm`: `SKIPPED`
+- `publish-registry`: `SKIPPED`
+
+The native dry-run passed candidate metadata, exact version lock, image-core tests, MCP dependency install, `sync:core` before MCP tests, MCP tests, package creation, packed metadata verification, clean installation/start from the packed candidate, and Official MCP Registry `server.json` validation.
+
+Public MCP pages checked after the run:
+
+- product: https://layerporter.com/mcp/website-image-optimizer/ — reachable and describes the bounded HTTP(S) URL mode and product boundaries;
+- docs: https://layerporter.com/docs/mcp/website-image-optimizer/ — reachable and correctly states `technical candidate`; it does not claim npm or Official MCP Registry publication.
+
+Public npm check:
+
+- `https://registry.npmjs.org/@layerporter%2Fimage-optimizer-mcp` returned HTTP 404 during the release check;
+- therefore `@layerporter/image-optimizer-mcp@0.1.0` is not publicly published as of this check;
+- no npm or MCP Registry publication was performed by this stage.
+
+Prepared next release step, not executed here: first npm bootstrap publish from the exact verified package at master SHA `8ca11132b8cec267d1b88ff85232d58483353c63`. Before publishing, run the publishable preflight and tests, then publish the scoped package publicly with `npm publish --access public`. The executing npm account must have publish rights for scope `@layerporter`; interactive npm publish must satisfy the account/package 2FA requirement.
+
+MCP release validation does not test or accept Extract Audio functionality. Audio status is independent and must not be inferred from this release gate.
