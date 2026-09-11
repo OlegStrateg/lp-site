@@ -48,7 +48,6 @@ jobs:
         run: |
           set -euo pipefail
           npx wrangler@4.65.0 whoami --json > /tmp/lp-agent-whoami.json
-
           node - <<'NODE'
           const fs = require('fs');
           const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-whoami.json', 'utf8'));
@@ -56,13 +55,9 @@ jobs:
             console.error(`Expected exactly one Cloudflare account, got ${Array.isArray(x.accounts) ? x.accounts.length : 0}`);
             process.exit(1);
           }
-          if (!x.accounts[0]?.id) {
-            console.error('Cloudflare account id is missing from wrangler whoami');
-            process.exit(1);
-          }
+          if (!x.accounts[0]?.id) process.exit(1);
           fs.writeFileSync('/tmp/lp-agent-account-id', String(x.accounts[0].id), { mode: 0o600 });
           NODE
-
           CLOUDFLARE_ACCOUNT_ID="$(cat /tmp/lp-agent-account-id)"
           echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> "$GITHUB_ENV"
           rm -f /tmp/lp-agent-whoami.json /tmp/lp-agent-account-id
@@ -75,35 +70,20 @@ jobs:
           set -euo pipefail
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces"
-
-          curl -fsS "$BASE?per_page=100&direction=asc&order=title" \
-            -H "$AUTH" \
-            -H 'Accept: application/json' \
-            -o /tmp/lp-agent-kv-list.json
-
+          curl -fsS "$BASE?per_page=100&direction=asc&order=title" -H "$AUTH" -H 'Accept: application/json' -o /tmp/lp-agent-kv-list.json
           node - <<'NODE'
           const fs = require('fs');
           const x = JSON.parse(fs.readFileSync('/tmp/lp-agent-kv-list.json', 'utf8'));
           if (x.success !== true || !Array.isArray(x.result)) process.exit(1);
           NODE
-
           KV_ID="$(jq -r --arg title "$KV_TITLE" '.result[] | select(.title == $title) | .id' /tmp/lp-agent-kv-list.json | head -n1)"
           if [ -z "$KV_ID" ]; then
             jq -n --arg title "$KV_TITLE" '{title:$title}' > /tmp/lp-agent-kv-create-request.json
-            STATUS="$(curl -sS -o /tmp/lp-agent-kv-create.json -w '%{http_code}' \
-              -X POST "$BASE" \
-              -H "$AUTH" \
-              -H 'Accept: application/json' \
-              -H 'Content-Type: application/json' \
-              --data-binary @/tmp/lp-agent-kv-create-request.json)"
-            if [ "$STATUS" != '200' ]; then
-              echo "KV namespace creation failed with HTTP $STATUS"
-              exit 1
-            fi
+            STATUS="$(curl -sS -o /tmp/lp-agent-kv-create.json -w '%{http_code}' -X POST "$BASE" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-kv-create-request.json)"
+            [ "$STATUS" = '200' ] || { echo "KV namespace creation failed with HTTP $STATUS"; exit 1; }
             KV_ID="$(jq -r '.result.id // empty' /tmp/lp-agent-kv-create.json)"
           fi
-
-          test -n "$KV_ID" || { echo 'Dedicated KV namespace id is missing'; exit 1; }
+          test -n "$KV_ID" || exit 1
           echo "kv_id=$KV_ID" >> "$GITHUB_OUTPUT"
           echo "KV_ID=$KV_ID" >> "$GITHUB_ENV"
           rm -f /tmp/lp-agent-kv-list.json /tmp/lp-agent-kv-create.json /tmp/lp-agent-kv-create-request.json
@@ -113,28 +93,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" \
-            wrangler-layerporter-agent.toml.example > "$WRANGLER_RUNTIME_CONFIG"
-          sed 's/crons = \["0 \* \* \* \*"\]/crons = ["* * * * *"]/g' "$WRANGLER_RUNTIME_CONFIG" \
-            > "$WRANGLER_VERIFY_CONFIG"
-          sed '/^\[triggers\]$/,+1d' "$WRANGLER_RUNTIME_CONFIG" \
-            > "$WRANGLER_BOOTSTRAP_CONFIG"
-
+          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" wrangler-layerporter-agent.toml.example > "$WRANGLER_RUNTIME_CONFIG"
+          sed 's/crons = \["0 \* \* \* \*"\]/crons = ["* * * * *"]/g' "$WRANGLER_RUNTIME_CONFIG" > "$WRANGLER_VERIFY_CONFIG"
+          sed '/^\[triggers\]$/,+1d' "$WRANGLER_RUNTIME_CONFIG" > "$WRANGLER_BOOTSTRAP_CONFIG"
           grep -F 'name = "layerporter-agent"' "$WRANGLER_RUNTIME_CONFIG"
           grep -F 'main = "packages/layerporter-agent/src/worker.js"' "$WRANGLER_RUNTIME_CONFIG"
           grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "dry-run"' "$WRANGLER_RUNTIME_CONFIG"
           grep -F 'crons = ["0 * * * *"]' "$WRANGLER_RUNTIME_CONFIG"
           grep -F 'crons = ["* * * * *"]' "$WRANGLER_VERIFY_CONFIG"
           grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "dry-run"' "$WRANGLER_BOOTSTRAP_CONFIG"
-
-          if grep -Fq 'REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID' "$WRANGLER_RUNTIME_CONFIG"; then
-            echo 'KV placeholder was not replaced'
-            exit 1
-          fi
-          if grep -Fq '[triggers]' "$WRANGLER_BOOTSTRAP_CONFIG"; then
-            echo 'Bootstrap config must not have a cron trigger'
-            exit 1
-          fi
+          ! grep -Fq 'REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID' "$WRANGLER_RUNTIME_CONFIG"
+          ! grep -Fq '[triggers]' "$WRANGLER_BOOTSTRAP_CONFIG"
 
       - name: Deploy unscheduled dry-run Worker before external registration
         shell: bash
@@ -157,58 +126,25 @@ jobs:
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           VALUE_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values"
           MARKER_KEY='bootstrap-postingboard-registered'
-
-          MARKER_STATUS="$(curl -sS -o /tmp/lp-agent-pb-marker -w '%{http_code}' \
-            "$VALUE_BASE/$MARKER_KEY" -H "$AUTH" -H 'Accept: application/json')"
-
+          MARKER_STATUS="$(curl -sS -o /tmp/lp-agent-pb-marker -w '%{http_code}' "$VALUE_BASE/$MARKER_KEY" -H "$AUTH" -H 'Accept: application/json')"
           if [ "$MARKER_STATUS" = '200' ]; then
             echo 'PostingBoard bootstrap marker already exists; registration will not be repeated'
             rm -f /tmp/lp-agent-pb-marker
             exit 0
           fi
-
-          if [ "$MARKER_STATUS" != '404' ]; then
-            echo "Could not verify PostingBoard bootstrap marker, HTTP $MARKER_STATUS"
-            exit 1
-          fi
+          [ "$MARKER_STATUS" = '404' ] || { echo "Could not verify PostingBoard bootstrap marker, HTTP $MARKER_STATUS"; exit 1; }
           rm -f /tmp/lp-agent-pb-marker
-
-          jq -n \
-            --arg name 'layerporter-agent' \
-            --arg description 'Technical research agent for LayerPorter: website image optimization, page audit, SEO/CRO verification, MCP tooling and safe measurable fixes.' \
-            --arg via 'LayerPorter LP-097 controlled pilot' \
-            '{name:$name,description:$description,discovered_via:$via,participation_basis:"owner_directed"}' \
-            > /tmp/lp-agent-pb-register-request.json
-
-          STATUS="$(curl -sS -o /tmp/lp-agent-pb-register.json -w '%{http_code}' \
-            -X POST 'https://getpostingboard.dev/v1/agents' \
-            -H 'Accept: application/json' \
-            -H 'Content-Type: application/json' \
-            -H 'X-Agent-Protocol: getpostingboard/1' \
-            -H 'User-Agent: layerporter-agent/0.0.1' \
-            --data-binary @/tmp/lp-agent-pb-register-request.json)"
-
-          if [ "$STATUS" != '201' ]; then
-            echo "PostingBoard registration failed with HTTP $STATUS; no alternate identity will be created automatically"
-            rm -f /tmp/lp-agent-pb-register.json /tmp/lp-agent-pb-register-request.json
-            exit 1
-          fi
-
+          jq -n --arg name 'layerporter-agent' --arg description 'Technical research agent for LayerPorter: website image optimization, page audit, SEO/CRO verification, MCP tooling and safe measurable fixes.' --arg via 'LayerPorter LP-097 controlled pilot' '{name:$name,description:$description,discovered_via:$via,participation_basis:"owner_directed"}' > /tmp/lp-agent-pb-register-request.json
+          STATUS="$(curl -sS -o /tmp/lp-agent-pb-register.json -w '%{http_code}' -X POST 'https://getpostingboard.dev/v1/agents' -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'X-Agent-Protocol: getpostingboard/1' -H 'User-Agent: layerporter-agent/0.0.1' --data-binary @/tmp/lp-agent-pb-register-request.json)"
+          [ "$STATUS" = '201' ] || { echo "PostingBoard registration failed with HTTP $STATUS; no alternate identity will be created automatically"; exit 1; }
           PB_KEY="$(jq -r '.api_key // empty' /tmp/lp-agent-pb-register.json)"
           PB_ID="$(jq -r '.id // empty' /tmp/lp-agent-pb-register.json)"
           PB_NAME="$(jq -r '.name // empty' /tmp/lp-agent-pb-register.json)"
-          test -n "$PB_KEY" || { echo 'PostingBoard registration did not return a key'; exit 1; }
-          test "$PB_NAME" = 'layerporter-agent' || { echo 'Unexpected PostingBoard identity'; exit 1; }
-
+          test -n "$PB_KEY" || exit 1
+          test "$PB_NAME" = 'layerporter-agent' || exit 1
           printf '%s' "$PB_KEY" | npx wrangler@3.90.0 secret put POSTINGBOARD_API_KEY --config "$WRANGLER_BOOTSTRAP_CONFIG"
-
-          MARKER="$(jq -nc --arg id "$PB_ID" --arg name "$PB_NAME" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{agent_id:$id,agent_name:$name,registered_at:$at}')"
-          curl -fsS -X PUT "$VALUE_BASE/$MARKER_KEY" \
-            -H "$AUTH" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$MARKER" >/dev/null
-
+          MARKER="$(jq -nc --arg id "$PB_ID" --arg name "$PB_NAME" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{agent_id:$id,agent_name:$name,registered_at:$at}')"
+          curl -fsS -X PUT "$VALUE_BASE/$MARKER_KEY" -H "$AUTH" -H 'Content-Type: application/json' --data-binary "$MARKER" >/dev/null
           unset PB_KEY
           rm -f /tmp/lp-agent-pb-register.json /tmp/lp-agent-pb-register-request.json
           echo 'PostingBoard identity registered and secret transferred to Cloudflare without log output'
@@ -220,76 +156,38 @@ jobs:
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           HEARTBEAT_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values/layerporter-agent%3Aheartbeat%3Av1"
           VERIFY_STARTED_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
-
           npx wrangler@3.90.0 deploy --config "$WRANGLER_VERIFY_CONFIG"
           echo 'Temporary one-minute dry-run cron deployed for runtime verification'
-
           verified=0
           for attempt in {1..12}; do
-            STATUS="$(curl -sS -o /tmp/lp-agent-heartbeat.json -w '%{http_code}' \
-              "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
-
+            STATUS="$(curl -sS -o /tmp/lp-agent-heartbeat.json -w '%{http_code}' "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
             if [ "$STATUS" = '200' ]; then
-              if node - "$VERIFY_STARTED_MS" <<'NODE'
-          const fs = require('fs');
-          const gate = Number(process.argv[2]);
-          const heartbeat = JSON.parse(fs.readFileSync('/tmp/lp-agent-heartbeat.json', 'utf8'));
-          const started = Date.parse(heartbeat.startedAt || '');
-          const isFresh = Number.isFinite(started) && started >= gate;
-          const isFinished = Boolean(heartbeat.finishedAt);
-          const isDryRun = heartbeat.writeMode === 'dry-run';
-          const isOk = heartbeat.ok === true && heartbeat.result?.ok === true;
-          const zeroWrites = Number(heartbeat.result?.writesThisRun ?? -1) === 0;
-          if (isFresh && isFinished && isDryRun && isOk && zeroWrites) process.exit(0);
-          if (isFresh && isFinished && heartbeat.ok === false) {
-            console.error(JSON.stringify({ runtime_error: heartbeat.error || null }));
-            process.exit(2);
-          }
-          process.exit(1);
-          NODE
-              then
+              set +e
+              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-heartbeat.json "$VERIFY_STARTED_MS"
+              check_status=$?
+              set -e
+              if [ "$check_status" -eq 0 ]; then
                 verified=1
                 break
-              else
-                check_status=$?
-                if [ "$check_status" -eq 2 ]; then
-                  echo 'Fresh runtime heartbeat reported an error'
-                  break
-                fi
+              fi
+              if [ "$check_status" -eq 2 ]; then
+                echo 'Fresh runtime heartbeat reported an error or unsafe state'
+                break
               fi
             elif [ "$STATUS" != '404' ]; then
               echo "Heartbeat read failed with HTTP $STATUS"
               break
             fi
-
             sleep 10
           done
-
           if [ "$verified" -ne 1 ]; then
             echo 'Runtime dry-run verification failed; removing cron trigger'
             npx wrangler@3.90.0 deploy --config "$WRANGLER_BOOTSTRAP_CONFIG"
             rm -f /tmp/lp-agent-heartbeat.json
             exit 1
           fi
-
-          node - <<'NODE'
-          const fs = require('fs');
-          const heartbeat = JSON.parse(fs.readFileSync('/tmp/lp-agent-heartbeat.json', 'utf8'));
-          process.stdout.write(JSON.stringify({
-            ok: heartbeat.ok,
-            startedAt: heartbeat.startedAt,
-            finishedAt: heartbeat.finishedAt,
-            writeMode: heartbeat.writeMode,
-            result: heartbeat.result ? {
-              ok: heartbeat.result.ok,
-              candidates: heartbeat.result.candidates,
-              researched: heartbeat.result.researched,
-              writesThisRun: heartbeat.result.writesThisRun,
-            } : null,
-          }) + '\n');
-          NODE
-          rm -f /tmp/lp-agent-heartbeat.json
           echo 'Real Cloudflare dry-run heartbeat PASS: external writes = 0'
+          rm -f /tmp/lp-agent-heartbeat.json
 
       - name: Final hourly dry-run deploy
         shell: bash
