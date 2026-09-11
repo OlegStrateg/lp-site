@@ -2,7 +2,8 @@ import { track } from '../lib/analytics';
 
 const MAX_FILE_BYTES = 250 * 1024 * 1024;
 const OUTPUT_BITRATE = 320_000;
-const WORKER_URL = '/tools/extract-audio-from-video/processor.js';
+const WORKER_BUILD = 'lp078-20260911-1';
+const WORKER_URL = `/tools/extract-audio-from-video/processor.js?v=${WORKER_BUILD}`;
 const SUPPORTED_EXTENSIONS = new Set(['mp4', 'm4v', 'mov', 'webm', 'mkv']);
 
 type WorkerMessage = {
