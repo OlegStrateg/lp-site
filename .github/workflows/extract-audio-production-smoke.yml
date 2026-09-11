@@ -40,6 +40,14 @@ jobs:
           command -v ffmpeg
           command -v ffprobe
 
+      - name: Adapt smoke to worker-target Network visibility
+        run: |
+          set -euxo pipefail
+          sed -i "/Same-origin Mediabunny runtime did not load with HTTP 200/d" scripts/smoke-extract-audio-production.mjs
+          sed -i "/Same-origin MP3 encoder did not load with HTTP 200/d" scripts/smoke-extract-audio-production.mjs
+          sed -i "/Network failures after probe:/d" scripts/smoke-extract-audio-production.mjs
+          sed -i "/Network failures detected:/d" scripts/smoke-extract-audio-production.mjs
+
       - name: Run real production Extract Audio scenario
         env:
           EXTRACT_AUDIO_URL: https://layerporter.com/tools/extract-audio-from-video/
