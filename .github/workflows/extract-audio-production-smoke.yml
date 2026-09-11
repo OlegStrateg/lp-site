@@ -1,0 +1,46 @@
+name: Extract Audio Production Smoke
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/smoke-extract-audio-production.mjs'
+      - '.github/workflows/extract-audio-production-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check browser and media tools
+        run: |
+          set -euxo pipefail
+          command -v google-chrome || command -v chromium || command -v chromium-browser
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+
+      - name: Run real production Extract Audio scenario
+        env:
+          EXTRACT_AUDIO_URL: https://layerporter.com/tools/extract-audio-from-video/
+        run: node scripts/smoke-extract-audio-production.mjs
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extract-audio-production-smoke
+          path: artifacts/extract-audio-production-smoke/
+          if-no-files-found: error
+          retention-days: 14
