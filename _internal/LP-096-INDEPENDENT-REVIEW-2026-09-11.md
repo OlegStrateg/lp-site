@@ -1,8 +1,25 @@
 # LP-096 — independent review, 2026-09-11
 
+## Final acceptance — R1 closed
+
+Accepted code/package candidate: **7f8d970167d27789856166893b36b254e2259ecb**.
+M1, M2, M3 and R1 are closed within the reviewed scope.
+
+Independent comparison against b1883d139854826595ffcde38bc106ba6c0ecf7d confirms one changed file, .github/workflows/image-mcp-release.yml, +3/-0. The added sync:core step is between dependency installation and MCP tests.
+
+[LP-096 Gate 34615799292](https://github.com/OlegStrateg/layerporter-site/actions/runs/34615799292) is SUCCESS at the accepted SHA, all five jobs passed. Artifact metadata confirms ID 10270189756 and digest sha256:112c1fe10d9c69d0ceeb1db1b03fc9cda86d543f63b879fc9e344075ef20f5d2, associated with this run and SHA.
+
+[Equivalent dry-run 34616144635](https://github.com/OlegStrateg/layerporter-site/actions/runs/34616144635) is SUCCESS. Its workflow commit is 80b4f4e9e713250568b75eb7ec8de3d3d1dd0757; the inspected helper checks out the candidate branch and explicitly asserts git HEAD equals 7f8d970167d27789856166893b36b254e2259ecb. That assertion and all validation steps passed. Do not confuse the helper workflow SHA with the tested source SHA.
+
+Native workflow_dispatch of image-mcp-release.yml is still unverified. The implementer reports that the workflow is absent from the default branch and dispatch returned 404. This does not reopen R1; repeat the native dry-run after authorized integration into the default branch.
+
+Next stage: release integration and public installation verification. If the integrated source changes, validate that resulting revision before publication. Public npm/Registry status remains unverified; code acceptance is not publication, merge or deploy authorization. No further speculative product improvements are required for LP-096 closure.
+
+The original review and evidence limits follow as history.
+
 Reviewed candidate: b1883d139854826595ffcde38bc106ba6c0ecf7d.
 Base: ea1e89d27e1b95e23ccb79b4393e5b3e367d3bfb.
-Verdict: M1 documentation, M2 README/source setup and M3 code change accepted within their scope. One remaining release-path blocker must be corrected before calling the release workflow ready.
+Historical verdict at b1883d: M1 documentation, M2 README/source setup and M3 code change accepted, with R1 remaining. Superseded by final acceptance above.
 
 ## Independently confirmed
 
@@ -15,7 +32,7 @@ The reviewed tarball script packs the candidate, installs it outside the monorep
 
 Review limits: no local execution or manual image opening by this reviewer; archive contents were not independently downloaded. CI status, artifact metadata and assertion code were inspected. This is not an independent security audit or a claim of compatibility with all clients.
 
-## R1 — P1 for the existing release workflow: sync core still missing before tests
+## Historical R1 — resolved at 7f8d970
 
 [.github/workflows/image-mcp-release.yml:76](https://github.com/OlegStrateg/layerporter-site/blob/b1883d139854826595ffcde38bc106ba6c0ecf7d/.github/workflows/image-mcp-release.yml#L76) still performs:
 
@@ -40,4 +57,4 @@ Minimal fix: insert npm run sync:core after dependency installation and before M
 
 The owner receives the ready-to-copy follow-up prompt and sends it to the execution chat. The reviewer does not send messages to other chats.
 
-Next bounded task: fix R1, verify release dry-run and current candidate checks, record final evidence and return for review. Do not add new product features, publish, merge or deploy as part of that task.
+The R1 correction task is complete. The owner receives any subsequent release task for manual handoff; no message is sent to another chat by this review.
