@@ -19,7 +19,7 @@ jobs:
   verify-runtime:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_API: https://api.cloudflare.com/client/v4
@@ -89,7 +89,7 @@ jobs:
             STATUS="$(curl -sS -o /tmp/lp-agent-heartbeat.json -w '%{http_code}' "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
             if [ "$STATUS" = '200' ]; then
               set +e
-              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-heartbeat.json "$VERIFY_STARTED_MS"
+              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-heartbeat.json "$VERIFY_STARTED_MS" dry-run 0
               gate_status=$?
               set -e
 
@@ -116,7 +116,7 @@ jobs:
             printf '[{"cron":"0 * * * *"}]' > /tmp/lp-agent-final-schedule.json
             curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-final-schedule.json -o /tmp/lp-agent-final-result.json
             jq -e '.success == true and any(.result.schedules[]?; .cron == "0 * * * *")' /tmp/lp-agent-final-result.json >/dev/null
-            echo 'REAL RUNTIME PASS: fresh dry-run heartbeat verified, writes=0; hourly dry-run schedule accepted'
+            echo 'REAL DRY-RUN PASS: fresh heartbeat verified, writes=0; hourly dry-run schedule accepted'
             rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-final-schedule.json /tmp/lp-agent-final-result.json
             exit 0
           fi
@@ -126,4 +126,129 @@ jobs:
           jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-disable-result.json >/dev/null
           echo "REAL RUNTIME FAIL-CLOSED: $failure_reason; schedule disabled in Cloudflare control plane"
           rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-disable-schedule.json /tmp/lp-agent-disable-result.json
+          exit 1
+
+      - name: Activate bounded live pilot after dry-run PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONTROL='packages/layerporter-agent/pilot-control.json'
+          if [ ! -f "$CONTROL" ]; then
+            echo 'No live pilot control file; hourly dry-run remains active'
+            exit 0
+          fi
+
+          jq -e '
+            .id == "LP-097" and
+            .enabled == true and
+            .authorizedBy == "owner" and
+            (.activatedAt | type == "string") and
+            (.hardStopAt | type == "string") and
+            (.maxResearchPerRun | type == "number" and . >= 1 and . <= 2) and
+            (.maxWritesPerRun == 1) and
+            (.maxDailyWrites | type == "number" and . >= 1 and . <= 2) and
+            (.minimumOpportunityScore | type == "number" and . >= 0.72 and . <= 1) and
+            (.minimumEvidenceScore | type == "number" and . >= 0.82 and . <= 1) and
+            .enableThreadCreation == false
+          ' "$CONTROL" >/dev/null
+
+          ACTIVATED_AT="$(jq -r '.activatedAt' "$CONTROL")"
+          HARD_STOP_AT="$(jq -r '.hardStopAt' "$CONTROL")"
+          ACTIVATED_EPOCH="$(date -u -d "$ACTIVATED_AT" +%s)"
+          HARD_STOP_EPOCH="$(date -u -d "$HARD_STOP_AT" +%s)"
+          NOW_EPOCH="$(date -u +%s)"
+          test "$HARD_STOP_EPOCH" -gt "$ACTIVATED_EPOCH" || { echo 'Invalid pilot window'; exit 1; }
+          test $((HARD_STOP_EPOCH - ACTIVATED_EPOCH)) -le $((15 * 24 * 60 * 60)) || { echo 'Pilot hard stop exceeds 15 days'; exit 1; }
+          if [ "$NOW_EPOCH" -ge "$HARD_STOP_EPOCH" ]; then
+            echo 'Live pilot authorization expired; hourly dry-run remains active'
+            exit 0
+          fi
+
+          MAX_RESEARCH="$(jq -r '.maxResearchPerRun' "$CONTROL")"
+          MAX_WRITES_RUN="$(jq -r '.maxWritesPerRun' "$CONTROL")"
+          MAX_WRITES_DAY="$(jq -r '.maxDailyWrites' "$CONTROL")"
+          MIN_OPPORTUNITY="$(jq -r '.minimumOpportunityScore' "$CONTROL")"
+          MIN_EVIDENCE="$(jq -r '.minimumEvidenceScore' "$CONTROL")"
+          LIVE_CONFIG='.wrangler-layerporter-agent.live.toml'
+          LIVE_BOOTSTRAP_CONFIG='.wrangler-layerporter-agent.live-bootstrap.toml'
+          DRY_FALLBACK_CONFIG='.wrangler-layerporter-agent.dry-fallback.toml'
+
+          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" wrangler-layerporter-agent.toml.example \
+            | sed 's/LAYERPORTER_AGENT_WRITE_MODE = "dry-run"/LAYERPORTER_AGENT_WRITE_MODE = "live"/' \
+            | sed "s/LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = \"3\"/LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = \"${MAX_RESEARCH}\"/" \
+            | sed "s/LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = \"2\"/LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = \"${MAX_WRITES_RUN}\"/" \
+            | sed "s/LAYERPORTER_AGENT_MAX_DAILY_WRITES = \"6\"/LAYERPORTER_AGENT_MAX_DAILY_WRITES = \"${MAX_WRITES_DAY}\"/" \
+            > "$LIVE_CONFIG"
+          printf '\nLAYERPORTER_AGENT_MIN_LIVE_OPPORTUNITY_SCORE = "%s"\n' "$MIN_OPPORTUNITY" >> "$LIVE_CONFIG"
+          printf 'LAYERPORTER_AGENT_MIN_LIVE_EVIDENCE_SCORE = "%s"\n' "$MIN_EVIDENCE" >> "$LIVE_CONFIG"
+          printf 'LAYERPORTER_AGENT_LIVE_HARD_STOP_AT = "%s"\n' "$HARD_STOP_AT" >> "$LIVE_CONFIG"
+
+          sed '/^\[triggers\]$/,+1d' "$LIVE_CONFIG" > "$LIVE_BOOTSTRAP_CONFIG"
+          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" wrangler-layerporter-agent.toml.example \
+            | sed '/^\[triggers\]$/,+1d' \
+            > "$DRY_FALLBACK_CONFIG"
+
+          grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "live"' "$LIVE_CONFIG"
+          grep -F "LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = \"${MAX_RESEARCH}\"" "$LIVE_CONFIG"
+          grep -F "LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = \"${MAX_WRITES_RUN}\"" "$LIVE_CONFIG"
+          grep -F "LAYERPORTER_AGENT_MAX_DAILY_WRITES = \"${MAX_WRITES_DAY}\"" "$LIVE_CONFIG"
+          grep -F "LAYERPORTER_AGENT_LIVE_HARD_STOP_AT = \"${HARD_STOP_AT}\"" "$LIVE_CONFIG"
+          grep -F 'LAYERPORTER_AGENT_ENABLE_THREAD_CREATION = "false"' "$LIVE_CONFIG"
+          ! grep -Fq '[triggers]' "$LIVE_BOOTSTRAP_CONFIG"
+
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
+          HEARTBEAT_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values/layerporter-agent%3Aheartbeat%3Av1"
+
+          printf '[]' > /tmp/lp-agent-disable-live-schedule.json
+          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-disable-live-schedule.json -o /tmp/lp-agent-disable-live-result.json
+          jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-disable-live-result.json >/dev/null
+
+          npx wrangler@4.131.1 deploy --config "$LIVE_BOOTSTRAP_CONFIG"
+          echo 'Bounded live Worker deployed without schedule; existing Worker secrets are preserved by Wrangler deploy'
+
+          LIVE_VERIFY_STARTED_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
+          printf '[{"cron":"* * * * *"}]' > /tmp/lp-agent-live-minute.json
+          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-live-minute.json -o /tmp/lp-agent-live-minute-result.json
+          jq -e '.success == true and any(.result.schedules[]?; .cron == "* * * * *")' /tmp/lp-agent-live-minute-result.json >/dev/null
+
+          live_verified=0
+          failure_reason='no_fresh_live_heartbeat'
+          for attempt in {1..100}; do
+            STATUS="$(curl -sS -o /tmp/lp-agent-live-heartbeat.json -w '%{http_code}' "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
+            if [ "$STATUS" = '200' ]; then
+              set +e
+              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-live-heartbeat.json "$LIVE_VERIFY_STARTED_MS" live "$MAX_WRITES_RUN"
+              live_gate_status=$?
+              set -e
+              if [ "$live_gate_status" -eq 0 ]; then
+                live_verified=1
+                break
+              fi
+              if [ "$live_gate_status" -eq 2 ]; then
+                failure_reason='fresh_live_runtime_error_or_unsafe_state'
+                break
+              fi
+            elif [ "$STATUS" != '404' ]; then
+              failure_reason="live_heartbeat_http_${STATUS}"
+              break
+            fi
+            sleep 10
+          done
+
+          if [ "$live_verified" -eq 1 ]; then
+            printf '[{"cron":"0 * * * *"}]' > /tmp/lp-agent-live-hourly.json
+            curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-live-hourly.json -o /tmp/lp-agent-live-hourly-result.json
+            jq -e '.success == true and any(.result.schedules[]?; .cron == "0 * * * *")' /tmp/lp-agent-live-hourly-result.json >/dev/null
+            echo "REAL LIVE PILOT PASS: bounded live heartbeat verified; hourly schedule active until at most ${HARD_STOP_AT}"
+            rm -f "$LIVE_CONFIG" "$LIVE_BOOTSTRAP_CONFIG" "$DRY_FALLBACK_CONFIG" /tmp/lp-agent-disable-live-schedule.json /tmp/lp-agent-disable-live-result.json /tmp/lp-agent-live-minute.json /tmp/lp-agent-live-minute-result.json /tmp/lp-agent-live-heartbeat.json /tmp/lp-agent-live-hourly.json /tmp/lp-agent-live-hourly-result.json
+            exit 0
+          fi
+
+          printf '[]' > /tmp/lp-agent-live-disable.json
+          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-live-disable.json -o /tmp/lp-agent-live-disable-result.json
+          jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-live-disable-result.json >/dev/null
+          npx wrangler@4.131.1 deploy --config "$DRY_FALLBACK_CONFIG"
+          echo "LIVE PILOT FAIL-CLOSED: $failure_reason; schedules disabled and Worker returned to dry-run"
+          rm -f "$LIVE_CONFIG" "$LIVE_BOOTSTRAP_CONFIG" "$DRY_FALLBACK_CONFIG" /tmp/lp-agent-disable-live-schedule.json /tmp/lp-agent-disable-live-result.json /tmp/lp-agent-live-minute.json /tmp/lp-agent-live-minute-result.json /tmp/lp-agent-live-heartbeat.json /tmp/lp-agent-live-disable.json /tmp/lp-agent-live-disable-result.json
           exit 1
