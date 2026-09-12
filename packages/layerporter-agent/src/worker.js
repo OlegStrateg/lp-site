@@ -25,12 +25,15 @@ export default {
   async scheduled(event, env, ctx) {
     const kv = requireEnv(env, 'LAYERPORTER_AGENT_KV');
     const startedAt = nowIso();
+    const config = createAgentConfig(env);
     const heartbeat = {
       ok: true,
       startedAt,
       finishedAt: null,
       cron: event?.cron || null,
-      writeMode: env.LAYERPORTER_AGENT_WRITE_MODE === 'live' ? 'live' : 'dry-run',
+      writeMode: config.writeMode,
+      requestedWriteMode: config.requestedWriteMode,
+      liveHardStopAt: config.liveHardStopAt,
       result: null,
       error: null,
     };
@@ -47,7 +50,6 @@ export default {
           researchModel: env.LAYERPORTER_AGENT_RESEARCH_MODEL || 'gpt-5.6-terra',
         });
         const store = new KvMemoryStore(kv);
-        const config = createAgentConfig(env);
         heartbeat.result = await runAgentCycle({ client, provider, store, config });
       } catch (error) {
         heartbeat.ok = false;
