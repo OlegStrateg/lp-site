@@ -2,7 +2,7 @@ name: Extract Audio Production Final Verification
 
 on:
   pull_request:
-    branches: [master]
+    branches: [test/LP-078-prod-base]
     paths:
       - 'scripts/prod-verify-extract-audio-final.mjs'
       - '.github/workflows/extract-audio-production-final-verification.yml'
