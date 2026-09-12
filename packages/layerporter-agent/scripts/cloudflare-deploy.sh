@@ -26,7 +26,6 @@ KV_ID="$(printf '%s' "$KV_LIST" | node -e '
   process.stdout.write(String(x.id));
 ')"
 test -n "$KV_ID" || { echo "Dedicated KV namespace $KV_TITLE not found"; exit 1; }
-
 echo "Dedicated LayerPorter Agent KV resolved"
 
 MODE='dry-run'
@@ -37,29 +36,47 @@ MIN_OPPORTUNITY='0.72'
 MIN_EVIDENCE='0.82'
 HARD_STOP=''
 
-if [ -f "$CONTROL" ] && [ "$(jq -r '.enabled // false' "$CONTROL")" = 'true' ]; then
-  jq -e '
-    .id == "LP-097" and
-    .authorizedBy == "owner" and
-    (.maxResearchPerRun | type == "number" and . >= 1 and . <= 2) and
-    .maxWritesPerRun == 1 and
-    (.maxDailyWrites | type == "number" and . >= 1 and . <= 2) and
-    (.minimumOpportunityScore | type == "number" and . >= 0.72 and . <= 1) and
-    (.minimumEvidenceScore | type == "number" and . >= 0.82 and . <= 1) and
-    .enableThreadCreation == false
-  ' "$CONTROL" >/dev/null
-  HARD_STOP="$(jq -r '.hardStopAt' "$CONTROL")"
-  NOW_EPOCH="$(date -u +%s)"
-  STOP_EPOCH="$(date -u -d "$HARD_STOP" +%s)"
-  if [ "$NOW_EPOCH" -lt "$STOP_EPOCH" ]; then
-    MODE='live'
-    MAX_RESEARCH="$(jq -r '.maxResearchPerRun' "$CONTROL")"
-    MAX_WRITES_RUN="$(jq -r '.maxWritesPerRun' "$CONTROL")"
-    MAX_WRITES_DAY="$(jq -r '.maxDailyWrites' "$CONTROL")"
-    MIN_OPPORTUNITY="$(jq -r '.minimumOpportunityScore' "$CONTROL")"
-    MIN_EVIDENCE="$(jq -r '.minimumEvidenceScore' "$CONTROL")"
-  else
-    echo 'Owner live authorization expired; deploying dry-run'
+if [ -f "$CONTROL" ]; then
+  CONTROL_VALUES="$(node - "$CONTROL" <<'NODE'
+const fs=require('fs');
+const c=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+if (c.id !== 'LP-097') throw new Error('Unexpected pilot id');
+if (c.authorizedBy !== 'owner') throw new Error('Live pilot must be owner-authorized');
+if (!Number.isInteger(c.maxResearchPerRun) || c.maxResearchPerRun < 1 || c.maxResearchPerRun > 2) throw new Error('Invalid maxResearchPerRun');
+if (c.maxWritesPerRun !== 1) throw new Error('maxWritesPerRun must equal 1');
+if (!Number.isInteger(c.maxDailyWrites) || c.maxDailyWrites < 1 || c.maxDailyWrites > 2) throw new Error('Invalid maxDailyWrites');
+if (!(c.minimumOpportunityScore >= 0.72 && c.minimumOpportunityScore <= 1)) throw new Error('Invalid minimumOpportunityScore');
+if (!(c.minimumEvidenceScore >= 0.82 && c.minimumEvidenceScore <= 1)) throw new Error('Invalid minimumEvidenceScore');
+if (c.enableThreadCreation !== false) throw new Error('Thread creation must stay disabled');
+const start=Date.parse(c.activatedAt); const stop=Date.parse(c.hardStopAt);
+if (!Number.isFinite(start) || !Number.isFinite(stop) || stop <= start) throw new Error('Invalid pilot timestamps');
+if (stop-start > 15*24*60*60*1000) throw new Error('Pilot hard stop exceeds 15 days');
+process.stdout.write([
+  c.enabled === true ? 'true' : 'false',
+  c.maxResearchPerRun,
+  c.maxWritesPerRun,
+  c.maxDailyWrites,
+  c.minimumOpportunityScore,
+  c.minimumEvidenceScore,
+  c.hardStopAt,
+].join('\t'));
+NODE
+)"
+  IFS=$'\t' read -r CONTROL_ENABLED CONTROL_RESEARCH CONTROL_WRITES_RUN CONTROL_WRITES_DAY CONTROL_MIN_OPPORTUNITY CONTROL_MIN_EVIDENCE CONTROL_HARD_STOP <<< "$CONTROL_VALUES"
+  if [ "$CONTROL_ENABLED" = 'true' ]; then
+    NOW_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
+    STOP_MS="$(node -e 'process.stdout.write(String(Date.parse(process.argv[1])))' "$CONTROL_HARD_STOP")"
+    if [ "$NOW_MS" -lt "$STOP_MS" ]; then
+      MODE='live'
+      MAX_RESEARCH="$CONTROL_RESEARCH"
+      MAX_WRITES_RUN="$CONTROL_WRITES_RUN"
+      MAX_WRITES_DAY="$CONTROL_WRITES_DAY"
+      MIN_OPPORTUNITY="$CONTROL_MIN_OPPORTUNITY"
+      MIN_EVIDENCE="$CONTROL_MIN_EVIDENCE"
+      HARD_STOP="$CONTROL_HARD_STOP"
+    else
+      echo 'Owner live authorization expired; deploying dry-run'
+    fi
   fi
 fi
 
@@ -87,18 +104,19 @@ make_unscheduled_config() {
   sed -i '/^\[triggers\]$/,+1c\[triggers]\ncrons = []' "$outfile"
 }
 
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-UNSCHEDULED="$TMP_DIR/unscheduled.toml"
-MINUTE="$TMP_DIR/minute.toml"
-HOURLY="$TMP_DIR/hourly.toml"
-HEARTBEAT="$TMP_DIR/heartbeat.json"
+PREFIX=".wrangler-layerporter-agent-build-${WORKERS_CI_BUILD_UUID:-$$}"
+UNSCHEDULED="${PREFIX}-unscheduled.toml"
+MINUTE="${PREFIX}-minute.toml"
+HOURLY="${PREFIX}-hourly.toml"
+FALLBACK="${PREFIX}-fallback.toml"
+HEARTBEAT="/tmp/layerporter-agent-heartbeat-${WORKERS_CI_BUILD_UUID:-$$}.json"
+trap 'rm -f "$UNSCHEDULED" "$MINUTE" "$HOURLY" "$FALLBACK" "$HEARTBEAT"' EXIT
 
 make_unscheduled_config "$UNSCHEDULED"
 make_config '* * * * *' "$MINUTE"
 make_config '0 * * * *' "$HOURLY"
 
-# Fail closed first: the new revision is deployed with no trigger.
+# Fail closed first: configs live at repo root so relative `main` resolves correctly.
 ${WRANGLER[@]} deploy --config "$UNSCHEDULED"
 echo "Worker deployed unscheduled in mode=$MODE"
 
@@ -108,6 +126,8 @@ echo "Temporary one-minute verification trigger deployed in mode=$MODE"
 
 verified=0
 failure='no_fresh_heartbeat'
+if [ "$MODE" = 'live' ]; then GATE_MAX_WRITES="$MAX_WRITES_RUN"; else GATE_MAX_WRITES='0'; fi
+
 for attempt in $(seq 1 90); do
   set +e
   ${WRANGLER[@]} kv key get "$HEARTBEAT_KEY" --namespace-id "$KV_ID" --text --remote > "$HEARTBEAT" 2>/dev/null
@@ -115,7 +135,7 @@ for attempt in $(seq 1 90); do
   set -e
   if [ "$kv_status" -eq 0 ] && [ -s "$HEARTBEAT" ]; then
     set +e
-    node packages/layerporter-agent/src/heartbeat-gate.js "$HEARTBEAT" "$GATE_MS" "$MODE" "$([ "$MODE" = 'live' ] && printf '%s' "$MAX_WRITES_RUN" || printf '0')"
+    node packages/layerporter-agent/src/heartbeat-gate.js "$HEARTBEAT" "$GATE_MS" "$MODE" "$GATE_MAX_WRITES"
     gate_status=$?
     set -e
     if [ "$gate_status" -eq 0 ]; then
@@ -144,7 +164,7 @@ MODE='dry-run'
 MAX_RESEARCH='3'
 MAX_WRITES_RUN='2'
 MAX_WRITES_DAY='6'
-FALLBACK="$TMP_DIR/fallback.toml"
+HARD_STOP=''
 make_unscheduled_config "$FALLBACK"
 ${WRANGLER[@]} deploy --config "$FALLBACK"
 echo "CLOUDFLARE RUNTIME FAIL-CLOSED: $failure; Worker returned to unscheduled dry-run"
