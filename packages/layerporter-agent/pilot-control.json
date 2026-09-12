@@ -1,6 +1,6 @@
 {
   "id": "LP-097",
-  "enabled": true,
+  "enabled": false,
   "authorizedBy": "owner",
   "activatedAt": "2026-09-12T04:46:24Z",
   "hardStopAt": "2026-09-26T05:00:00Z",
@@ -10,5 +10,5 @@
   "minimumOpportunityScore": 0.72,
   "minimumEvidenceScore": 0.82,
   "enableThreadCreation": false,
-  "notes": "First controlled public PostingBoard live pilot. Any normal deployment verifies dry-run first. Live activation is bounded by this explicit owner control and the in-memory 14-day pilot window."
+  "notes": "Phase A: deploy and verify the exact live-gate code in real Cloudflare dry-run first. After PASS, flip only enabled/timestamps in a separate owner-authorized commit to start the bounded public pilot."
 }
