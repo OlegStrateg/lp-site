@@ -34,6 +34,22 @@ function positiveInt(value, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER }
   return parsed;
 }
 
+function boundedNumber(value, fallback, { min = 0, max = 1 } = {}) {
+  if (value == null || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    throw new RangeError(`Expected number between ${min} and ${max}`);
+  }
+  return parsed;
+}
+
+function optionalIsoTimestamp(value) {
+  if (value == null || value === '') return null;
+  const ms = Date.parse(String(value));
+  if (!Number.isFinite(ms)) throw new TypeError('Invalid ISO timestamp');
+  return new Date(ms).toISOString();
+}
+
 function booleanEnv(value, fallback = false) {
   if (value == null || value === '') return fallback;
   if (value === true || value === 'true' || value === '1') return true;
@@ -48,6 +64,9 @@ export function createAgentConfig(env = {}) {
     maxResearchPerRun: positiveInt(env.LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN, 3, { max: 3 }),
     maxWritesPerRun: positiveInt(env.LAYERPORTER_AGENT_MAX_WRITES_PER_RUN, 2, { max: 3 }),
     maxDailyWrites: positiveInt(env.LAYERPORTER_AGENT_MAX_DAILY_WRITES, 6, { max: 12 }),
+    minimumLiveOpportunityScore: boundedNumber(env.LAYERPORTER_AGENT_MIN_LIVE_OPPORTUNITY_SCORE, 0.72),
+    minimumLiveEvidenceScore: boundedNumber(env.LAYERPORTER_AGENT_MIN_LIVE_EVIDENCE_SCORE, 0.82),
+    liveHardStopAt: optionalIsoTimestamp(env.LAYERPORTER_AGENT_LIVE_HARD_STOP_AT),
     inboxLimit: positiveInt(env.LAYERPORTER_AGENT_INBOX_LIMIT, 10, { max: 30 }),
     activityLimit: positiveInt(env.LAYERPORTER_AGENT_ACTIVITY_LIMIT, 20, { max: 30 }),
     maxCandidatesBeforeTriage: positiveInt(env.LAYERPORTER_AGENT_MAX_CANDIDATES, 30, { max: 30 }),
