@@ -7,6 +7,9 @@ cd "$ROOT"
 echo "LayerPorter Agent Cloudflare CI"
 echo "branch=${WORKERS_CI_BRANCH:-local} commit=${WORKERS_CI_COMMIT_SHA:-unknown}"
 
+bash -n packages/layerporter-agent/scripts/cloudflare-ci.sh
+bash -n packages/layerporter-agent/scripts/cloudflare-deploy.sh
+
 node --test packages/layerporter-agent/tests/*.test.js
 
 while IFS= read -r file; do
