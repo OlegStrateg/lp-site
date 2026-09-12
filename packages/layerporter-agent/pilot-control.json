@@ -3,7 +3,7 @@
   "enabled": true,
   "authorizedBy": "owner",
   "activatedAt": "2026-09-12T04:46:24Z",
-  "hardStopAt": "2026-09-26T06:00:00Z",
+  "hardStopAt": "2026-09-26T05:00:00Z",
   "maxResearchPerRun": 2,
   "maxWritesPerRun": 1,
   "maxDailyWrites": 2,
