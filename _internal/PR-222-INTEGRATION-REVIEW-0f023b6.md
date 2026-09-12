@@ -86,3 +86,43 @@ Public npm check:
 Prepared next release step, not executed here: first npm bootstrap publish from the exact verified package at master SHA `8ca11132b8cec267d1b88ff85232d58483353c63`. Before publishing, run the publishable preflight and tests, then publish the scoped package publicly with `npm publish --access public`. The executing npm account must have publish rights for scope `@layerporter`; interactive npm publish must satisfy the account/package 2FA requirement.
 
 MCP release validation does not test or accept Extract Audio functionality. Audio status is independent and must not be inferred from this release gate.
+
+
+## PUBLIC NPM RELEASE — 2026-09-12 — VERIFIED
+
+This section supersedes the unpublished npm status above. Official MCP Registry remains a separate, unperformed release step.
+
+Owner-authorized source: 8ca11132b8cec267d1b88ff85232d58483353c63, detached checkout at D:\layerporter-mcp-release-0.1.0. Current master was not used. Authenticated npm account: layerporter. Owner completed official browser passkey/2FA. The first confirmation attempt failed; version absence was checked before retrying. Successful npm publish exited 0 and returned:
+
+    + @layerporter/image-optimizer-mcp@0.1.0
+
+Public package: https://www.npmjs.com/package/@layerporter/image-optimizer-mcp/v/0.1.0
+Public artifact: https://registry.npmjs.org/@layerporter/image-optimizer-mcp/-/image-optimizer-mcp-0.1.0.tgz
+
+Prepublication verification performed in this session:
+- Official Linux Node.js v24.16.0 download SHA-256 verified.
+- Exact source SHA, image-core 20/20, MCP 22/22, publishable preflight PASS.
+- Original full tarball/client smoke PASS with official MCP client 2.0.0; single, batch, responsive variants, rejection and resource checks.
+- The initial Windows unit run failed its Unix mode assertion (0666 versus expected 0600). No tests or runtime were edited/skipped. Full suite was rerun successfully in Ubuntu/WSL with Unix permission metadata, using an isolated directory on D:. Temporary WSL mount was removed afterwards. Windows unit-suite portability is not claimed fixed.
+- Release tarball SHA-256: 0a5eaaa541b113e81b2d3f91d4e79c1a140f3fb0c752453c7ec94d10dbde02b2
+- npm shasum: 3e01568a8eb6f8b406ab69dbbd785efbfdc99407
+- npm integrity: sha512-7xEl1lqMdyGdtglUmBTiyquGOcFcN0OCqEbSAaHYq0VZ8guUzbcgtZ3nysHhECEp7AvQ0i+aMOOzfRQHNlGKZQ==
+
+External verification:
+- Anonymous public Registry version metadata returned 200; its tarball shasum matched the published candidate.
+- Immediately after publication, name lookup initially returned 404 while the version and tarball were already accessible. Subsequent public manifest requests returned 200 with latest=0.1.0, and npm view by name returned 0.1.0.
+- A separate npm project and fresh cache at D:\layerporter-mcp-public-check-0.1.0\named-install installed by exact public package name, not a local tarball:
+
+    npm install --save-exact --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/ @layerporter/image-optimizer-mcp@0.1.0 @modelcontextprotocol/client@2.0.0
+
+- Installation resolved to the public Registry tarball and package-lock integrity matched anonymous public metadata.
+- Runtime platform: Windows, Node v24.16.0, official MCP client 2.0.0 over stdio.
+- initialize PASS; tools/list exactly 7 expected tools; optimize_image ACCEPT; resource_link and resources/read PASS; repeated read PASS.
+- Returned image: WebP, 320x240, 216 bytes; metadata MIME/size/hash agreed with actual bytes; full raw pixel decode PASS.
+- Image SHA-256: 7a1e54d7952a634cd44a7f7be1f986b6f3c41db87e13453f6ce0baf8a24e6d4f
+- Local external proof JSON: D:\layerporter-mcp-public-check-0.1.0\named-install\proof\public-npm-smoke.json
+- Local decoded output: D:\layerporter-mcp-public-check-0.1.0\named-install\proof\public-single-optimized.webp
+
+Scope: npm publication and external stdio resource retrieval are VERIFIED. This does not claim Claude/ChatGPT-specific UI compatibility, Windows Unix-permission-test compatibility, a hosted endpoint, production write/apply, SEO/CWV gains, Official MCP Registry listing or successful Extract Audio functionality. No MCP Registry publish or production site deploy was performed in this release step.
+
+Next: separately authorized Official MCP Registry publication with ownership verification, public entry read-back and truthful public page status update.
