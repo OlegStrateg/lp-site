@@ -14,6 +14,37 @@ if [ "${WORKERS_CI_BRANCH:-master}" != 'master' ]; then
   exit 0
 fi
 
+changed_paths() {
+  if [ -z "${WORKERS_CI_COMMIT_SHA:-}" ]; then
+    return 0
+  fi
+  git show --pretty=format: --name-only --no-renames "$WORKERS_CI_COMMIT_SHA" 2>/dev/null \
+    | sed '/^[[:space:]]*$/d' \
+    | sort -u || true
+}
+
+classify_change() {
+  node --input-type=module -e '
+    import fs from "node:fs";
+    import { classifyBuildChange } from "./packages/layerporter-agent/src/build-change-policy.js";
+    const paths = fs.readFileSync(0, "utf8").split(/\r?\n/).filter(Boolean);
+    process.stdout.write(classifyBuildChange(paths));
+  '
+}
+
+CHANGED_PATHS="$(changed_paths)"
+CHANGE_MODE="$(printf '%s\n' "$CHANGED_PATHS" | classify_change)"
+echo "change_mode=$CHANGE_MODE"
+
+if [ "$CHANGE_MODE" = 'audit_request_only' ]; then
+  echo 'LayerPorter Agent deployment skipped: runtime-audit request is read-only and was evaluated in the build step.'
+  exit 0
+fi
+if [ "$CHANGE_MODE" = 'unrelated' ]; then
+  echo 'LayerPorter Agent deployment skipped: commit does not change agent runtime/configuration.'
+  exit 0
+fi
+
 test -f "$TEMPLATE" || { echo "Missing $TEMPLATE"; exit 1; }
 test -f "$CONTROL" || { echo "Missing $CONTROL"; exit 1; }
 
