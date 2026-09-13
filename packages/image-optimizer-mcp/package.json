@@ -14,6 +14,8 @@
   "files": [
     "src/**",
     "README.md",
+    "SECURITY.md",
+    "PRIVACY.md",
     "LICENSE",
     "server.json"
   ],
@@ -35,16 +37,21 @@
   },
   "homepage": "https://layerporter.com/mcp/website-image-optimizer/",
   "bugs": {
-    "url": "https://github.com/OlegStrateg/layerporter-site/issues"
+    "url": "https://layerporter.com/feedback/?p=mcp&tool=website-image-optimizer",
+    "email": "hello@layerporter.com"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
     "image-optimization",
+    "web-performance",
+    "core-web-vitals",
     "webp",
     "avif",
-    "core-web-vitals",
-    "lcp"
+    "lcp",
+    "claude",
+    "cursor",
+    "developer-tools"
   ],
   "publishConfig": {
     "access": "public"
