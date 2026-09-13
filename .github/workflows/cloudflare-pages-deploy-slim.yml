@@ -1,0 +1,62 @@
+name: Deploy LayerPorter to Cloudflare Pages (slim fallback)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/cloudflare-pages-deploy-slim.yml'
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-slim
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=layerporter --branch=main --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Resize and Crop production pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in /tools/resize-image/ /tools/crop-image/; do
+            ok=0
+            for attempt in {1..24}; do
+              status="$(curl -sS -o /tmp/lp-tool.html -w '%{http_code}' --max-time 20 -A 'Mozilla/5.0' "https://layerporter.com${path}?verify=${{ github.sha }}")"
+              if [ "$status" = "200" ] && grep -Fq 'image-workspace-nav' /tmp/lp-tool.html; then
+                echo "LIVE $path"
+                ok=1
+                break
+              fi
+              sleep 5
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "Production verification failed for $path"
+              exit 1
+            fi
+          done
