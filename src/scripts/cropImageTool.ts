@@ -9,8 +9,10 @@ import {
 } from './imageToolCore';
 
 type CropRect = { x: number; y: number; width: number; height: number };
+type Handle = 'nw' | 'ne' | 'sw' | 'se';
+type DragMode = 'new' | 'move' | Handle;
 type DragState = {
-  mode: 'new' | 'move';
+  mode: DragMode;
   startX: number;
   startY: number;
   origin: CropRect;
@@ -92,6 +94,15 @@ export function initCropImageTool(): void {
     return Math.min(1, 960 / image.width, 620 / image.height);
   }
 
+  function handlePoints(rect: CropRect): Record<Handle, { x: number; y: number }> {
+    return {
+      nw: { x: rect.x, y: rect.y },
+      ne: { x: rect.x + rect.width, y: rect.y },
+      sw: { x: rect.x, y: rect.y + rect.height },
+      se: { x: rect.x + rect.width, y: rect.y + rect.height },
+    };
+  }
+
   function draw(): void {
     if (!image) return;
     const scale = previewScale();
@@ -111,23 +122,25 @@ export function initCropImageTool(): void {
     const dy = selection.y * scale;
     const dw = selection.width * scale;
     const dh = selection.height * scale;
-    context.drawImage(
-      image.bitmap,
-      selection.x,
-      selection.y,
-      selection.width,
-      selection.height,
-      dx,
-      dy,
-      dw,
-      dh,
-    );
+    context.drawImage(image.bitmap, selection.x, selection.y, selection.width, selection.height, dx, dy, dw, dh);
+
     context.strokeStyle = '#8276e8';
     context.lineWidth = 3;
     context.strokeRect(Math.round(dx) + 1.5, Math.round(dy) + 1.5, Math.max(1, Math.round(dw) - 3), Math.max(1, Math.round(dh) - 3));
     context.strokeStyle = 'rgba(255,255,255,.9)';
     context.lineWidth = 1;
     context.strokeRect(Math.round(dx) + .5, Math.round(dy) + .5, Math.max(1, Math.round(dw) - 1), Math.max(1, Math.round(dh) - 1));
+
+    const handleSize = 12;
+    for (const point of Object.values(handlePoints(selection))) {
+      const hx = point.x * scale;
+      const hy = point.y * scale;
+      context.fillStyle = '#fff';
+      context.strokeStyle = '#8276e8';
+      context.lineWidth = 2;
+      context.fillRect(hx - handleSize / 2, hy - handleSize / 2, handleSize, handleSize);
+      context.strokeRect(hx - handleSize / 2, hy - handleSize / 2, handleSize, handleSize);
+    }
   }
 
   function updateSelection(next: CropRect): void {
@@ -149,37 +162,80 @@ export function initCropImageTool(): void {
     return point.x >= selection.x && point.x <= selection.x + selection.width && point.y >= selection.y && point.y <= selection.y + selection.height;
   }
 
+  function hitHandle(point: { x: number; y: number }): Handle | null {
+    const scale = previewScale();
+    const radiusInImagePixels = Math.max(8, 14 / Math.max(scale, 0.01));
+    const points = handlePoints(selection);
+    for (const [name, handle] of Object.entries(points) as [Handle, { x: number; y: number }][]) {
+      if (Math.abs(point.x - handle.x) <= radiusInImagePixels && Math.abs(point.y - handle.y) <= radiusInImagePixels) return name;
+    }
+    return null;
+  }
+
   function ratioValue(): number | null {
     const value = Number(preset.value);
     return Number.isFinite(value) && value > 0 ? value : null;
   }
 
+  function fitRatio(width: number, height: number, ratio: number): { width: number; height: number } {
+    let nextWidth = Math.max(1, width);
+    let nextHeight = Math.max(1, height);
+    if (nextWidth / nextHeight > ratio) nextWidth = nextHeight * ratio;
+    else nextHeight = nextWidth / ratio;
+    return { width: nextWidth, height: nextHeight };
+  }
+
   function rectFromDrag(startX: number, startY: number, currentX: number, currentY: number): CropRect {
     if (!image) return selection;
-    let x1 = clamp(startX, 0, image.width);
-    let y1 = clamp(startY, 0, image.height);
     let x2 = clamp(currentX, 0, image.width);
     let y2 = clamp(currentY, 0, image.height);
     const ratio = ratioValue();
 
     if (ratio) {
-      const signX = x2 >= x1 ? 1 : -1;
-      const signY = y2 >= y1 ? 1 : -1;
-      let width = Math.max(1, Math.abs(x2 - x1));
-      let height = Math.max(1, Math.abs(y2 - y1));
-      if (width / height > ratio) width = height * ratio;
-      else height = width / ratio;
-      x2 = x1 + width * signX;
-      y2 = y1 + height * signY;
-      x2 = clamp(x2, 0, image.width);
-      y2 = clamp(y2, 0, image.height);
+      const signX = x2 >= startX ? 1 : -1;
+      const signY = y2 >= startY ? 1 : -1;
+      const fitted = fitRatio(Math.abs(x2 - startX), Math.abs(y2 - startY), ratio);
+      x2 = clamp(startX + fitted.width * signX, 0, image.width);
+      y2 = clamp(startY + fitted.height * signY, 0, image.height);
     }
 
-    const x = Math.min(x1, x2);
-    const y = Math.min(y1, y2);
-    const width = Math.max(1, Math.abs(x2 - x1));
-    const height = Math.max(1, Math.abs(y2 - y1));
-    return normalizedRect({ x, y, width, height });
+    return normalizedRect({
+      x: Math.min(startX, x2),
+      y: Math.min(startY, y2),
+      width: Math.max(1, Math.abs(x2 - startX)),
+      height: Math.max(1, Math.abs(y2 - startY)),
+    });
+  }
+
+  function rectFromHandle(mode: Handle, point: { x: number; y: number }, origin: CropRect): CropRect {
+    const left = origin.x;
+    const top = origin.y;
+    const right = origin.x + origin.width;
+    const bottom = origin.y + origin.height;
+    const opposite = {
+      nw: { x: right, y: bottom },
+      ne: { x: left, y: bottom },
+      sw: { x: right, y: top },
+      se: { x: left, y: top },
+    }[mode];
+
+    let currentX = point.x;
+    let currentY = point.y;
+    const ratio = ratioValue();
+    if (ratio) {
+      const signX = currentX >= opposite.x ? 1 : -1;
+      const signY = currentY >= opposite.y ? 1 : -1;
+      const fitted = fitRatio(Math.abs(currentX - opposite.x), Math.abs(currentY - opposite.y), ratio);
+      currentX = opposite.x + fitted.width * signX;
+      currentY = opposite.y + fitted.height * signY;
+    }
+
+    return normalizedRect({
+      x: Math.min(opposite.x, currentX),
+      y: Math.min(opposite.y, currentY),
+      width: Math.max(1, Math.abs(currentX - opposite.x)),
+      height: Math.max(1, Math.abs(currentY - opposite.y)),
+    });
   }
 
   function applyPreset(): void {
@@ -224,14 +280,21 @@ export function initCropImageTool(): void {
 
     try {
       image = await loadLocalImage(file);
-      selection = { x: 0, y: 0, width: image.width, height: image.height };
+      const insetX = Math.round(image.width * 0.05);
+      const insetY = Math.round(image.height * 0.05);
+      selection = normalizedRect({
+        x: insetX,
+        y: insetY,
+        width: Math.max(1, image.width - insetX * 2),
+        height: Math.max(1, image.height - insetY * 2),
+      });
       preset.value = 'free';
       fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(file.size)}`;
       syncInputs();
       draw();
       root.dataset.state = 'ready';
       button.disabled = false;
-      setStatus('Drag to choose an area, or enter exact crop coordinates.', 'success');
+      setStatus('Drag the corners to resize the crop, drag inside to move it, or draw a new area outside.', 'success');
     } catch (error) {
       root.dataset.state = 'error';
       setStatus(error instanceof Error ? error.message : 'This image could not be opened.', 'error');
@@ -279,6 +342,7 @@ export function initCropImageTool(): void {
     const file = input.files?.[0];
     if (file) void chooseFile(file);
   });
+
   for (const name of ['dragenter', 'dragover'] as const) {
     drop.addEventListener(name, (event) => {
       event.preventDefault();
@@ -299,8 +363,9 @@ export function initCropImageTool(): void {
   canvas.addEventListener('pointerdown', (event) => {
     if (!image) return;
     const point = pointFromEvent(event);
+    const handle = hitHandle(point);
     drag = {
-      mode: insideSelection(point) ? 'move' : 'new',
+      mode: handle || (insideSelection(point) ? 'move' : 'new'),
       startX: point.x,
       startY: point.y,
       origin: { ...selection },
@@ -310,15 +375,26 @@ export function initCropImageTool(): void {
   });
 
   canvas.addEventListener('pointermove', (event) => {
-    if (!image || !drag) return;
+    if (!image) return;
     const point = pointFromEvent(event);
-    if (drag.mode === 'move') {
-      const dx = point.x - drag.startX;
-      const dy = point.y - drag.startY;
-      updateSelection({ ...drag.origin, x: drag.origin.x + dx, y: drag.origin.y + dy });
-    } else {
-      updateSelection(rectFromDrag(drag.startX, drag.startY, point.x, point.y));
+    if (!drag) {
+      const handle = hitHandle(point);
+      canvas.style.cursor = handle ? `${handle}-resize` : insideSelection(point) ? 'move' : 'crosshair';
+      return;
     }
+    if (drag.mode === 'move') {
+      updateSelection({
+        ...drag.origin,
+        x: drag.origin.x + point.x - drag.startX,
+        y: drag.origin.y + point.y - drag.startY,
+      });
+      return;
+    }
+    if (drag.mode === 'new') {
+      updateSelection(rectFromDrag(drag.startX, drag.startY, point.x, point.y));
+      return;
+    }
+    updateSelection(rectFromHandle(drag.mode, point, drag.origin));
   });
 
   const endDrag = (event: PointerEvent) => {
