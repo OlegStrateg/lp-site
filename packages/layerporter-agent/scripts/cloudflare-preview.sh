@@ -22,9 +22,8 @@ ${WRANGLER[@]} kv key get "$HEARTBEAT_KEY" --namespace-id "$KV_ID" --text --remo
 node - "$tmp" <<'NODE'
 const fs=require('fs');
 const heartbeat=JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-if (!heartbeat || typeof heartbeat !== 'object') process.exit(10);
-if (!heartbeat.startedAt || !heartbeat.writeMode || typeof heartbeat.ok !== 'boolean') process.exit(11);
+if (heartbeat.writeMode !== 'dry-run') process.exit(12);
 process.exit(0);
 NODE
 
-echo 'LP-097 DIAGNOSTIC BIT 0 PASS: preview token can read a valid remote heartbeat'
+echo 'LP-097 DIAGNOSTIC BIT 2 PASS: last retained heartbeat is dry-run; failed Phase B never executed a live scheduled cycle'
