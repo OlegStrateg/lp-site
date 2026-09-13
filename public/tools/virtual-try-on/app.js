@@ -43,6 +43,7 @@ const state = {
   pose: null,
   poseMs: null,
   garmentPrepared: null,
+  armOverlay: null,
   poseLandmarker: null,
   runtimePromise: null,
   runtimeBackend: null,
@@ -97,9 +98,9 @@ function clearResult() {
   ui.tool.dataset.state = state.person || state.garment ? 'input' : 'empty';
 }
 
-function refreshRunState() {
+function refreshRunState(updateStatus = true) {
   ui.run.disabled = state.running || !state.person || !state.garment;
-  if (state.running) return;
+  if (!updateStatus || state.running) return;
   if (state.person && state.garment) setStatus('Ready for a local instant preview.');
   else setStatus('Add both images to start.');
 }
@@ -124,6 +125,7 @@ async function setAsset(kind, file) {
       state.person = asset;
       state.pose = null;
       state.poseMs = null;
+      state.armOverlay = null;
       showAsset('person', asset);
     } else {
       releaseAsset(state.garment);
@@ -449,7 +451,11 @@ function drawArmMask(maskCtx, landmarks, width, height, shoulderWidth) {
   }
 }
 
-function redrawArms(ctx, landmarks, width, height, shoulderWidth) {
+function getArmOverlay(landmarks, width, height, shoulderWidth) {
+  if (state.armOverlay?.width === width && state.armOverlay?.height === height) {
+    return state.armOverlay.canvas;
+  }
+
   const mask = makeCanvas(width, height);
   const maskCtx = mask.getContext('2d');
   drawArmMask(maskCtx, landmarks, width, height, shoulderWidth);
@@ -460,7 +466,13 @@ function redrawArms(ctx, landmarks, width, height, shoulderWidth) {
   layerCtx.globalCompositeOperation = 'destination-in';
   layerCtx.drawImage(mask, 0, 0);
   layerCtx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(layer, 0, 0);
+
+  state.armOverlay = { canvas: layer, width, height };
+  return layer;
+}
+
+function redrawArms(ctx, landmarks, width, height, shoulderWidth) {
+  ctx.drawImage(getArmOverlay(landmarks, width, height, shoulderWidth), 0, 0);
 }
 
 function renderResult() {
@@ -531,6 +543,7 @@ async function runTryOn() {
   ui.run.textContent = 'Building preview…';
   ui.result.hidden = true;
   ui.tool.dataset.state = 'running';
+  let succeeded = false;
 
   try {
     prepareGarment();
@@ -541,15 +554,15 @@ async function runTryOn() {
     ui.timing.textContent = `Pose ${state.poseMs ?? 0} ms · ${state.runtimeBackend ?? 'local'}${runtimeText}${cleanupText}. Fit controls reuse this pose.`;
     ui.result.hidden = false;
     ui.tool.dataset.state = 'result';
-    setStatus('Instant preview ready. Adjust the fit without rerunning pose detection.', 'success');
+    succeeded = true;
   } catch (error) {
     ui.tool.dataset.state = 'input';
     setStatus(error instanceof Error ? error.message : 'The local try-on could not be completed.', 'error');
   } finally {
     state.running = false;
     ui.run.textContent = 'Try it on';
-    refreshRunState();
-    if (!ui.result.hidden) setStatus('Instant preview ready. Adjust the fit without rerunning pose detection.', 'success');
+    refreshRunState(false);
+    if (succeeded) setStatus('Instant preview ready. Adjust the fit without rerunning pose detection.', 'success');
   }
 }
 
@@ -568,6 +581,7 @@ function resetAll() {
   state.pose = null;
   state.poseMs = null;
   state.garmentPrepared = null;
+  state.armOverlay = null;
   ui.personInput.value = '';
   ui.garmentInput.value = '';
   ui.personImage.removeAttribute('src');
