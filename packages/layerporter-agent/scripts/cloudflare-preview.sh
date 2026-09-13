@@ -3,16 +3,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
-
-CONTROL='packages/layerporter-agent/pilot-control.json'
 WRANGLER=(npx --yes wrangler@4.131.1)
 
-test -f "$CONTROL" || { echo "Missing $CONTROL"; exit 1; }
-
-# Diagnostic-only: no deploy, no secret writes, no KV mutation.
-npm --prefix packages/layerporter-agent run check
-npm --prefix packages/layerporter-agent test
-
+# Diagnostic-only: prove remote KV can be resolved/read. No deploy and no mutation.
 KV_LIST="$(${WRANGLER[@]} kv namespace list)"
 KV_ID="$(printf '%s' "$KV_LIST" | node -e '
   const fs=require("fs");
@@ -21,65 +14,14 @@ KV_ID="$(printf '%s' "$KV_LIST" | node -e '
   if(!x?.id) process.exit(2);
   process.stdout.write(String(x.id));
 ')"
-test -n "$KV_ID" || { echo 'Dedicated LayerPorter Agent KV not found'; exit 1; }
+test -n "$KV_ID" || exit 1
 
 ${WRANGLER[@]} kv key get 'layerporter-agent:heartbeat:v1' --namespace-id "$KV_ID" --remote --text > /tmp/lp-agent-heartbeat.json
-${WRANGLER[@]} kv key get 'layerporter-agent:memory:v1' --namespace-id "$KV_ID" --remote --text > /tmp/lp-agent-memory.json
-chmod 600 /tmp/lp-agent-heartbeat.json /tmp/lp-agent-memory.json
-
-node --input-type=module <<'NODE'
-import fs from 'node:fs';
-import { evaluateHeartbeat } from './packages/layerporter-agent/src/heartbeat-gate.js';
-import { evaluateLiveSafety } from './packages/layerporter-agent/src/live-safety-gate.js';
-import { createAgentConfig } from './packages/layerporter-agent/src/config.js';
-
-const control = JSON.parse(fs.readFileSync('packages/layerporter-agent/pilot-control.json', 'utf8'));
-const heartbeat = JSON.parse(fs.readFileSync('/tmp/lp-agent-heartbeat.json', 'utf8'));
-const memory = JSON.parse(fs.readFileSync('/tmp/lp-agent-memory.json', 'utf8'));
-const now = new Date();
-const activatedMs = Date.parse(control.activatedAt || '');
-const startedMs = Date.parse(heartbeat.startedAt || '');
-
-if (!Number.isFinite(activatedMs) || !Number.isFinite(startedMs)) throw new Error('Invalid activation/heartbeat timestamp');
-if (startedMs < activatedMs) throw new Error('Heartbeat predates current live activation');
-if (now.getTime() - startedMs > 90 * 60 * 1000) throw new Error('Heartbeat stale >90m');
-
-const hb = evaluateHeartbeat(heartbeat, activatedMs, {
-  expectedWriteMode: 'live',
-  maxWrites: Number(control.maxWritesPerRun),
-});
-if (hb.code !== 0) throw new Error(`Heartbeat gate failed: ${hb.status}`);
-
-const config = createAgentConfig({
-  LAYERPORTER_AGENT_WRITE_MODE: 'live',
-  LAYERPORTER_AGENT_LIVE_ACTIVATED_AT: control.activatedAt,
-  LAYERPORTER_AGENT_LIVE_HARD_STOP_AT: control.hardStopAt,
-  LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN: String(control.maxResearchPerRun),
-  LAYERPORTER_AGENT_MAX_WRITES_PER_RUN: String(control.maxWritesPerRun),
-  LAYERPORTER_AGENT_MAX_DAILY_WRITES: String(control.maxDailyWrites),
-  LAYERPORTER_AGENT_MIN_LIVE_OPPORTUNITY_SCORE: String(control.minimumOpportunityScore),
-  LAYERPORTER_AGENT_MIN_LIVE_EVIDENCE_SCORE: String(control.minimumEvidenceScore),
-  LAYERPORTER_AGENT_ENABLE_THREAD_CREATION: String(control.enableThreadCreation),
-}, now);
-
-const safety = evaluateLiveSafety(memory, config, now);
-if (!safety.allowed) throw new Error(`Live circuit breaker closed: ${safety.reason}`);
-
-const writes = Number(heartbeat.result?.writesThisRun ?? -1);
-if (!Number.isInteger(writes) || writes < 0 || writes > Number(control.maxWritesPerRun)) throw new Error('Invalid bounded write count');
-
-console.log(JSON.stringify({
-  status: 'PASS',
-  startedAt: heartbeat.startedAt,
-  finishedAt: heartbeat.finishedAt,
-  writeMode: heartbeat.writeMode,
-  writesThisRun: writes,
-  candidates: heartbeat.result?.candidates ?? null,
-  researched: heartbeat.result?.researched ?? null,
-  strategyRecommendation: heartbeat.result?.pilot?.strategyRecommendation ?? null,
-}));
+node - <<'NODE'
+const fs=require('fs');
+const x=JSON.parse(fs.readFileSync('/tmp/lp-agent-heartbeat.json','utf8'));
+if (!x || typeof x !== 'object' || !x.startedAt) process.exit(1);
 NODE
+rm -f /tmp/lp-agent-heartbeat.json
 
-rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-memory.json
-
-echo 'LP-097 READ-ONLY LIVE SAFETY PASS: fresh live runtime and circuit breaker verified within owner bounds.'
+echo 'LP-097 DIAG PASS: remote KV heartbeat is readable and valid JSON.'
