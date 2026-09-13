@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/image-tools.css';
+
+const title = 'Resize Image Online — Exact Pixel Dimensions | LayerPorter';
+const description = 'Resize JPG, PNG and WebP images to exact width and height in pixels in your browser. Keep aspect ratio or set exact dimensions.';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/tools/resize-image/"
+  headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
+  footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
+>
+  <section class="image-tool-hero" aria-labelledby="resize-title">
+    <div class="image-tool-copy">
+      <p class="image-tool-kicker">Exact pixels</p>
+      <h1 id="resize-title">Resize image to exact pixels</h1>
+      <p class="image-tool-lede">Change the width and height of the whole image without cutting content. Keep the aspect ratio, or unlock it when a specification requires exact dimensions.</p>
+      <div class="image-tool-badges" aria-label="Supported files and processing"><span>JPG, PNG, WebP</span><span>Width × Height in px</span><span>Processed in your browser</span></div>
+    </div>
+
+    <div class="image-tool-shell" id="resize-image-tool" data-state="empty">
+      <input id="resize-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+      <label class="image-tool-drop" id="resize-drop" for="resize-file" tabindex="0"><span class="image-tool-drop-icon" aria-hidden="true">＋</span><strong>Choose an image</strong><small>or drop JPG, PNG or WebP here</small></label>
+
+      <div class="image-tool-workspace" id="resize-workspace" hidden>
+        <div class="image-tool-preview-panel"><div class="image-tool-preview-wrap"><img id="resize-preview" alt="Selected image preview" /></div><p class="image-tool-file-meta" id="resize-file-meta"></p></div>
+        <div class="image-tool-controls">
+          <h2>New dimensions</h2>
+          <div class="image-tool-grid">
+            <label class="image-tool-field"><span>Width (px)</span><input class="image-tool-input" id="resize-width" type="number" min="1" max="16384" inputmode="numeric" /></label>
+            <label class="image-tool-field"><span>Height (px)</span><input class="image-tool-input" id="resize-height" type="number" min="1" max="16384" inputmode="numeric" /></label>
+          </div>
+          <div class="image-tool-row"><input id="resize-lock" type="checkbox" checked /><label for="resize-lock"><strong>Keep aspect ratio</strong><br />Change one dimension and the other follows automatically.</label></div>
+          <div class="image-tool-row"><input id="resize-no-enlarge" type="checkbox" /><label for="resize-no-enlarge"><strong>Do not enlarge smaller images</strong><br />Useful when you only want to reduce dimensions.</label></div>
+          <div class="image-tool-status" id="resize-status" role="status" aria-live="polite"></div>
+          <button class="image-tool-primary" id="resize-action" type="button" disabled>Resize image</button>
+        </div>
+      </div>
+
+      <div class="image-tool-result" id="resize-result" hidden>
+        <div class="image-tool-result-head"><div><strong>Resized image is ready</strong><span id="resize-result-meta"></span></div></div>
+        <div class="image-tool-result-preview"><img id="resize-result-image" alt="Resized image preview" /></div>
+        <div class="image-tool-result-actions"><a class="image-tool-primary" id="resize-download" href="#" download>Download resized image</a><button class="image-tool-secondary" id="resize-another" type="button">Choose another image</button></div>
+      </div>
+    </div>
+
+    <p class="image-tool-crosslink">Need to cut part of the image instead? <a href="/tools/crop-image/">Open Crop Image →</a></p>
+  </section>
+
+  <section class="image-tool-info" aria-labelledby="resize-how-title">
+    <div><p class="image-tool-section-label">How it works</p><h2 id="resize-how-title">Exact dimensions without cropping.</h2></div>
+    <ol class="image-tool-steps">
+      <li><span>01</span><div><strong>Select an image</strong><p>Use a local JPG, PNG or WebP file. The image is decoded in the browser.</p></div></li>
+      <li><span>02</span><div><strong>Enter width and height</strong><p>Keep the aspect ratio for proportional resizing, or unlock it when an exact specification requires both dimensions.</p></div></li>
+      <li><span>03</span><div><strong>Resize and download</strong><p>The complete image is scaled to the requested pixel dimensions and exported in the same image format.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="image-tool-faq" aria-labelledby="resize-faq-title">
+    <p class="image-tool-section-label">FAQ</p><h2 id="resize-faq-title">Resize image questions</h2>
+    <details><summary>Does resizing crop any part of the image?</summary><p>No. Resize scales the complete image. If you need to remove edges or select only part of the image, use the Crop Image tool.</p></details>
+    <details><summary>Can I set an exact width and height?</summary><p>Yes. Turn off “Keep aspect ratio” to force both pixel dimensions exactly. This can change the visual proportions of the image.</p></details>
+    <details><summary>Can I make an image larger?</summary><p>Yes. Leave “Do not enlarge smaller images” turned off. Normal resizing interpolates pixels; it does not recreate missing detail like an AI upscaler.</p></details>
+    <details><summary>Which formats are supported?</summary><p>This first version supports JPG, PNG and WebP and exports in the same format.</p></details>
+  </section>
+
+  <script>
+    import { initResizeImageTool } from '../../scripts/resizeImageTool';
+    initResizeImageTool();
+  </script>
+</BaseLayout>
