@@ -68,3 +68,7 @@ Phase B: after Phase A PASS, a separate owner-authorized commit changes only `pi
 ## Cost boundary
 
 GitHub-hosted Actions are not required for this pipeline. Cloudflare Workers Builds Free currently includes its own monthly build-minute allowance. GitHub remains the source of truth for code, PRs and history.
+
+## Connection verification
+
+2026-09-13: harmless documentation-only commit used to trigger the first Cloudflare non-production preview build after the GitHub integration was connected. Production Worker must remain unchanged during this verification.
