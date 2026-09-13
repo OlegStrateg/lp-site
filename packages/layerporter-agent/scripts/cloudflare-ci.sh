@@ -20,7 +20,7 @@ if [ "${WORKERS_CI_BRANCH:-}" = 'diag/LP-097-live-heartbeat-1600' ]; then
 const fs=require('fs');
 const h=JSON.parse(fs.readFileSync('/tmp/lp-heartbeat.json','utf8'));
 const m=String(h?.error?.message||'').toLowerCase();
-if(!(m.includes('schema') || m.includes('response_format') || m.includes('text.format') || m.includes('structured'))) process.exit(24);
+if(!['reasoning','model','tool','web_search','parameter','unsupported'].some(x=>m.includes(x))) process.exit(25);
 NODE
 fi
 echo "CLOUDFLARE CI PASS"
