@@ -1,0 +1,30 @@
+LayerPorter Virtual Try-On — Third-Party Notices
+Candidate build: LP-098
+Date: 2026-09-13
+
+1. MediaPipe Tasks Vision
+Package: @mediapipe/tasks-vision
+Pinned version: 1.0.1
+Publisher: Google / MediaPipe
+License: Apache License 2.0
+Package: https://www.npmjs.com/package/@mediapipe/tasks-vision
+Project: https://github.com/google-ai-edge/mediapipe
+License: https://www.apache.org/licenses/LICENSE-2.0
+
+The candidate loads the browser runtime from:
+https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/
+
+Pose model:
+MediaPipe Pose Landmarker Lite, float16, version 1
+https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+
+MediaPipe privacy notice (as published with the package): input data such as images is processed on-device and is not sent by MediaPipe to Google servers. MediaPipe Tasks may send technical performance and utilization metrics to Google. LayerPorter surfaces this disclosure before the user starts the candidate preview.
+
+2. Engineering reference — @practics/tryon-core
+Repository: https://github.com/pravoobi/try-on
+Package: @practics/tryon-core
+License: MIT
+
+The LP-098 candidate uses this project as an engineering/architecture reference for browser-native virtual try-on. The first implementation does not bundle the @practics/tryon-core package; it uses a smaller MediaPipe pose pipeline while the TPS/segmentation stack is evaluated separately.
+
+LayerPorter-specific UI, fitting rules, product-background cleanup, arm compositing, fit controls, export logic and integration code in this candidate are maintained in the LayerPorter site repository.
