@@ -15,12 +15,19 @@ function baseHeartbeat() {
       candidates: 2,
       researched: 1,
       writesThisRun: 0,
+      pilot: {
+        strategyRecommendation: 'AWAIT_LIVE_GATE',
+        guardrails: {
+          uncertainActions: 0,
+          publishedUnverifiedActions: 0,
+        },
+      },
     },
     error: null,
   };
 }
 
-test('heartbeat gate passes only a fresh finished dry-run with zero writes', () => {
+test('heartbeat gate passes only a fresh finished dry-run with zero writes by default', () => {
   const result = evaluateHeartbeat(baseHeartbeat(), gateMs);
   assert.equal(result.status, 'pass');
   assert.equal(result.code, 0);
@@ -37,7 +44,7 @@ test('heartbeat gate keeps stale or unfinished heartbeats pending', () => {
   assert.equal(evaluateHeartbeat(unfinished, gateMs).status, 'pending');
 });
 
-test('heartbeat gate fails closed on runtime errors, live mode or non-zero writes', () => {
+test('dry-run heartbeat gate fails closed on runtime errors, live mode or non-zero writes', () => {
   const runtimeError = baseHeartbeat();
   runtimeError.ok = false;
   runtimeError.result = null;
@@ -51,4 +58,27 @@ test('heartbeat gate fails closed on runtime errors, live mode or non-zero write
   const wrote = baseHeartbeat();
   wrote.result.writesThisRun = 1;
   assert.equal(evaluateHeartbeat(wrote, gateMs).code, 2);
+});
+
+test('bounded live gate accepts zero or one verified write and rejects unsafe pilot state', () => {
+  const live = baseHeartbeat();
+  live.writeMode = 'live';
+  live.result.writesThisRun = 1;
+  live.result.pilot.strategyRecommendation = 'COLLECT_BASELINE';
+
+  const pass = evaluateHeartbeat(live, gateMs, { expectedWriteMode: 'live', maxWrites: 1 });
+  assert.equal(pass.code, 0);
+  assert.equal(pass.summary.writeMode, 'live');
+  assert.equal(pass.summary.result.writesThisRun, 1);
+
+  live.result.pilot.guardrails.uncertainActions = 1;
+  assert.equal(evaluateHeartbeat(live, gateMs, { expectedWriteMode: 'live', maxWrites: 1 }).code, 2);
+
+  live.result.pilot.guardrails.uncertainActions = 0;
+  live.result.pilot.strategyRecommendation = 'STOP_AND_REVIEW';
+  assert.equal(evaluateHeartbeat(live, gateMs, { expectedWriteMode: 'live', maxWrites: 1 }).code, 2);
+
+  live.result.pilot.strategyRecommendation = 'COLLECT_BASELINE';
+  live.result.writesThisRun = 2;
+  assert.equal(evaluateHeartbeat(live, gateMs, { expectedWriteMode: 'live', maxWrites: 1 }).code, 2);
 });

@@ -13,6 +13,7 @@ import { assertActionAllowed } from './action-policy.js';
 import { appendRunLog, makeRunRecord } from './observability.js';
 import { recordReputationEvent } from './reputation-ledger.js';
 import { preparePilotMeasurement, recordPilotRun } from './pilot-measurement.js';
+import { evaluateLiveSafety } from './live-safety-gate.js';
 
 const PUBLIC_PRODUCT_CONTEXT = Object.freeze({
   website: 'https://layerporter.com/',
@@ -149,8 +150,9 @@ async function recoverPreparedActions({ client, memory, store, nowIso }) {
   }
 }
 
-function canWrite({ memory, config, account }) {
-  if (config.writeMode !== 'live') return { allowed: false, reason: 'dry_run' };
+function canWrite({ memory, config, account, now }) {
+  const safety = evaluateLiveSafety(memory, config, now);
+  if (!safety.allowed) return safety;
   if (memory.budget.writes >= config.maxDailyWrites) return { allowed: false, reason: 'daily_internal_budget' };
   if (Number(account?.posting_quota?.remaining ?? 1) <= 0) return { allowed: false, reason: 'postingboard_quota' };
   return { allowed: true, reason: null };
@@ -174,8 +176,8 @@ async function persistNonWriteAction({ memory, store, proposal, candidate, statu
   return memory.actions[id];
 }
 
-async function executeReply({ client, memory, store, proposal, candidate, config }) {
-  const writeGate = canWrite({ memory, config, account: memory.lastAccountSnapshot });
+async function executeReply({ client, memory, store, proposal, candidate, config, now }) {
+  const writeGate = canWrite({ memory, config, account: memory.lastAccountSnapshot, now });
   if (!writeGate.allowed) {
     return persistNonWriteAction({
       memory,
@@ -187,7 +189,10 @@ async function executeReply({ client, memory, store, proposal, candidate, config
     });
   }
 
-  assertActionAllowed(proposal);
+  assertActionAllowed(proposal, {
+    minimumOpportunityScore: config.minimumLiveOpportunityScore,
+    minimumEvidenceScore: config.minimumLiveEvidenceScore,
+  });
   const fresh = await client.readMessage(candidate.message.id, { limit: 30 });
   const sourceCheck = verifySourceUnchanged({
     originalHash: proposal.sourceContentHash,
@@ -351,7 +356,7 @@ export async function runAgentCycle({ client, provider, store, config, now = new
       }
 
       if (proposal.action === 'reply') {
-        const action = await executeReply({ client, memory, store, proposal, candidate, config });
+        const action = await executeReply({ client, memory, store, proposal, candidate, config, now });
         if (['published', 'published_unverified', 'uncertain'].includes(action.status)) writesThisRun += 1;
         runCounters.writesThisRun = writesThisRun;
         continue;

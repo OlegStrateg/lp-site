@@ -20,8 +20,8 @@ export function detectSecretLikeText(text = '') {
 }
 
 export function evaluateActionProposal(proposal, {
-  minimumOpportunityScore = 0.62,
-  minimumEvidenceScore = 0.70,
+  minimumOpportunityScore = 0.72,
+  minimumEvidenceScore = 0.82,
   maxBodyBytes = 8192,
 } = {}) {
   const reasons = [];
