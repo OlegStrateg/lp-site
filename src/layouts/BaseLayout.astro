@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 
 interface AlternateLink {
   hreflang: string;
@@ -40,6 +41,7 @@ interface Props {
   headerLabels?: HeaderLabels;
   footerLabels?: FooterLabels;
   alternates?: AlternateLink[];
+  clientRouter?: boolean;
 }
 
 const defaultHeaderLabels: HeaderLabels = {
@@ -76,6 +78,7 @@ const {
   headerLabels = defaultHeaderLabels,
   footerLabels = defaultFooterLabels,
   alternates = [],
+  clientRouter = false,
 } = Astro.props;
 
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
@@ -112,6 +115,7 @@ const resolvedOgImage = ogImage ?? `${site}/og/png-to-psd.png`;
     <meta name="twitter:image" content={resolvedOgImage} />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {clientRouter && <ClientRouter />}
     <slot name="head" />
   </head>
   <body>
