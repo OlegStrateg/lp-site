@@ -19,8 +19,8 @@ if [ "${WORKERS_CI_BRANCH:-}" = 'diag/LP-097-live-heartbeat-1600' ]; then
  node - <<'NODE'
 const fs=require('fs');
 const h=JSON.parse(fs.readFileSync('/tmp/lp-heartbeat.json','utf8'));
-const codes=new Set(['insufficient_quota','billing_hard_limit_reached','invalid_api_key','rate_limit_exceeded']);
-if(!codes.has(h?.error?.code)) process.exit(20);
+const codes=new Set(['model_not_found','unsupported_parameter','invalid_request_error','MODEL_HTTP_ERROR','invalid_value','unknown_parameter','invalid_json_schema']);
+if(!codes.has(h?.error?.code)) process.exit(21);
 NODE
 fi
 echo "CLOUDFLARE CI PASS"
