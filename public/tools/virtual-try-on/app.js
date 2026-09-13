@@ -1,3 +1,5 @@
+import { affineFromTriangles, buildTorsoGeometry } from './geometry.js';
+
 const MEDIAPIPE_MODULE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm';
 const MEDIAPIPE_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
 const POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -407,51 +409,6 @@ function pointPx(landmark, width, height) {
   return { x: landmark.x * width, y: landmark.y * height };
 }
 
-function distance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-function midpoint(a, b) {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
-
-function orderByScreenX(a, b) {
-  return a.x <= b.x ? [a, b] : [b, a];
-}
-
-function normalizeVector(x, y, fallback = { x: 0, y: 1 }) {
-  const length = Math.hypot(x, y);
-  if (length < 0.0001) return fallback;
-  return { x: x / length, y: y / length };
-}
-
-function addPoint(point, vector, amount) {
-  return { x: point.x + vector.x * amount, y: point.y + vector.y * amount };
-}
-
-function affineFromTriangles(s0, s1, s2, d0, d1, d2) {
-  const det = s0.x * (s1.y - s2.y) + s1.x * (s2.y - s0.y) + s2.x * (s0.y - s1.y);
-  if (Math.abs(det) < 0.000001) return null;
-
-  const a = (d0.x * (s1.y - s2.y) + d1.x * (s2.y - s0.y) + d2.x * (s0.y - s1.y)) / det;
-  const c = (d0.x * (s2.x - s1.x) + d1.x * (s0.x - s2.x) + d2.x * (s1.x - s0.x)) / det;
-  const e = (
-    d0.x * (s1.x * s2.y - s2.x * s1.y) +
-    d1.x * (s2.x * s0.y - s0.x * s2.y) +
-    d2.x * (s0.x * s1.y - s1.x * s0.y)
-  ) / det;
-
-  const b = (d0.y * (s1.y - s2.y) + d1.y * (s2.y - s0.y) + d2.y * (s0.y - s1.y)) / det;
-  const d = (d0.y * (s2.x - s1.x) + d1.y * (s0.x - s2.x) + d2.y * (s1.x - s0.x)) / det;
-  const f = (
-    d0.y * (s1.x * s2.y - s2.x * s1.y) +
-    d1.y * (s2.x * s0.y - s0.x * s2.y) +
-    d2.y * (s0.x * s1.y - s1.x * s0.y)
-  ) / det;
-
-  return { a, b, c, d, e, f };
-}
-
 function drawImageTriangle(ctx, image, source, destination) {
   const transform = affineFromTriangles(
     source[0], source[1], source[2],
@@ -575,47 +532,20 @@ function renderResult() {
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage(person, 0, 0, width, height);
 
-  const anatomicalLeftShoulder = pointPx(state.pose[11], width, height);
-  const anatomicalRightShoulder = pointPx(state.pose[12], width, height);
-  const anatomicalLeftHip = pointPx(state.pose[23], width, height);
-  const anatomicalRightHip = pointPx(state.pose[24], width, height);
-  const [screenLeftShoulder, screenRightShoulder] = orderByScreenX(anatomicalLeftShoulder, anatomicalRightShoulder);
-  const [screenLeftHip, screenRightHip] = orderByScreenX(anatomicalLeftHip, anatomicalRightHip);
-  const shoulderCenter = midpoint(screenLeftShoulder, screenRightShoulder);
-  const hipCenter = midpoint(screenLeftHip, screenRightHip);
-  const shoulderWidth = distance(screenLeftShoulder, screenRightShoulder);
-  const hipWidth = distance(screenLeftHip, screenRightHip);
-  const torsoHeight = Math.max(20, distance(shoulderCenter, hipCenter));
-  const lateral = normalizeVector(screenRightShoulder.x - screenLeftShoulder.x, screenRightShoulder.y - screenLeftShoulder.y, { x: 1, y: 0 });
-  const bodyAxis = normalizeVector(hipCenter.x - shoulderCenter.x, hipCenter.y - shoulderCenter.y, { x: -lateral.y, y: lateral.x });
-
-  const fitScale = Number(ui.scale.value) / 100;
-  const xOffset = Number(ui.x.value) / 100;
-  const yOffset = Number(ui.y.value) / 100;
   const prepared = prepareGarment();
-  const { bounds } = prepared;
-  const sourceAspect = bounds.height / Math.max(1, bounds.width);
+  const geometry = buildTorsoGeometry({
+    anatomicalLeftShoulder: pointPx(state.pose[11], width, height),
+    anatomicalRightShoulder: pointPx(state.pose[12], width, height),
+    anatomicalLeftHip: pointPx(state.pose[23], width, height),
+    anatomicalRightHip: pointPx(state.pose[24], width, height),
+    sourceAspect: prepared.bounds.height / Math.max(1, prepared.bounds.width),
+    fitScale: Number(ui.scale.value) / 100,
+    xOffset: Number(ui.x.value) / 100,
+    yOffset: Number(ui.y.value) / 100,
+  });
 
-  const baseTargetWidth = Math.max(shoulderWidth * 1.56, hipWidth * 1.28);
-  const targetWidth = baseTargetWidth * fitScale;
-  const naturalHeight = targetWidth * sourceAspect;
-  const targetHeight = Math.min(Math.max(naturalHeight, torsoHeight * 0.72), torsoHeight * 1.72);
-  const bottomWidth = Math.max(hipWidth * 1.34, baseTargetWidth * 0.78) * fitScale;
-
-  let topCenter = addPoint(shoulderCenter, bodyAxis, -torsoHeight * 0.13);
-  topCenter = addPoint(topCenter, lateral, shoulderWidth * xOffset);
-  topCenter = addPoint(topCenter, bodyAxis, torsoHeight * yOffset);
-  const bottomCenter = addPoint(topCenter, bodyAxis, targetHeight);
-
-  const quad = {
-    tl: addPoint(topCenter, lateral, -targetWidth / 2),
-    tr: addPoint(topCenter, lateral, targetWidth / 2),
-    br: addPoint(bottomCenter, lateral, bottomWidth / 2),
-    bl: addPoint(bottomCenter, lateral, -bottomWidth / 2),
-  };
-
-  drawGarmentWarp(ctx, prepared, quad);
-  redrawArms(ctx, state.pose, width, height, shoulderWidth);
+  drawGarmentWarp(ctx, prepared, geometry.quad);
+  redrawArms(ctx, state.pose, width, height, geometry.shoulderWidth);
 
   ui.scaleValue.value = `${ui.scale.value}%`;
   ui.xValue.value = `${Number(ui.x.value) > 0 ? '+' : ''}${ui.x.value}%`;
