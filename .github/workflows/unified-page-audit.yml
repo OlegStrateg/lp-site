@@ -1,0 +1,59 @@
+name: Unified Page Audit Verify
+
+on:
+  push:
+    branches:
+      - feat/unified-page-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Test page audit core
+        working-directory: packages/page-audit-core
+        run: npm test
+
+      - name: Install site dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build site without deploy
+        run: npm run build
+
+      - name: Audit built WebP to JPG control page
+        run: node scripts/run-unified-page-audit.mjs
+
+      - name: Assert audit artifact contract
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = '_artifacts/unified-page-audit/webp-to-jpg-static.json';
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (report.schemaVersion !== '1.0.0') throw new Error('unexpected audit schema version');
+          for (const direction of ['seo', 'ai_search', 'cro', 'images_performance']) {
+            if (!(direction in report.summary.byDirection)) throw new Error(`missing direction ${direction}`);
+          }
+          if (report.coverage.static_html?.state !== 'checked') throw new Error('static_html coverage missing');
+          if (report.coverage.browser_rendered?.state !== 'not_checked') throw new Error('browser coverage must not be fabricated');
+          if (report.coverage.field_analytics?.state !== 'not_available') throw new Error('field analytics must not be fabricated');
+          console.log(JSON.stringify({ status: 'PASS', findings: report.summary.findingCount, top: report.topFindings.map(x => x.id) }, null, 2));
+          NODE
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-page-audit-baseline-${{ github.sha }}
+          path: _artifacts/unified-page-audit/
+          if-no-files-found: error
+          retention-days: 30
