@@ -38,7 +38,13 @@ assert(app.includes("@mediapipe/tasks-vision@1.0.1/+esm"), 'MediaPipe package is
 assert(app.includes("@mediapipe/tasks-vision@1.0.1/wasm"), 'MediaPipe WASM path is not pinned');
 assert(app.includes('pose_landmarker_lite/float16/1/pose_landmarker_lite.task'), 'pose model is not pinned');
 assert(app.includes("runningMode: 'IMAGE'"), 'single-image pose mode missing');
+assert(app.includes("options('GPU')"), 'GPU pose path missing');
+assert(app.includes("options('CPU')"), 'CPU fallback missing');
 assert(app.includes('if (state.pose) return state.pose;'), 'pose cache missing');
+assert(app.includes('armOverlay: null'), 'arm overlay cache state missing');
+assert(app.includes('state.armOverlay = { canvas: layer, width, height }'), 'arm overlay cache write missing');
+assert(app.includes('refreshRunState(false)'), 'error-preserving run-state refresh missing');
+assert(app.includes('let succeeded = false;'), 'explicit successful-run guard missing');
 assert(app.includes('renderResult();'), 'local rerender path missing');
 assert(app.includes("link.download = `layerporter-virtual-try-on-${Date.now()}.png`"), 'PNG download filename missing');
 assert(!app.includes('FormData'), 'user image upload primitive detected');
@@ -62,4 +68,4 @@ assert(notices.includes('License: MIT'), 'tryon-core MIT notice missing');
 const syntax = spawnSync(process.execPath, ['--check', appPath], { encoding: 'utf8' });
 assert(syntax.status === 0, `app.js syntax check failed: ${syntax.stderr || syntax.stdout}`);
 
-console.log('Virtual Try-On static/build verification: PASS — local instant preview candidate, pinned MediaPipe 1.0.1, no LayerPorter upload API');
+console.log('Virtual Try-On static/build verification: PASS — local instant preview candidate, pinned MediaPipe 1.0.1, cached pose/arm overlay, no LayerPorter upload API');
