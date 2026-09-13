@@ -1,13 +1,25 @@
 import { track } from '../lib/analytics';
 import {
-  disposeLoadedImage,
   downloadName,
   formatImageBytes,
-  loadLocalImage,
   renderImage,
   type LoadedImage,
   validateOutputSize,
 } from './imageToolCore';
+import {
+  getWorkspaceSnapshot,
+  getWorkspaceToolState,
+  setWorkspaceFile,
+  setWorkspaceToolState,
+} from './imageWorkspaceStore';
+
+type ResizeState = {
+  imageVersion: number;
+  width: number;
+  height: number;
+  lock: boolean;
+  noEnlarge: boolean;
+};
 
 function byId<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -20,7 +32,10 @@ function integerValue(input: HTMLInputElement): number {
 }
 
 export function initResizeImageTool(): void {
-  const root = byId<HTMLElement>('resize-image-tool');
+  const root = document.getElementById('resize-image-tool') as HTMLElement | null;
+  if (!root || root.dataset.bound === '1') return;
+  root.dataset.bound = '1';
+
   const input = byId<HTMLInputElement>('resize-file');
   const drop = byId<HTMLLabelElement>('resize-drop');
   const workspace = byId<HTMLElement>('resize-workspace');
@@ -39,18 +54,10 @@ export function initResizeImageTool(): void {
   const another = byId<HTMLButtonElement>('resize-another');
 
   let image: LoadedImage | null = null;
-  let sourceUrl = '';
   let resultUrl = '';
   let syncing = false;
 
   track('tool_view', { tool: 'resize_image' });
-
-  function revokeUrls(): void {
-    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    if (resultUrl) URL.revokeObjectURL(resultUrl);
-    sourceUrl = '';
-    resultUrl = '';
-  }
 
   function setStatus(message: string, kind: 'normal' | 'error' | 'success' = 'normal'): void {
     status.textContent = message;
@@ -66,18 +73,45 @@ export function initResizeImageTool(): void {
     result.hidden = true;
   }
 
-  function reset(openPicker = false): void {
-    disposeLoadedImage(image);
-    image = null;
-    revokeUrls();
-    input.value = '';
-    preview.removeAttribute('src');
-    workspace.hidden = true;
-    result.hidden = true;
-    drop.hidden = false;
-    root.dataset.state = 'empty';
-    setStatus('');
-    if (openPicker) input.click();
+  function saveState(): void {
+    const snapshot = getWorkspaceSnapshot();
+    if (!image || !snapshot.image) return;
+    setWorkspaceToolState<ResizeState>('resize', {
+      imageVersion: snapshot.version,
+      width: integerValue(widthInput),
+      height: integerValue(heightInput),
+      lock: lockInput.checked,
+      noEnlarge: noEnlargeInput.checked,
+    });
+  }
+
+  function hydrateFromWorkspace(): boolean {
+    const snapshot = getWorkspaceSnapshot();
+    if (!snapshot.image) return false;
+    image = snapshot.image;
+    drop.hidden = true;
+    workspace.hidden = false;
+    preview.src = snapshot.sourceUrl;
+    fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
+
+    const saved = getWorkspaceToolState<ResizeState>('resize');
+    if (saved && saved.imageVersion === snapshot.version) {
+      widthInput.value = String(saved.width);
+      heightInput.value = String(saved.height);
+      lockInput.checked = saved.lock;
+      noEnlargeInput.checked = saved.noEnlarge;
+    } else {
+      widthInput.value = String(image.width);
+      heightInput.value = String(image.height);
+      lockInput.checked = true;
+      noEnlargeInput.checked = false;
+      saveState();
+    }
+
+    root.dataset.state = 'ready';
+    button.disabled = false;
+    setStatus(snapshot.source === 'extension' ? 'Image received from the extension. Set the exact output dimensions.' : 'Set the exact output dimensions.', 'success');
+    return true;
   }
 
   function syncFromWidth(): void {
@@ -85,6 +119,7 @@ export function initResizeImageTool(): void {
     syncing = true;
     heightInput.value = String(Math.max(1, Math.round(integerValue(widthInput) * image.height / image.width)));
     syncing = false;
+    saveState();
   }
 
   function syncFromHeight(): void {
@@ -92,32 +127,21 @@ export function initResizeImageTool(): void {
     syncing = true;
     widthInput.value = String(Math.max(1, Math.round(integerValue(heightInput) * image.width / image.height)));
     syncing = false;
+    saveState();
   }
 
   async function chooseFile(file: File): Promise<void> {
     clearResult();
-    disposeLoadedImage(image);
-    image = null;
-    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    sourceUrl = '';
     root.dataset.state = 'loading';
     drop.hidden = true;
     workspace.hidden = false;
     button.disabled = true;
     setStatus('Reading image…');
-
     track('upload_start', { tool: 'resize_image', input_format: file.type || 'unknown' });
 
     try {
-      image = await loadLocalImage(file);
-      sourceUrl = URL.createObjectURL(file);
-      preview.src = sourceUrl;
-      widthInput.value = String(image.width);
-      heightInput.value = String(image.height);
-      fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(file.size)}`;
-      root.dataset.state = 'ready';
-      button.disabled = false;
-      setStatus('Set the exact output dimensions.', 'success');
+      image = await setWorkspaceFile(file, 'local');
+      hydrateFromWorkspace();
     } catch (error) {
       root.dataset.state = 'error';
       setStatus(error instanceof Error ? error.message : 'This image could not be opened.', 'error');
@@ -153,6 +177,7 @@ export function initResizeImageTool(): void {
       result.hidden = false;
       root.dataset.state = 'success';
       setStatus('Image resized to the requested pixel dimensions.', 'success');
+      saveState();
       track('convert_success', { tool: 'resize_image', output_width: width, output_height: height, output_format: image.mime });
     } catch (error) {
       root.dataset.state = 'error';
@@ -185,19 +210,25 @@ export function initResizeImageTool(): void {
     if (file) void chooseFile(file);
   });
 
-  widthInput.addEventListener('input', syncFromWidth);
-  heightInput.addEventListener('input', syncFromHeight);
+  widthInput.addEventListener('input', () => {
+    syncFromWidth();
+    if (!lockInput.checked) saveState();
+  });
+  heightInput.addEventListener('input', () => {
+    syncFromHeight();
+    if (!lockInput.checked) saveState();
+  });
   lockInput.addEventListener('change', () => {
     if (lockInput.checked) syncFromWidth();
+    saveState();
   });
+  noEnlargeInput.addEventListener('change', saveState);
   button.addEventListener('click', () => void resize());
-  another.addEventListener('click', () => reset(true));
+  another.addEventListener('click', () => input.click());
   download.addEventListener('click', () => {
     if (image) track('download_click', { tool: 'resize_image', output_format: image.mime });
   });
 
-  window.addEventListener('pagehide', () => {
-    disposeLoadedImage(image);
-    revokeUrls();
-  }, { once: true });
+  document.addEventListener('astro:before-swap', clearResult, { once: true });
+  hydrateFromWorkspace();
 }
