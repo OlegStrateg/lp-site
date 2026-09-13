@@ -1,0 +1,30 @@
+---
+interface Props {
+  active: 'resize' | 'crop';
+}
+
+const { active } = Astro.props;
+const tools = [
+  { id: 'crop', label: 'Crop', href: '/tools/crop-image/' },
+  { id: 'resize', label: 'Resize', href: '/tools/resize-image/' },
+] as const;
+---
+
+<nav class="image-workspace-nav" aria-label="Image editing tools">
+  <div class="image-workspace-nav-inner">
+    <span class="image-workspace-nav-label">Edit image</span>
+    <div class="image-workspace-tabs" role="list">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class:list={['image-workspace-tab', { 'is-active': active === tool.id }]}
+          aria-current={active === tool.id ? 'page' : undefined}
+          data-astro-prefetch
+        >
+          {tool.label}
+        </a>
+      ))}
+    </div>
+    <span class="image-workspace-state" aria-label="Current image stays loaded while switching tools">One image · switch tools</span>
+  </div>
+</nav>

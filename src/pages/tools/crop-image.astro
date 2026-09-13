@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ImageWorkspaceNav from '../../components/ImageWorkspaceNav.astro';
+import '../../styles/image-tools.css';
+
+const title = 'Crop Image Online — Exact Pixels & Aspect Ratio | LayerPorter';
+const description = 'Crop JPG, PNG and WebP images by exact width, height, X and Y pixels, or choose a common aspect ratio. Process images in your browser.';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/tools/crop-image/"
+  clientRouter={true}
+  headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
+  footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
+>
+  <section class="image-tool-hero" aria-labelledby="crop-title">
+    <div class="image-tool-copy">
+      <p class="image-tool-kicker">Exact crop</p>
+      <h1 id="crop-title">Crop image to exact pixels</h1>
+      <p class="image-tool-lede">Draw the crop area visually, then fine-tune Width, Height, X and Y in pixels. Use a common aspect ratio when the destination requires one.</p>
+      <div class="image-tool-badges" aria-label="Supported files and crop modes"><span>JPG, PNG, WebP</span><span>Width · Height · X · Y</span><span>1:1 · 4:5 · 16:9 · 3:2</span></div>
+    </div>
+
+    <div class="image-workspace-frame" transition:name="image-workspace-frame">
+      <ImageWorkspaceNav active="crop" />
+
+      <div class="image-tool-shell" id="crop-image-tool" data-state="empty">
+        <input id="crop-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+        <label class="image-tool-drop" id="crop-drop" for="crop-file" tabindex="0"><span class="image-tool-drop-icon" aria-hidden="true">＋</span><strong>Choose an image</strong><small>or drop JPG, PNG or WebP here</small></label>
+
+        <div class="image-tool-workspace" id="crop-workspace" hidden>
+          <div class="image-tool-preview-panel"><div class="image-tool-preview-wrap"><canvas id="crop-preview" aria-label="Crop preview. Drag on the image to create a crop area, or use the exact pixel fields."></canvas></div><p class="image-tool-file-meta" id="crop-file-meta"></p></div>
+          <div class="image-tool-controls">
+            <div class="image-tool-control-heading"><span class="image-tool-mode-label">Crop</span><h2>Crop area</h2></div>
+            <label class="image-tool-field" style="margin-bottom:12px"><span>Aspect ratio</span><select class="image-tool-select" id="crop-preset"><option value="free">Free</option><option value="1">1:1 Square</option><option value="0.8">4:5 Portrait</option><option value="1.7777777778">16:9 Landscape</option><option value="1.5">3:2 Landscape</option></select></label>
+            <div class="image-tool-grid">
+              <label class="image-tool-field"><span>Width (px)</span><input class="image-tool-input" id="crop-width" type="number" min="1" inputmode="numeric" /></label>
+              <label class="image-tool-field"><span>Height (px)</span><input class="image-tool-input" id="crop-height" type="number" min="1" inputmode="numeric" /></label>
+              <label class="image-tool-field"><span>X (px)</span><input class="image-tool-input" id="crop-x" type="number" min="0" inputmode="numeric" /></label>
+              <label class="image-tool-field"><span>Y (px)</span><input class="image-tool-input" id="crop-y" type="number" min="0" inputmode="numeric" /></label>
+            </div>
+            <div class="image-tool-status" id="crop-status" role="status" aria-live="polite"></div>
+            <button class="image-tool-primary" id="crop-action" type="button" disabled>Crop image</button>
+          </div>
+        </div>
+
+        <div class="image-tool-result" id="crop-result" hidden>
+          <div class="image-tool-result-head"><div><strong>Cropped image is ready</strong><span id="crop-result-meta"></span></div></div>
+          <div class="image-tool-result-preview"><img id="crop-result-image" alt="Cropped image preview" /></div>
+          <div class="image-tool-result-actions"><a class="image-tool-primary" id="crop-download" href="#" download>Download cropped image</a><button class="image-tool-secondary" id="crop-another" type="button">Choose another image</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="image-tool-info" aria-labelledby="crop-how-title">
+    <div><p class="image-tool-section-label">How it works</p><h2 id="crop-how-title">Cut exactly the area you need.</h2></div>
+    <ol class="image-tool-steps">
+      <li><span>01</span><div><strong>Select an image</strong><p>Open a local JPG, PNG or WebP file and see it immediately in the crop workspace.</p></div></li>
+      <li><span>02</span><div><strong>Choose the crop</strong><p>Drag a new rectangle, move the selected area, choose a ratio preset, or enter exact Width, Height, X and Y pixels.</p></div></li>
+      <li><span>03</span><div><strong>Crop and download</strong><p>Only the selected rectangle is exported. The output dimensions equal the crop Width × Height exactly.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="image-tool-faq" aria-labelledby="crop-faq-title">
+    <p class="image-tool-section-label">FAQ</p><h2 id="crop-faq-title">Crop image questions</h2>
+    <details><summary>What do X and Y mean?</summary><p>X is the horizontal distance from the left edge of the original image. Y is the vertical distance from the top edge. Both values are measured in pixels.</p></details>
+    <details><summary>Does Crop Image resize the selected area?</summary><p>No. The crop keeps the selected pixels at their original resolution. A 1080 × 1350 crop produces a 1080 × 1350 image.</p></details>
+    <details><summary>Can I crop to a social media aspect ratio?</summary><p>Yes. The first version includes 1:1, 4:5, 16:9 and 3:2 presets. You can still enter exact pixel dimensions after choosing the area.</p></details>
+    <details><summary>Which formats are supported?</summary><p>This first version supports JPG, PNG and WebP and exports in the same format.</p></details>
+  </section>
+
+  <script>
+    import { installImageWorkspaceBootstrap } from '../../scripts/imageWorkspaceBootstrap';
+    installImageWorkspaceBootstrap();
+  </script>
+</BaseLayout>
