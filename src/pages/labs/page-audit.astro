@@ -1,0 +1,322 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Page Audit Pilot — LayerPorter"
+  description="Evidence-first single-page audit pilot for SEO, AI-search readiness, CRO and images/performance."
+  canonicalPath="/labs/page-audit/"
+  robots="noindex, nofollow, noarchive"
+>
+  <section class="audit-hero" aria-labelledby="audit-title">
+    <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> Single-page pilot</p>
+    <h1 id="audit-title">Check a page. See what is proven before changing it.</h1>
+    <p class="answer-first">
+      LayerPorter checks one public page across SEO, AI-search readiness, CRO, and images/performance. Findings include evidence, priority, a proposed action, a verification method, and explicit limitations.
+    </p>
+    <p class="audit-boundary">Static URL audit is available in this pilot. Browser behavior, field analytics, AI citations, and repository writes are reported separately and are never inferred.</p>
+  </section>
+
+  <section class="audit-shell" aria-labelledby="audit-input-title">
+    <div class="audit-tabs" role="tablist" aria-label="Audit input">
+      <button type="button" class="audit-tab is-active" role="tab" aria-selected="true" id="url-tab">Public URL</button>
+      <button type="button" class="audit-tab" role="tab" aria-selected="false" disabled title="GitHub authorization is not configured for this pilot">Repository <span>not configured</span></button>
+    </div>
+
+    <h2 id="audit-input-title">Audit one public page</h2>
+    <form id="page-audit-form" class="audit-form">
+      <label for="page-audit-url">Page URL</label>
+      <div class="audit-input-row">
+        <input id="page-audit-url" name="url" type="url" inputmode="url" autocomplete="url" required maxlength="2048" placeholder="https://example.com/page/" value="https://layerporter.com/convert/webp-to-jpg/" />
+        <button class="btn" type="submit" id="page-audit-submit">Run audit</button>
+      </div>
+      <p class="form-note">One public HTTP(S) page per run. No login, form submission, production write, or full-site crawl.</p>
+    </form>
+
+    <div id="audit-progress" class="audit-progress" hidden aria-live="polite">
+      <span class="audit-spinner" aria-hidden="true"></span>
+      <div>
+        <strong id="audit-progress-title">Fetching bounded static HTML…</strong>
+        <p id="audit-progress-note">Browser-rendered checks remain separate.</p>
+      </div>
+    </div>
+
+    <div id="audit-error" class="audit-error" hidden role="alert"></div>
+  </section>
+
+  <section id="audit-results" class="audit-results" hidden aria-labelledby="audit-results-title">
+    <div class="results-head">
+      <div>
+        <p class="eyebrow">Audit result</p>
+        <h2 id="audit-results-title">Evidence-backed findings</h2>
+        <p id="audit-page-summary"></p>
+      </div>
+      <div class="result-actions">
+        <button type="button" class="btn secondary" id="download-report">Download report JSON</button>
+        <button type="button" class="btn secondary" id="download-plan">Download selected plan</button>
+      </div>
+    </div>
+
+    <div class="coverage-panel" aria-labelledby="coverage-title">
+      <h3 id="coverage-title">What was actually checked</h3>
+      <div id="coverage-grid" class="coverage-grid"></div>
+    </div>
+
+    <div class="direction-grid" id="direction-grid" aria-label="Finding counts by direction"></div>
+
+    <section aria-labelledby="top-findings-title">
+      <h3 id="top-findings-title">Top issues</h3>
+      <p class="section-note">Up to five real issues are shown. A healthy page is not padded with invented problems.</p>
+      <div id="top-findings" class="findings-list"></div>
+    </section>
+
+    <section aria-labelledby="all-findings-title">
+      <h3 id="all-findings-title">All findings and proposed actions</h3>
+      <p class="section-note">Select only the changes you want prepared. Selection does not modify the page.</p>
+      <div id="all-findings" class="findings-list"></div>
+    </section>
+
+    <section class="limits-card" aria-labelledby="limits-title">
+      <h3 id="limits-title">Current pilot boundary</h3>
+      <ul>
+        <li>Static HTTP facts can be checked now.</li>
+        <li>JavaScript states, console/network behavior, mobile interaction and the real output file require the browser verification stage.</li>
+        <li>AI-search readiness is not proof that an AI system mentions or cites the page.</li>
+        <li>No repository or website change is applied from this screen yet.</li>
+      </ul>
+    </section>
+  </section>
+
+  <style>
+    .audit-hero { padding: 2.25rem 0 1rem; max-width: 860px; }
+    .audit-boundary, .form-note, .section-note { color: var(--color-text-muted); max-width: 72ch; }
+    .audit-shell, .audit-results { margin-top: 1.5rem; border: 1px solid var(--color-border); border-radius: 18px; background: color-mix(in srgb, var(--color-bg) 94%, transparent); padding: clamp(1rem, 3vw, 2rem); }
+    .audit-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .audit-tab { border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-bg); color: var(--color-text); min-height: 40px; padding: 0 .9rem; font-weight: 650; }
+    .audit-tab.is-active { border-color: var(--color-primary); color: var(--color-primary); }
+    .audit-tab:disabled { opacity: .55; cursor: not-allowed; }
+    .audit-tab span { font-size: .72em; font-weight: 500; }
+    .audit-form label { display: block; font-weight: 700; margin-bottom: .45rem; }
+    .audit-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .65rem; }
+    .audit-input-row input { min-height: 48px; width: 100%; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg); color: var(--color-text); padding: 0 .85rem; font: inherit; }
+    .audit-progress { margin-top: 1rem; display: flex; gap: .75rem; align-items: center; padding: 1rem; border-radius: 12px; background: var(--color-bg-subtle); }
+    .audit-progress[hidden] { display: none; }
+    .audit-progress p { margin: .15rem 0 0; color: var(--color-text-muted); font-size: .9rem; }
+    .audit-spinner { width: 22px; height: 22px; border: 3px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: audit-spin .8s linear infinite; flex: 0 0 auto; }
+    @keyframes audit-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .audit-spinner { animation: none; border-top-color: var(--color-border); } }
+    .audit-error { margin-top: 1rem; padding: .9rem 1rem; background: var(--color-error-bg); color: var(--color-error); border-radius: 10px; font-weight: 650; }
+    .results-head { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+    .results-head h2 { margin-top: .2rem; }
+    .result-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+    .coverage-panel { margin: 1.25rem 0; }
+    .coverage-panel h3, .audit-results section > h3 { margin: 1rem 0 .5rem; }
+    .coverage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .55rem; }
+    .coverage-item { border: 1px solid var(--color-border); border-radius: 10px; padding: .7rem; background: var(--color-bg); }
+    .coverage-item strong { display: block; font-size: .86rem; word-break: break-word; }
+    .coverage-state { display: inline-block; margin-top: .35rem; font-size: .75rem; border-radius: 999px; padding: .16rem .48rem; background: var(--color-bg-subtle); color: var(--color-text-muted); }
+    .coverage-state.checked { background: var(--color-success-bg); color: var(--color-success); }
+    .direction-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; margin: 1rem 0 1.5rem; }
+    .direction-card { border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-bg); padding: .85rem; }
+    .direction-card strong { display: block; font-size: 1.5rem; line-height: 1; margin-top: .25rem; }
+    .findings-list { display: grid; gap: .7rem; }
+    .finding-card { border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-bg); padding: .9rem 1rem; }
+    .finding-head { display: flex; gap: .75rem; align-items: flex-start; justify-content: space-between; }
+    .finding-title { margin: 0; font-size: 1rem; }
+    .finding-meta { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .4rem; }
+    .tag { font-size: .72rem; border: 1px solid var(--color-border); border-radius: 999px; padding: .15rem .45rem; color: var(--color-text-muted); }
+    .tag.high, .tag.critical { border-color: color-mix(in srgb, var(--color-error) 40%, var(--color-border)); color: var(--color-error); }
+    .finding-card p { margin: .65rem 0; }
+    .finding-card details { margin-top: .65rem; }
+    .finding-card summary { cursor: pointer; font-weight: 650; }
+    .evidence-list { margin: .55rem 0; padding-left: 1.2rem; color: var(--color-text-muted); overflow-wrap: anywhere; }
+    .select-finding { display: inline-flex; gap: .45rem; align-items: center; font-size: .85rem; font-weight: 650; white-space: nowrap; }
+    .empty-state { border: 1px dashed var(--color-border); border-radius: 12px; padding: 1rem; color: var(--color-text-muted); }
+    .limits-card { margin-top: 1.5rem; background: var(--color-bg-subtle); border-radius: 12px; padding: 1rem; }
+    .limits-card ul { margin-bottom: 0; }
+    @media (max-width: 760px) {
+      .audit-input-row { grid-template-columns: 1fr; }
+      .audit-input-row .btn { width: 100%; }
+      .results-head { display: block; }
+      .result-actions { justify-content: flex-start; }
+      .direction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+
+  <script>
+    const form = document.getElementById('page-audit-form') as HTMLFormElement;
+    const urlInput = document.getElementById('page-audit-url') as HTMLInputElement;
+    const submit = document.getElementById('page-audit-submit') as HTMLButtonElement;
+    const progress = document.getElementById('audit-progress') as HTMLElement;
+    const progressTitle = document.getElementById('audit-progress-title') as HTMLElement;
+    const progressNote = document.getElementById('audit-progress-note') as HTMLElement;
+    const errorBox = document.getElementById('audit-error') as HTMLElement;
+    const results = document.getElementById('audit-results') as HTMLElement;
+    const pageSummary = document.getElementById('audit-page-summary') as HTMLElement;
+    const coverageGrid = document.getElementById('coverage-grid') as HTMLElement;
+    const directionGrid = document.getElementById('direction-grid') as HTMLElement;
+    const topList = document.getElementById('top-findings') as HTMLElement;
+    const allList = document.getElementById('all-findings') as HTMLElement;
+    const downloadReport = document.getElementById('download-report') as HTMLButtonElement;
+    const downloadPlan = document.getElementById('download-plan') as HTMLButtonElement;
+
+    let currentReport: any = null;
+
+    const directionLabel: Record<string, string> = {
+      seo: 'SEO',
+      ai_search: 'AI-search readiness',
+      cro: 'CRO',
+      images_performance: 'Images / performance',
+    };
+
+    function clear(el: Element) { while (el.firstChild) el.firstChild.remove(); }
+    function text(tag: string, value: string, className = '') {
+      const el = document.createElement(tag);
+      el.textContent = value;
+      if (className) el.className = className;
+      return el;
+    }
+    function safeValue(value: unknown) {
+      if (typeof value === 'string') return value;
+      try { return JSON.stringify(value); } catch { return String(value); }
+    }
+    function downloadJson(name: string, value: unknown) {
+      const blob = new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' });
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 0);
+    }
+
+    function renderCoverage(report: any) {
+      clear(coverageGrid);
+      for (const [key, item] of Object.entries<any>(report.coverage ?? {})) {
+        const card = document.createElement('div');
+        card.className = 'coverage-item';
+        card.append(text('strong', key.replaceAll('_', ' ')));
+        card.append(text('span', item.state, `coverage-state ${item.state}`));
+        if (item.note) card.append(text('p', item.note, 'section-note'));
+        coverageGrid.append(card);
+      }
+    }
+
+    function renderDirections(report: any) {
+      clear(directionGrid);
+      for (const key of ['seo', 'ai_search', 'cro', 'images_performance']) {
+        const card = document.createElement('div');
+        card.className = 'direction-card';
+        card.append(text('span', directionLabel[key]));
+        card.append(text('strong', String(report.summary?.byDirection?.[key] ?? 0)));
+        directionGrid.append(card);
+      }
+    }
+
+    function findingCard(finding: any, selectable: boolean) {
+      const card = document.createElement('article');
+      card.className = 'finding-card';
+      const head = document.createElement('div');
+      head.className = 'finding-head';
+      const copy = document.createElement('div');
+      copy.append(text('h4', finding.observation, 'finding-title'));
+      const meta = document.createElement('div');
+      meta.className = 'finding-meta';
+      meta.append(text('span', directionLabel[finding.direction] ?? finding.direction, 'tag'));
+      meta.append(text('span', finding.priority?.level ?? 'review', `tag ${finding.priority?.level ?? ''}`));
+      copy.append(meta);
+      head.append(copy);
+      if (selectable) {
+        const label = document.createElement('label');
+        label.className = 'select-finding';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.findingId = finding.id;
+        label.append(checkbox, document.createTextNode('Select'));
+        head.append(label);
+      }
+      card.append(head);
+      card.append(text('p', finding.priority?.reason ?? ''));
+
+      const details = document.createElement('details');
+      details.append(text('summary', 'Evidence, action and verification'));
+      const evidence = document.createElement('ul');
+      evidence.className = 'evidence-list';
+      for (const item of finding.evidence ?? []) evidence.append(text('li', `${item.type}: ${safeValue(item.value)} (${item.source})`));
+      details.append(evidence);
+      details.append(text('p', `Action: ${finding.action}`));
+      details.append(text('p', `Verify: ${finding.verification}`));
+      if (finding.limitations?.length) details.append(text('p', `Limits: ${finding.limitations.join(' · ')}`, 'section-note'));
+      card.append(details);
+      return card;
+    }
+
+    function renderFindings(report: any) {
+      clear(topList); clear(allList);
+      const top = report.topFindings ?? [];
+      const all = report.findings ?? [];
+      if (top.length === 0) topList.append(text('div', 'No evidence-backed static issues were found. Browser and field checks are still outstanding.', 'empty-state'));
+      else top.forEach((finding: any) => topList.append(findingCard(finding, false)));
+      if (all.length === 0) allList.append(text('div', 'Nothing to select from the static audit. Continue with browser verification instead of inventing changes.', 'empty-state'));
+      else all.forEach((finding: any) => allList.append(findingCard(finding, true)));
+    }
+
+    function renderReport(report: any) {
+      currentReport = report;
+      pageSummary.textContent = `${report.page?.url ?? ''} — ${report.summary?.findingCount ?? 0} static finding(s).`;
+      renderCoverage(report);
+      renderDirections(report);
+      renderFindings(report);
+      results.hidden = false;
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorBox.hidden = true;
+      results.hidden = true;
+      progress.hidden = false;
+      progressTitle.textContent = 'Fetching bounded static HTML…';
+      progressNote.textContent = 'Checking public DNS, redirects, response size and static page facts.';
+      submit.disabled = true;
+      currentReport = null;
+      try {
+        const response = await fetch('/api/page-audit', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ url: urlInput.value.trim() }),
+        });
+        const body = await response.json();
+        if (!response.ok || body.status !== 'ok') throw new Error(body.error || `HTTP_${response.status}`);
+        progressTitle.textContent = 'Audit complete.';
+        progressNote.textContent = 'Static findings are ready; unchecked browser/field layers remain visible in coverage.';
+        renderReport(body.report);
+      } catch (error) {
+        errorBox.textContent = `Audit could not complete: ${error instanceof Error ? error.message : String(error)}`;
+        errorBox.hidden = false;
+      } finally {
+        progress.hidden = true;
+        submit.disabled = false;
+      }
+    });
+
+    downloadReport.addEventListener('click', () => {
+      if (currentReport) downloadJson('layerporter-page-audit-report.json', currentReport);
+    });
+    downloadPlan.addEventListener('click', () => {
+      if (!currentReport) return;
+      const selectedIds = [...document.querySelectorAll<HTMLInputElement>('[data-finding-id]:checked')].map((el) => el.dataset.findingId);
+      const selected = currentReport.findings.filter((finding: any) => selectedIds.includes(finding.id));
+      downloadJson('layerporter-selected-fix-plan.json', {
+        schemaVersion: currentReport.schemaVersion,
+        sourcePage: currentReport.page,
+        selectedFindingIds: selectedIds,
+        selectedFindings: selected,
+        status: 'PROPOSED_ONLY',
+        note: 'This file is a selection plan. It does not prove that changes were applied or verified.',
+      });
+    });
+  </script>
+</BaseLayout>
