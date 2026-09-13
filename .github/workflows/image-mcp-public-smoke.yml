@@ -1,0 +1,156 @@
+name: LP-098 Public npm + Inspector
+
+on:
+  push:
+    branches:
+      - verify/LP-098-public-npm-inspector
+    paths:
+      - 'packages/image-optimizer-mcp/scripts/verify-public-npm.mjs'
+      - '.github/workflows/image-mcp-public-smoke.yml'
+  pull_request:
+    paths:
+      - 'packages/image-optimizer-mcp/scripts/verify-public-npm.mjs'
+      - '.github/workflows/image-mcp-public-smoke.yml'
+
+jobs:
+  verify-public-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LP_INSPECTOR_SPEC: '@modelcontextprotocol/inspector@2.6.0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          # Inspector 2.6.0 requires Node >=22.19. Keep the gate pinned and reproducible.
+          node-version: '22.19.0'
+          cache: 'npm'
+
+      - name: Verify exact public npm package against authorized release source
+        working-directory: packages/image-optimizer-mcp
+        env:
+          LP_PUBLIC_PACKAGE_SPEC: '@layerporter/image-optimizer-mcp@0.1.0'
+          LP_RELEASE_SOURCE_SHA: '8ca11132b8cec267d1b88ff85232d58483353c63'
+          LP_PUBLIC_PROOF_DIR: ${{ runner.temp }}/lp098-public-proof
+        run: node scripts/verify-public-npm.mjs | tee "$RUNNER_TEMP/lp098-public-smoke.stdout.json"
+
+      - name: Clean install public package and capture dependency security evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          INSPECTOR_DIR="$RUNNER_TEMP/lp098-inspector"
+          mkdir -p "$INSPECTOR_DIR"
+          cd "$INSPECTOR_DIR"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @layerporter/image-optimizer-mcp@0.1.0
+          npm ls --all --json > "$RUNNER_TEMP/lp098-dependency-tree.json"
+
+          set +e
+          npm audit --omit=dev --audit-level=high --json > "$RUNNER_TEMP/lp098-npm-audit.json"
+          AUDIT_STATUS=$?
+          set -e
+          if [ "$AUDIT_STATUS" -ne 0 ]; then
+            cat "$RUNNER_TEMP/lp098-npm-audit.json"
+            exit "$AUDIT_STATUS"
+          fi
+
+          printf '%s\n' "$INSPECTOR_DIR" > "$RUNNER_TEMP/lp098-inspector-dir.txt"
+
+      - name: Official MCP Inspector initialize and tools/list
+        shell: bash
+        run: |
+          set -euo pipefail
+          INSPECTOR_DIR="$(cat "$RUNNER_TEMP/lp098-inspector-dir.txt")"
+          cd "$INSPECTOR_DIR"
+          SERVER="$INSPECTOR_DIR/node_modules/@layerporter/image-optimizer-mcp/src/server.js"
+          test -f "$SERVER"
+
+          npx -y "$LP_INSPECTOR_SPEC" --cli node "$SERVER" --method initialize --format json \
+            | tee "$RUNNER_TEMP/lp098-inspector-initialize.json"
+
+          npx -y "$LP_INSPECTOR_SPEC" --cli node "$SERVER" --method tools/list --format json \
+            | tee "$RUNNER_TEMP/lp098-inspector-tools.json"
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const raw = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/lp098-inspector-tools.json', 'utf8'));
+          const result = raw.result ?? raw;
+          const names = (result.tools ?? []).map((tool) => tool.name).sort();
+          const expected = [
+            'analyze_page_images',
+            'analyze_url_images',
+            'compare_image_versions',
+            'generate_responsive_variants',
+            'optimize_image',
+            'optimize_page_images',
+            'optimize_url_images',
+          ].sort();
+          if (JSON.stringify(names) !== JSON.stringify(expected)) {
+            throw new Error(`Inspector tools/list mismatch: ${JSON.stringify(names)}`);
+          }
+          NODE
+
+      - name: Official MCP Inspector tools/call smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          INSPECTOR_DIR="$(cat "$RUNNER_TEMP/lp098-inspector-dir.txt")"
+          cd "$INSPECTOR_DIR"
+          SERVER="$INSPECTOR_DIR/node_modules/@layerporter/image-optimizer-mcp/src/server.js"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import sharp from 'sharp';
+          const source = await sharp({
+            create: {
+              width: 96,
+              height: 64,
+              channels: 3,
+              background: { r: 74, g: 142, b: 218 },
+            },
+          }).jpeg({ quality: 100 }).toBuffer();
+          fs.writeFileSync('lp098-inspector-args.json', JSON.stringify({
+            imageBase64: source.toString('base64'),
+            target: { width: 48 },
+          }));
+          NODE
+
+          ARGS_JSON="$(cat lp098-inspector-args.json)"
+          npx -y "$LP_INSPECTOR_SPEC" --cli node "$SERVER" \
+            --method tools/call \
+            --tool-name optimize_image \
+            --tool-args-json "$ARGS_JSON" \
+            --format json \
+            | tee "$RUNNER_TEMP/lp098-inspector-tool-call.json"
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const raw = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/lp098-inspector-tool-call.json', 'utf8'));
+          const result = raw.result ?? raw;
+          if (result.isError === true) throw new Error('Inspector optimize_image returned isError=true');
+          const link = (result.content ?? []).find((item) => item.type === 'resource_link');
+          if (!link?.uri) throw new Error('Inspector optimize_image did not return resource_link');
+          const text = (result.content ?? []).find((item) => item.type === 'text')?.text;
+          if (!text) throw new Error('Inspector optimize_image did not return JSON text');
+          const parsed = JSON.parse(text);
+          if (parsed.status !== 'ACCEPT') throw new Error(`Inspector optimize_image status=${parsed.status}`);
+          NODE
+
+      - name: Upload public release verification proof
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lp098-public-npm-inspector-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/lp098-public-proof/
+            ${{ runner.temp }}/lp098-public-smoke.stdout.json
+            ${{ runner.temp }}/lp098-dependency-tree.json
+            ${{ runner.temp }}/lp098-npm-audit.json
+            ${{ runner.temp }}/lp098-inspector-initialize.json
+            ${{ runner.temp }}/lp098-inspector-tools.json
+            ${{ runner.temp }}/lp098-inspector-tool-call.json
+          if-no-files-found: warn
+          retention-days: 30
