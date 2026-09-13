@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ImageWorkspaceNav from '../../components/ImageWorkspaceNav.astro';
 import '../../styles/image-tools.css';
 
 const title = 'Resize Image Online — Exact Pixel Dimensions | LayerPorter';
@@ -10,6 +11,7 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
   title={title}
   description={description}
   canonicalPath="/tools/resize-image/"
+  clientRouter={true}
   headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
   footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
 >
@@ -21,33 +23,35 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
       <div class="image-tool-badges" aria-label="Supported files and processing"><span>JPG, PNG, WebP</span><span>Width × Height in px</span><span>Processed in your browser</span></div>
     </div>
 
-    <div class="image-tool-shell" id="resize-image-tool" data-state="empty">
-      <input id="resize-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
-      <label class="image-tool-drop" id="resize-drop" for="resize-file" tabindex="0"><span class="image-tool-drop-icon" aria-hidden="true">＋</span><strong>Choose an image</strong><small>or drop JPG, PNG or WebP here</small></label>
+    <div class="image-workspace-frame" transition:name="image-workspace-frame">
+      <ImageWorkspaceNav active="resize" />
 
-      <div class="image-tool-workspace" id="resize-workspace" hidden>
-        <div class="image-tool-preview-panel"><div class="image-tool-preview-wrap"><img id="resize-preview" alt="Selected image preview" /></div><p class="image-tool-file-meta" id="resize-file-meta"></p></div>
-        <div class="image-tool-controls">
-          <h2>New dimensions</h2>
-          <div class="image-tool-grid">
-            <label class="image-tool-field"><span>Width (px)</span><input class="image-tool-input" id="resize-width" type="number" min="1" max="16384" inputmode="numeric" /></label>
-            <label class="image-tool-field"><span>Height (px)</span><input class="image-tool-input" id="resize-height" type="number" min="1" max="16384" inputmode="numeric" /></label>
+      <div class="image-tool-shell" id="resize-image-tool" data-state="empty">
+        <input id="resize-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+        <label class="image-tool-drop" id="resize-drop" for="resize-file" tabindex="0"><span class="image-tool-drop-icon" aria-hidden="true">＋</span><strong>Choose an image</strong><small>or drop JPG, PNG or WebP here</small></label>
+
+        <div class="image-tool-workspace" id="resize-workspace" hidden>
+          <div class="image-tool-preview-panel"><div class="image-tool-preview-wrap"><img id="resize-preview" alt="Selected image preview" /></div><p class="image-tool-file-meta" id="resize-file-meta"></p></div>
+          <div class="image-tool-controls">
+            <div class="image-tool-control-heading"><span class="image-tool-mode-label">Resize</span><h2>New dimensions</h2></div>
+            <div class="image-tool-grid">
+              <label class="image-tool-field"><span>Width (px)</span><input class="image-tool-input" id="resize-width" type="number" min="1" max="16384" inputmode="numeric" /></label>
+              <label class="image-tool-field"><span>Height (px)</span><input class="image-tool-input" id="resize-height" type="number" min="1" max="16384" inputmode="numeric" /></label>
+            </div>
+            <div class="image-tool-row"><input id="resize-lock" type="checkbox" checked /><label for="resize-lock"><strong>Keep aspect ratio</strong><br />Change one dimension and the other follows automatically.</label></div>
+            <div class="image-tool-row"><input id="resize-no-enlarge" type="checkbox" /><label for="resize-no-enlarge"><strong>Do not enlarge smaller images</strong><br />Useful when you only want to reduce dimensions.</label></div>
+            <div class="image-tool-status" id="resize-status" role="status" aria-live="polite"></div>
+            <button class="image-tool-primary" id="resize-action" type="button" disabled>Resize image</button>
           </div>
-          <div class="image-tool-row"><input id="resize-lock" type="checkbox" checked /><label for="resize-lock"><strong>Keep aspect ratio</strong><br />Change one dimension and the other follows automatically.</label></div>
-          <div class="image-tool-row"><input id="resize-no-enlarge" type="checkbox" /><label for="resize-no-enlarge"><strong>Do not enlarge smaller images</strong><br />Useful when you only want to reduce dimensions.</label></div>
-          <div class="image-tool-status" id="resize-status" role="status" aria-live="polite"></div>
-          <button class="image-tool-primary" id="resize-action" type="button" disabled>Resize image</button>
+        </div>
+
+        <div class="image-tool-result" id="resize-result" hidden>
+          <div class="image-tool-result-head"><div><strong>Resized image is ready</strong><span id="resize-result-meta"></span></div></div>
+          <div class="image-tool-result-preview"><img id="resize-result-image" alt="Resized image preview" /></div>
+          <div class="image-tool-result-actions"><a class="image-tool-primary" id="resize-download" href="#" download>Download resized image</a><button class="image-tool-secondary" id="resize-another" type="button">Choose another image</button></div>
         </div>
       </div>
-
-      <div class="image-tool-result" id="resize-result" hidden>
-        <div class="image-tool-result-head"><div><strong>Resized image is ready</strong><span id="resize-result-meta"></span></div></div>
-        <div class="image-tool-result-preview"><img id="resize-result-image" alt="Resized image preview" /></div>
-        <div class="image-tool-result-actions"><a class="image-tool-primary" id="resize-download" href="#" download>Download resized image</a><button class="image-tool-secondary" id="resize-another" type="button">Choose another image</button></div>
-      </div>
     </div>
-
-    <p class="image-tool-crosslink">Need to cut part of the image instead? <a href="/tools/crop-image/">Open Crop Image →</a></p>
   </section>
 
   <section class="image-tool-info" aria-labelledby="resize-how-title">
@@ -68,7 +72,7 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
   </section>
 
   <script>
-    import { initResizeImageTool } from '../../scripts/resizeImageTool';
-    initResizeImageTool();
+    import { installImageWorkspaceBootstrap } from '../../scripts/imageWorkspaceBootstrap';
+    installImageWorkspaceBootstrap();
   </script>
 </BaseLayout>
