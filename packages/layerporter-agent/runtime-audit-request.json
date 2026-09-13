@@ -1,0 +1,9 @@
+{
+  "id": "LP-097",
+  "enabled": false,
+  "requestedBy": "owner",
+  "minimumHeartbeatAt": "2026-09-13T11:46:00Z",
+  "expectedWriteMode": "live",
+  "maxWritesPerRun": 1,
+  "maxHeartbeatAgeMinutes": 90
+}
