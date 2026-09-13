@@ -14,7 +14,12 @@ if(c.id!=='LP-097'||c.authorizedBy!=='owner'||c.enabled!==true) throw new Error(
 if(c.maxWritesPerRun!==1||c.maxDailyWrites>2||c.enableThreadCreation!==false) throw new Error('pilot bounds invalid');
 NODE
 if [ "${WORKERS_CI_BRANCH:-}" = 'diag/LP-097-live-heartbeat-1600' ]; then
-  npx --yes wrangler@4.131.1 kv namespace list >/tmp/lp-kv-list.json
-  node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync("/tmp/lp-kv-list.json","utf8"));if(!r.find(v=>v.title==="layerporter-agent-state")) process.exit(2);console.log("LP097 REMOTE KV AUTH PASS")'
+  W=(npx --yes wrangler@4.131.1)
+  ${W[@]} kv namespace list >/tmp/lp-kv-list.json
+  KV_ID="$(node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync("/tmp/lp-kv-list.json","utf8"));const x=r.find(v=>v.title==="layerporter-agent-state");if(!x?.id)process.exit(2);process.stdout.write(x.id)')"
+  ${W[@]} kv key get 'layerporter-agent:heartbeat:v1' --namespace-id "$KV_ID" --remote --text >/tmp/lp-heartbeat.json
+  node - <<'NODE'
+const fs=require('fs');const raw=fs.readFileSync('/tmp/lp-heartbeat.json','utf8').trim();if(!raw) throw new Error('heartbeat empty');const hb=JSON.parse(raw);if(!hb||typeof hb!=='object'||Array.isArray(hb)) throw new Error('heartbeat not object');if(!hb.startedAt) throw new Error('heartbeat missing startedAt');console.log('LP097 REMOTE HEARTBEAT READ PASS');
+NODE
 fi
 echo "CLOUDFLARE CI PASS"
