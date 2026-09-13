@@ -8,6 +8,8 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const server = JSON.parse(fs.readFileSync(path.join(root, 'server.json'), 'utf8'));
 const publishable = process.argv.includes('--publishable');
 const licensePath = path.join(root, 'LICENSE');
+const securityPath = path.join(root, 'SECURITY.md');
+const privacyPath = path.join(root, 'PRIVACY.md');
 
 const errors = [];
 const expect = (condition, message) => {
@@ -31,6 +33,12 @@ expect(pkg.repository?.directory === 'packages/image-optimizer-mcp', 'repository
 expect(pkg.bin?.['layerporter-image-optimizer-mcp'] === 'src/server.js', 'expected MCP executable is missing');
 expect(pkg.license === 'SEE LICENSE IN LICENSE', 'package must use the explicit proprietary LICENSE file');
 expect(fs.existsSync(licensePath), 'LICENSE file is missing');
+expect(fs.existsSync(securityPath), 'SECURITY.md is missing');
+expect(fs.existsSync(privacyPath), 'PRIVACY.md is missing');
+expect(Array.isArray(pkg.files) && pkg.files.includes('SECURITY.md'), 'package files must include SECURITY.md');
+expect(Array.isArray(pkg.files) && pkg.files.includes('PRIVACY.md'), 'package files must include PRIVACY.md');
+expect(pkg.bugs?.url === 'https://layerporter.com/feedback/?p=mcp&tool=website-image-optimizer', 'bugs.url must use the public LayerPorter feedback route');
+expect(pkg.bugs?.email === 'hello@layerporter.com', 'bugs.email must use the public LayerPorter contact');
 
 let licenseText = '';
 if (fs.existsSync(licensePath)) {
@@ -40,9 +48,25 @@ if (fs.existsSync(licensePath)) {
   expect(licenseText.includes('modify, adapt, translate, alter, or create derivative works'), 'LICENSE must preserve modification restrictions');
 }
 
+let securityText = '';
+if (fs.existsSync(securityPath)) {
+  securityText = fs.readFileSync(securityPath, 'utf8');
+  expect(securityText.includes('Reporting a security issue'), 'SECURITY.md must include a reporting section');
+  expect(securityText.includes('hello@layerporter.com'), 'SECURITY.md must include the public security contact');
+}
+
+let privacyText = '';
+if (fs.existsSync(privacyPath)) {
+  privacyText = fs.readFileSync(privacyPath, 'utf8');
+  expect(privacyText.includes('Local processing model'), 'PRIVACY.md must describe the local processing model');
+  expect(privacyText.includes('MCP client and model provider'), 'PRIVACY.md must describe the client/provider boundary');
+}
+
 if (publishable) {
   expect(pkg.license === 'SEE LICENSE IN LICENSE', 'publication blocked: proprietary license metadata is unresolved');
   expect(licenseText.length > 500, 'publication blocked: proprietary LICENSE file is incomplete');
+  expect(securityText.length > 500, 'publication blocked: SECURITY.md is incomplete');
+  expect(privacyText.length > 500, 'publication blocked: PRIVACY.md is incomplete');
 }
 
 const result = {
@@ -53,6 +77,9 @@ const result = {
   mcpName: pkg.mcpName,
   license: pkg.license ?? null,
   licenseFile: fs.existsSync(licensePath) ? 'LICENSE' : null,
+  securityFile: fs.existsSync(securityPath) ? 'SECURITY.md' : null,
+  privacyFile: fs.existsSync(privacyPath) ? 'PRIVACY.md' : null,
+  support: pkg.bugs ?? null,
   errors,
 };
 
