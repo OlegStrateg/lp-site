@@ -1,12 +1,16 @@
 import { track } from '../lib/analytics';
 import {
-  disposeLoadedImage,
   downloadName,
   formatImageBytes,
-  loadLocalImage,
   renderImage,
   type LoadedImage,
 } from './imageToolCore';
+import {
+  getWorkspaceSnapshot,
+  getWorkspaceToolState,
+  setWorkspaceFile,
+  setWorkspaceToolState,
+} from './imageWorkspaceStore';
 
 type CropRect = { x: number; y: number; width: number; height: number };
 type Handle = 'nw' | 'ne' | 'sw' | 'se';
@@ -16,6 +20,11 @@ type DragState = {
   startX: number;
   startY: number;
   origin: CropRect;
+};
+type CropState = {
+  imageVersion: number;
+  selection: CropRect;
+  preset: string;
 };
 
 function byId<T extends HTMLElement>(id: string): T {
@@ -33,7 +42,10 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export function initCropImageTool(): void {
-  const root = byId<HTMLElement>('crop-image-tool');
+  const root = document.getElementById('crop-image-tool') as HTMLElement | null;
+  if (!root || root.dataset.bound === '1') return;
+  root.dataset.bound = '1';
+
   const input = byId<HTMLInputElement>('crop-file');
   const drop = byId<HTMLLabelElement>('crop-drop');
   const workspace = byId<HTMLElement>('crop-workspace');
@@ -87,6 +99,16 @@ export function initCropImageTool(): void {
     yInput.value = String(selection.y);
     widthInput.value = String(selection.width);
     heightInput.value = String(selection.height);
+  }
+
+  function saveState(): void {
+    const snapshot = getWorkspaceSnapshot();
+    if (!image || !snapshot.image) return;
+    setWorkspaceToolState<CropState>('crop', {
+      imageVersion: snapshot.version,
+      selection: { ...selection },
+      preset: preset.value,
+    });
   }
 
   function previewScale(): number {
@@ -147,6 +169,7 @@ export function initCropImageTool(): void {
     selection = normalizedRect(next);
     syncInputs();
     draw();
+    saveState();
   }
 
   function pointFromEvent(event: PointerEvent): { x: number; y: number } {
@@ -241,7 +264,10 @@ export function initCropImageTool(): void {
   function applyPreset(): void {
     if (!image) return;
     const ratio = ratioValue();
-    if (!ratio) return;
+    if (!ratio) {
+      saveState();
+      return;
+    }
     let width = image.width;
     let height = image.height;
     if (width / height > ratio) width = Math.round(height * ratio);
@@ -254,23 +280,46 @@ export function initCropImageTool(): void {
     });
   }
 
-  function reset(openPicker = false): void {
-    disposeLoadedImage(image);
-    image = null;
-    clearResult();
-    input.value = '';
-    workspace.hidden = true;
-    drop.hidden = false;
-    root.dataset.state = 'empty';
-    preset.value = 'free';
-    setStatus('');
-    if (openPicker) input.click();
+  function defaultSelection(): CropRect {
+    if (!image) return { x: 0, y: 0, width: 1, height: 1 };
+    const insetX = Math.round(image.width * 0.05);
+    const insetY = Math.round(image.height * 0.05);
+    return normalizedRect({
+      x: insetX,
+      y: insetY,
+      width: Math.max(1, image.width - insetX * 2),
+      height: Math.max(1, image.height - insetY * 2),
+    });
+  }
+
+  function hydrateFromWorkspace(): boolean {
+    const snapshot = getWorkspaceSnapshot();
+    if (!snapshot.image) return false;
+    image = snapshot.image;
+    drop.hidden = true;
+    workspace.hidden = false;
+    fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
+
+    const saved = getWorkspaceToolState<CropState>('crop');
+    if (saved && saved.imageVersion === snapshot.version) {
+      selection = normalizedRect(saved.selection);
+      preset.value = saved.preset;
+    } else {
+      preset.value = 'free';
+      selection = defaultSelection();
+      saveState();
+    }
+
+    syncInputs();
+    draw();
+    root.dataset.state = 'ready';
+    button.disabled = false;
+    setStatus(snapshot.source === 'extension' ? 'Image received from the extension. Drag the crop or enter exact pixels.' : 'Drag the corners to resize the crop, drag inside to move it, or draw a new area outside.', 'success');
+    return true;
   }
 
   async function chooseFile(file: File): Promise<void> {
     clearResult();
-    disposeLoadedImage(image);
-    image = null;
     root.dataset.state = 'loading';
     drop.hidden = true;
     workspace.hidden = false;
@@ -279,22 +328,8 @@ export function initCropImageTool(): void {
     track('upload_start', { tool: 'crop_image', input_format: file.type || 'unknown' });
 
     try {
-      image = await loadLocalImage(file);
-      const insetX = Math.round(image.width * 0.05);
-      const insetY = Math.round(image.height * 0.05);
-      selection = normalizedRect({
-        x: insetX,
-        y: insetY,
-        width: Math.max(1, image.width - insetX * 2),
-        height: Math.max(1, image.height - insetY * 2),
-      });
-      preset.value = 'free';
-      fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(file.size)}`;
-      syncInputs();
-      draw();
-      root.dataset.state = 'ready';
-      button.disabled = false;
-      setStatus('Drag the corners to resize the crop, drag inside to move it, or draw a new area outside.', 'success');
+      image = await setWorkspaceFile(file, 'local');
+      hydrateFromWorkspace();
     } catch (error) {
       root.dataset.state = 'error';
       setStatus(error instanceof Error ? error.message : 'This image could not be opened.', 'error');
@@ -328,6 +363,7 @@ export function initCropImageTool(): void {
       result.hidden = false;
       root.dataset.state = 'success';
       setStatus('Crop ready.', 'success');
+      saveState();
       track('convert_success', { tool: 'crop_image', output_width: rect.width, output_height: rect.height, output_format: image.mime });
     } catch (error) {
       root.dataset.state = 'error';
@@ -400,6 +436,7 @@ export function initCropImageTool(): void {
   const endDrag = (event: PointerEvent) => {
     if (!drag) return;
     drag = null;
+    saveState();
     if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
   };
   canvas.addEventListener('pointerup', endDrag);
@@ -420,13 +457,12 @@ export function initCropImageTool(): void {
 
   preset.addEventListener('change', applyPreset);
   button.addEventListener('click', () => void crop());
-  another.addEventListener('click', () => reset(true));
+  another.addEventListener('click', () => input.click());
   download.addEventListener('click', () => {
     if (image) track('download_click', { tool: 'crop_image', output_format: image.mime });
   });
   window.addEventListener('resize', draw);
-  window.addEventListener('pagehide', () => {
-    disposeLoadedImage(image);
-    clearResult();
-  }, { once: true });
+  document.addEventListener('astro:before-swap', clearResult, { once: true });
+
+  hydrateFromWorkspace();
 }
