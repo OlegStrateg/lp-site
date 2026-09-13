@@ -37,6 +37,7 @@ assert(page.includes('/tools/virtual-try-on/app.js'), 'local app module missing'
 assert(page.includes('MediaPipe may send technical performance and usage metrics to Google'), 'runtime privacy disclosure missing');
 assert(page.includes('Preview, not sizing advice.'), 'sizing disclaimer missing');
 
+assert(app.includes("import { affineFromTriangles, buildTorsoGeometry } from './geometry.js';"), 'browser app is not bound to tested geometry module');
 assert(app.includes("@mediapipe/tasks-vision@1.0.1/+esm"), 'MediaPipe package is not pinned to 1.0.1');
 assert(app.includes("@mediapipe/tasks-vision@1.0.1/wasm"), 'MediaPipe WASM path is not pinned');
 assert(app.includes('pose_landmarker_lite/float16/1/pose_landmarker_lite.task'), 'pose model is not pinned');
@@ -48,12 +49,13 @@ assert(app.includes('armOverlay: null'), 'arm overlay cache state missing');
 assert(app.includes('state.armOverlay = { canvas: layer, width, height }'), 'arm overlay cache write missing');
 assert(app.includes('refreshRunState(false)'), 'error-preserving run-state refresh missing');
 assert(app.includes('let succeeded = false;'), 'explicit successful-run guard missing');
-assert(app.includes('function orderByScreenX'), 'mirrored-screen ordering guard missing');
-assert(app.includes('function affineFromTriangles'), 'affine torso warp primitive missing');
+assert(app.includes('buildTorsoGeometry({'), 'tested torso geometry is not used by render path');
 assert(app.includes('function drawGarmentWarp'), 'four-triangle torso warp renderer missing');
-assert(app.includes('drawGarmentWarp(ctx, prepared, quad)'), 'torso warp not used by render path');
+assert(app.includes('drawGarmentWarp(ctx, prepared, geometry.quad)'), 'torso warp not used by render path');
 assert(app.includes('renderResult();'), 'local rerender path missing');
 assert(app.includes("link.download = `layerporter-virtual-try-on-${Date.now()}.png`"), 'PNG download filename missing');
+assert(!app.includes('function orderByScreenX'), 'duplicated screen-order implementation leaked back into app');
+assert(!app.includes('function affineFromTriangles'), 'duplicated affine implementation leaked back into app');
 assert(!app.includes('FormData'), 'user image upload primitive detected');
 assert(!app.includes('XMLHttpRequest'), 'XMLHttpRequest detected');
 assert(!app.includes('navigator.sendBeacon'), 'sendBeacon detected');
@@ -81,4 +83,4 @@ for (const file of [appPath, geometryPath]) {
   assert(syntax.status === 0, `${file} syntax check failed: ${syntax.stderr || syntax.stdout}`);
 }
 
-console.log('Virtual Try-On static/build verification: PASS — pinned MediaPipe 1.0.1, mirrored-pose guard, torso warp, cached pose/arm overlay, no LayerPorter upload API');
+console.log('Virtual Try-On static/build verification: PASS — shared tested geometry, pinned MediaPipe 1.0.1, mirrored-pose guard, torso warp, cached pose/arm overlay, no LayerPorter upload API');
