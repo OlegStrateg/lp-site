@@ -1,0 +1,210 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const title = 'Virtual Try-On — Preview Clothes on Your Photo | LayerPorter';
+const description = 'Preview a top on your own photo directly in the browser. No LayerPorter upload, no account, and no paid inference call for the instant preview.';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/tools/virtual-try-on/"
+  robots="noindex, nofollow, noarchive, nosnippet, noimageindex"
+  headerLabels={{
+    converters: 'Converters',
+    extensions: 'Extensions',
+    learn: 'Learn',
+    mainAria: 'Main',
+    localEngine: 'On-device preview',
+    localTitle: 'Your photos are processed on this device for the instant preview',
+  }}
+  footerLabels={{
+    tagline: 'LayerPorter — focused browser tools for files, images and media.',
+    about: 'About',
+    extensions: 'Extensions',
+    privacy: 'Privacy',
+    terms: 'Terms',
+    footerAria: 'Footer',
+  }}
+>
+  <section class="vto-hero" aria-labelledby="vto-title">
+    <div class="vto-copy">
+      <p class="vto-kicker">Virtual Try-On · Candidate</p>
+      <h1 id="vto-title">See the top on your photo.</h1>
+      <p class="vto-lede">
+        Add a front-facing photo and a clean product image. LayerPorter detects your pose locally and builds an instant visual preview in your browser.
+      </p>
+      <div class="vto-pills" aria-label="Current scope">
+        <span>Instant browser preview</span>
+        <span>Tops first</span>
+        <span>No account</span>
+        <span>Export PNG</span>
+      </div>
+    </div>
+
+    <div class="vto-tool" id="virtual-try-on-tool" data-state="empty">
+      <div class="vto-input-grid">
+        <section class="vto-input-card" id="vto-person-card" aria-labelledby="vto-person-title">
+          <div class="vto-input-heading">
+            <span class="vto-step">01</span>
+            <div>
+              <h2 id="vto-person-title">Your photo</h2>
+              <p>Front-facing, shoulders and hips visible.</p>
+            </div>
+          </div>
+          <input class="vto-file" id="vto-person-input" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" />
+          <label class="vto-drop" id="vto-person-drop" for="vto-person-input">
+            <span class="vto-drop-icon" aria-hidden="true">+</span>
+            <strong>Add your photo</strong>
+            <small>PNG, JPG or WebP · up to 20 MB</small>
+          </label>
+          <div class="vto-preview" id="vto-person-preview" hidden>
+            <img id="vto-person-image" alt="Selected person preview" />
+            <div class="vto-preview-footer">
+              <span id="vto-person-meta">Photo ready</span>
+              <button type="button" class="vto-text-button" id="vto-person-change">Change</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="vto-input-card" id="vto-garment-card" aria-labelledby="vto-garment-title">
+          <div class="vto-input-heading">
+            <span class="vto-step">02</span>
+            <div>
+              <h2 id="vto-garment-title">Product image</h2>
+              <p>A top on a transparent or plain background works best.</p>
+            </div>
+          </div>
+          <input class="vto-file" id="vto-garment-input" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" />
+          <label class="vto-drop" id="vto-garment-drop" for="vto-garment-input">
+            <span class="vto-drop-icon" aria-hidden="true">+</span>
+            <strong>Add a top</strong>
+            <small>Shirt, T-shirt, sweater or jacket · up to 20 MB</small>
+          </label>
+          <div class="vto-preview" id="vto-garment-preview" hidden>
+            <img id="vto-garment-image" alt="Selected garment preview" />
+            <div class="vto-preview-footer">
+              <span id="vto-garment-meta">Product ready</span>
+              <button type="button" class="vto-text-button" id="vto-garment-change">Change</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="vto-run-panel">
+        <div class="vto-runtime-note">
+          <strong>Local image processing</strong>
+          <p>
+            LayerPorter does not upload your selected photos for Instant Preview. When you run it, the pinned Google MediaPipe browser runtime and pose model are loaded; MediaPipe states that input images stay on-device, while technical performance and usage metrics may be sent to Google.
+          </p>
+        </div>
+        <button class="vto-primary" id="vto-run" type="button" disabled>Try it on</button>
+        <p class="vto-status" id="vto-status" role="status" aria-live="polite">Add both images to start.</p>
+      </div>
+
+      <section class="vto-result" id="vto-result" aria-labelledby="vto-result-title" hidden>
+        <div class="vto-result-heading">
+          <div>
+            <span class="vto-step">03</span>
+            <div>
+              <h2 id="vto-result-title">Instant preview</h2>
+              <p id="vto-timing">Pose detected locally.</p>
+            </div>
+          </div>
+          <button type="button" class="vto-text-button" id="vto-reset">Start over</button>
+        </div>
+
+        <div class="vto-result-grid">
+          <div class="vto-canvas-shell">
+            <canvas id="vto-canvas" aria-label="Virtual try-on result"></canvas>
+          </div>
+
+          <aside class="vto-controls" aria-label="Fit controls">
+            <div class="vto-control-copy">
+              <strong>Adjust the preview</strong>
+              <p>These controls only redraw the result. Pose detection is not rerun.</p>
+            </div>
+
+            <label class="vto-slider-row" for="vto-scale">
+              <span>Size <output id="vto-scale-value">100%</output></span>
+              <input id="vto-scale" type="range" min="75" max="135" value="100" step="1" />
+            </label>
+
+            <label class="vto-slider-row" for="vto-x">
+              <span>Horizontal <output id="vto-x-value">0%</output></span>
+              <input id="vto-x" type="range" min="-25" max="25" value="0" step="1" />
+            </label>
+
+            <label class="vto-slider-row" for="vto-y">
+              <span>Vertical <output id="vto-y-value">0%</output></span>
+              <input id="vto-y" type="range" min="-25" max="25" value="0" step="1" />
+            </label>
+
+            <button class="vto-secondary" id="vto-fit-reset" type="button">Reset fit</button>
+            <button class="vto-primary" id="vto-download" type="button">Download PNG</button>
+          </aside>
+        </div>
+
+        <div class="vto-warning">
+          <strong>Preview, not sizing advice.</strong>
+          <p>This candidate estimates placement from body landmarks. It does not predict real garment size, fabric physics or exact fit.</p>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section class="vto-info" aria-labelledby="vto-how-title">
+    <div>
+      <p class="vto-section-label">How it works</p>
+      <h2 id="vto-how-title">One local pass, then instant adjustments.</h2>
+    </div>
+    <ol class="vto-steps">
+      <li><span>01</span><div><strong>Choose two images</strong><p>Your photo plus a clean image of the top you want to preview.</p></div></li>
+      <li><span>02</span><div><strong>Detect the pose</strong><p>The browser locates shoulders, hips and arms on your device.</p></div></li>
+      <li><span>03</span><div><strong>Build the preview</strong><p>The top is aligned to your torso and your arms are composited back in front.</p></div></li>
+      <li><span>04</span><div><strong>Fine-tune without rerunning ML</strong><p>Adjust size and position instantly, then export a PNG.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="vto-info vto-scope" aria-labelledby="vto-scope-title">
+    <div>
+      <p class="vto-section-label">Candidate scope</p>
+      <h2 id="vto-scope-title">Deliberately narrow first.</h2>
+    </div>
+    <div class="vto-table" role="list">
+      <div role="listitem"><strong>Current garments</strong><span>T-shirts, shirts, sweaters, jackets and similar tops</span></div>
+      <div role="listitem"><strong>Best person photo</strong><span>Front-facing, one person, torso and hips visible, arms not tightly crossed</span></div>
+      <div role="listitem"><strong>Best product image</strong><span>Transparent PNG or a product centered on a plain contrasting background</span></div>
+      <div role="listitem"><strong>Processing</strong><span>Pose detection and rendering run in your browser</span></div>
+      <div role="listitem"><strong>Not yet</strong><span>Dresses, trousers, multilayer outfits, exact sizing and photorealistic HD generation</span></div>
+    </div>
+  </section>
+
+  <section class="vto-faq" aria-labelledby="vto-faq-title">
+    <p class="vto-section-label">FAQ</p>
+    <h2 id="vto-faq-title">What this candidate actually does.</h2>
+    <details>
+      <summary>Does LayerPorter upload my photos?</summary>
+      <p>No upload endpoint is used by Instant Preview. The selected images are decoded and rendered in your browser. The MediaPipe runtime/model are loaded from Google/jsDelivr infrastructure and MediaPipe may send technical usage/performance metrics to Google.</p>
+    </details>
+    <details>
+      <summary>Is this a true size recommendation?</summary>
+      <p>No. This version is a visual placement preview. It does not know the garment's physical measurements or simulate fabric accurately.</p>
+    </details>
+    <details>
+      <summary>Why does a product image sometimes keep its background?</summary>
+      <p>The candidate can remove a simple edge-connected background, but complex scenes and white garments on white backgrounds need a transparent product image for a clean result.</p>
+    </details>
+    <details>
+      <summary>Why start with tops?</summary>
+      <p>It gives us a measurable quality target without pretending one geometric model already handles every garment class. Dresses and bottoms require separate placement rules and validation.</p>
+    </details>
+    <p class="vto-notices"><a href="/tools/virtual-try-on/THIRD_PARTY_NOTICES.txt">Third-party notices</a></p>
+  </section>
+
+  <style>
+    .vto-hero{padding:68px 0 86px;max-width:1120px;margin:0 auto}.vto-copy{text-align:center;max-width:860px;margin:0 auto 34px}.vto-kicker,.vto-section-label{margin:0 0 12px;color:#6b5dd3;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.vto-copy h1{margin:0;font-size:clamp(46px,7vw,80px);line-height:.94;letter-spacing:-.058em}.vto-lede{max-width:760px;margin:22px auto 0;color:#62656f;font-size:19px;line-height:1.55}.vto-pills{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:24px}.vto-pills span{padding:8px 11px;border:1px solid #dedfe6;border-radius:999px;background:#fff;color:#555965;font-size:12px;font-weight:750}.vto-tool{padding:18px;border:1px solid #dfe1e8;border-radius:24px;background:#fff;box-shadow:0 24px 70px rgba(30,33,45,.08)}.vto-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.vto-input-card{min-width:0;padding:16px;border:1px solid #e2e3e8;border-radius:18px;background:#fbfbfd}.vto-input-heading{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:start;margin-bottom:14px}.vto-step{display:grid;width:31px;height:31px;place-items:center;border-radius:9px;background:#11131a;color:#fff;font-size:10px;font-weight:850;letter-spacing:.04em}.vto-input-heading h2,.vto-result-heading h2{margin:0;font-size:17px;letter-spacing:-.02em}.vto-input-heading p,.vto-result-heading p{margin:4px 0 0;color:#777b85;font-size:12px;line-height:1.45}.vto-file{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.vto-drop{min-height:260px;border:1.5px dashed #cdd0d9;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#fff;cursor:pointer;transition:border-color .16s,background .16s,transform .16s}.vto-drop:hover,.vto-drop.is-dragging{border-color:#8276e8;background:#f8f7ff;transform:translateY(-1px)}.vto-drop:focus-visible,.vto-primary:focus-visible,.vto-secondary:focus-visible,.vto-text-button:focus-visible,.vto-slider-row input:focus-visible{outline:3px solid rgba(130,118,232,.23);outline-offset:3px}.vto-drop-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:#11131a;color:#fff;font-size:24px}.vto-drop strong{font-size:16px}.vto-drop small{color:#838791;font-size:12px}.vto-preview{overflow:hidden;border-radius:14px;background:#f1f2f6}.vto-preview[hidden]{display:none}.vto-preview img{display:block;width:100%;height:260px;object-fit:contain;background:linear-gradient(45deg,#f5f5f7 25%,transparent 25%),linear-gradient(-45deg,#f5f5f7 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f5f5f7 75%),linear-gradient(-45deg,transparent 75%,#f5f5f7 75%);background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0}.vto-preview-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-top:1px solid #e4e5ea;background:#fff;color:#6c707a;font-size:12px}.vto-text-button{border:0;background:transparent;color:#6557ca;font:inherit;font-size:12px;font-weight:800;cursor:pointer;padding:5px}.vto-run-panel{display:grid;grid-template-columns:1fr 220px;gap:16px;align-items:center;margin-top:14px;padding:17px 18px;border-radius:17px;background:#11131a;color:#fff}.vto-runtime-note strong{display:block;font-size:13px}.vto-runtime-note p{max-width:760px;margin:5px 0 0;color:#b9bdc8;font-size:11px;line-height:1.55}.vto-primary,.vto-secondary{min-height:50px;border:0;border-radius:12px;font:inherit;font-weight:850;cursor:pointer;display:flex;align-items:center;justify-content:center}.vto-primary{background:#8276e8;color:#fff}.vto-primary:disabled{cursor:not-allowed;opacity:.38}.vto-run-panel .vto-primary{background:#fff;color:#11131a}.vto-status{grid-column:1/-1;margin:0;color:#aeb3bf;font-size:12px}.vto-status.is-error{color:#ffb4ad}.vto-status.is-success{color:#9ce6bd}.vto-result{margin-top:14px;padding:18px;border:1px solid #e1e2e8;border-radius:18px;background:#fafafd}.vto-result[hidden]{display:none}.vto-result-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}.vto-result-heading>div:first-child{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:start}.vto-result-grid{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:16px}.vto-canvas-shell{min-height:520px;display:grid;place-items:center;overflow:hidden;border-radius:15px;background:#e9eaf0}.vto-canvas-shell canvas{display:block;max-width:100%;max-height:72vh;width:auto;height:auto;background:#fff}.vto-controls{display:flex;flex-direction:column;gap:17px;padding:18px;border-radius:15px;background:#fff;border:1px solid #e1e2e7}.vto-control-copy strong{font-size:14px}.vto-control-copy p{margin:5px 0 0;color:#747883;font-size:11px;line-height:1.5}.vto-slider-row{display:grid;gap:8px}.vto-slider-row>span{display:flex;justify-content:space-between;gap:10px;color:#555963;font-size:12px;font-weight:750}.vto-slider-row output{color:#7771c9}.vto-slider-row input{width:100%;accent-color:#8276e8}.vto-secondary{background:#f0effb;color:#5048a7}.vto-controls .vto-primary{margin-top:auto}.vto-warning{margin-top:14px;padding:14px 16px;border-radius:13px;background:#fff7e8;border:1px solid #f0dfb8}.vto-warning strong{font-size:12px}.vto-warning p{margin:4px 0 0;color:#6f6553;font-size:11px;line-height:1.5}.vto-info,.vto-faq{max-width:1040px;margin:0 auto;padding:78px 0;border-top:1px solid #e5e6eb}.vto-info{display:grid;grid-template-columns:.75fr 1.25fr;gap:72px}.vto-info h2,.vto-faq h2{margin:0;font-size:clamp(34px,4vw,52px);line-height:1;letter-spacing:-.045em}.vto-steps{list-style:none;padding:0;margin:0}.vto-steps li{display:grid;grid-template-columns:48px 1fr;gap:16px;padding:21px 0;border-top:1px solid #e7e8ed}.vto-steps li:first-child{border-top:0;padding-top:0}.vto-steps li>span{color:#8a8e98;font-size:11px;font-weight:850}.vto-steps strong{font-size:16px}.vto-steps p{margin:6px 0 0;color:#676b75;line-height:1.55;font-size:14px}.vto-table{border-top:1px solid #dadce3}.vto-table>div{display:grid;grid-template-columns:.8fr 1.2fr;gap:20px;padding:17px 0;border-bottom:1px solid #e5e6eb;font-size:14px}.vto-table span{color:#666a74}.vto-faq{max-width:820px}.vto-faq h2{margin-bottom:28px}.vto-faq details{border-top:1px solid #e2e3e9;padding:18px 0}.vto-faq summary{cursor:pointer;font-weight:800}.vto-faq details p{margin:10px 0 0;color:#666a74;line-height:1.6}.vto-notices{margin:24px 0 0;font-size:12px}.vto-notices a{text-decoration:underline;text-underline-offset:3px}@media(max-width:820px){.vto-hero{padding:46px 0 64px}.vto-copy{text-align:left}.vto-pills{justify-content:flex-start}.vto-tool{padding:12px;border-radius:18px}.vto-input-grid{grid-template-columns:1fr}.vto-run-panel{grid-template-columns:1fr}.vto-run-panel .vto-primary{width:100%}.vto-result-grid{grid-template-columns:1fr}.vto-canvas-shell{min-height:360px}.vto-info{grid-template-columns:1fr;gap:34px;padding:62px 0}.vto-table>div{grid-template-columns:1fr;gap:6px}.vto-faq{padding:62px 0}}@media(max-width:520px){.vto-copy h1{font-size:44px}.vto-lede{font-size:17px}.vto-input-card{padding:12px}.vto-drop,.vto-preview img{min-height:220px;height:220px}.vto-result-heading{align-items:flex-start}.vto-result-grid{gap:12px}.vto-canvas-shell{min-height:300px}.vto-controls{padding:14px}}
+  </style>
+
+  <script is:inline type="module" src="/tools/virtual-try-on/app.js"></script>
+</BaseLayout>
