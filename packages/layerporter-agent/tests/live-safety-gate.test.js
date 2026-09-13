@@ -56,6 +56,36 @@ test('live safety blocks unresolved publication uncertainty', () => {
   );
 });
 
+test('one failed live write after activation trips the write circuit breaker', () => {
+  const memory = createEmptyMemory();
+  memory.actions['failed-live-write'] = {
+    id: 'failed-live-write',
+    status: 'failed',
+    createdAt: '2026-09-12T05:01:00Z',
+  };
+  const config = createAgentConfig(LIVE_ENV, new Date('2026-09-12T06:00:00Z'));
+
+  assert.deepEqual(
+    evaluateLiveSafety(memory, config, new Date('2026-09-12T06:00:00Z')),
+    { allowed: false, reason: 'live_circuit_breaker_write_failure', actionId: 'failed-live-write' },
+  );
+});
+
+test('failed writes from before the current activation do not poison a new owner-authorized window', () => {
+  const memory = createEmptyMemory();
+  memory.actions['old-failed-write'] = {
+    id: 'old-failed-write',
+    status: 'failed',
+    createdAt: '2026-09-12T04:59:00Z',
+  };
+  const config = createAgentConfig(LIVE_ENV, new Date('2026-09-12T06:00:00Z'));
+
+  assert.deepEqual(
+    evaluateLiveSafety(memory, config, new Date('2026-09-12T06:00:00Z')),
+    { allowed: true, reason: null },
+  );
+});
+
 test('one live runtime error after activation trips the write circuit breaker', () => {
   const memory = createEmptyMemory();
   memory.runLog.push({
