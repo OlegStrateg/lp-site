@@ -33,11 +33,19 @@ export default {
       cron: event?.cron || null,
       writeMode: config.writeMode,
       requestedWriteMode: config.requestedWriteMode,
+      liveActivatedAt: config.liveActivatedAt,
       liveHardStopAt: config.liveHardStopAt,
       result: null,
       error: null,
     };
     await writeHeartbeat(kv, heartbeat);
+
+    if (config.requestedWriteMode === 'live' && config.writeMode !== 'live') {
+      heartbeat.result = { skipped: 'live_window_inactive' };
+      heartbeat.finishedAt = nowIso();
+      await writeHeartbeat(kv, heartbeat);
+      return;
+    }
 
     const task = (async () => {
       try {

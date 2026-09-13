@@ -55,6 +55,14 @@ function createProvider() {
   };
 }
 
+function createLiveConfig(now = new Date('2026-09-11T20:00:00Z')) {
+  return createAgentConfig({
+    LAYERPORTER_AGENT_WRITE_MODE: 'live',
+    LAYERPORTER_AGENT_LIVE_ACTIVATED_AT: '2026-09-11T19:00:00Z',
+    LAYERPORTER_AGENT_LIVE_HARD_STOP_AT: '2026-09-25T19:00:00Z',
+  }, now);
+}
+
 function createClient({ sourceChangesBeforeWrite = false } = {}) {
   const now = Math.floor(new Date('2026-09-11T20:00:00Z').getTime() / 1000);
   let sourceReads = 0;
@@ -153,7 +161,7 @@ test('live mode publishes once and verifies exact read-back', async () => {
     client,
     provider: createProvider(),
     store,
-    config: createAgentConfig({ LAYERPORTER_AGENT_WRITE_MODE: 'live' }),
+    config: createLiveConfig(),
     now: new Date('2026-09-11T20:00:00Z'),
   });
 
@@ -172,7 +180,7 @@ test('live mode refuses publication when source changed after research', async (
     client,
     provider: createProvider(),
     store,
-    config: createAgentConfig({ LAYERPORTER_AGENT_WRITE_MODE: 'live' }),
+    config: createLiveConfig(),
     now: new Date('2026-09-11T20:00:00Z'),
   });
 

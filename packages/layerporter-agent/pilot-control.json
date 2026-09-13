@@ -2,13 +2,13 @@
   "id": "LP-097",
   "enabled": true,
   "authorizedBy": "owner",
-  "activatedAt": "2026-09-13T10:26:00Z",
-  "hardStopAt": "2026-09-27T10:26:00Z",
+  "activatedAt": "2026-09-13T11:46:00Z",
+  "hardStopAt": "2026-09-27T11:46:00Z",
   "maxResearchPerRun": 2,
   "maxWritesPerRun": 1,
   "maxDailyWrites": 2,
   "minimumOpportunityScore": 0.72,
   "minimumEvidenceScore": 0.82,
   "enableThreadCreation": false,
-  "notes": "Phase B: owner-authorized bounded public PostingBoard live pilot. Automatic hard stop after 14 days; new threads disabled; fail closed on uncertain/unverified publication or runtime instability."
+  "notes": "Owner-authorized bounded public PostingBoard live pilot. Hourly Cloudflare schedule; one live runtime error or uncertain/unverified publication trips the in-agent write circuit breaker. New threads disabled. Automatic hard stop after 14 days."
 }
