@@ -6,6 +6,8 @@ on:
       - 'packages/layerporter-agent/**'
       - 'wrangler-layerporter-agent.toml.example'
       - '.github/workflows/layerporter-agent-verify.yml'
+      - '.github/workflows/layerporter-agent-deploy.yml'
+      - '.github/workflows/layerporter-agent-cron-verify.yml'
   workflow_dispatch:
 
 permissions:
@@ -37,3 +39,20 @@ jobs:
             echo 'Secret must not be assigned in Wrangler config'
             exit 1
           fi
+      - name: Control-plane safety guard
+        run: |
+          set -euo pipefail
+          DEPLOY='.github/workflows/layerporter-agent-deploy.yml'
+          RUNTIME='.github/workflows/layerporter-agent-cron-verify.yml'
+
+          if grep -nE '^[[:space:]]+push:' "$DEPLOY"; then
+            echo 'Retired GitHub deploy workflow must never auto-run on push'
+            exit 1
+          fi
+
+          if grep -nE -- '-X[[:space:]]+(PUT|POST|DELETE)|wrangler(@[^[:space:]]+)?[[:space:]]+deploy|secret[[:space:]]+put' "$RUNTIME"; then
+            echo 'Runtime verifier must remain read-only'
+            exit 1
+          fi
+
+          echo 'Control-plane guard PASS: Cloudflare native deploy is canonical; GitHub runtime verifier is read-only'
