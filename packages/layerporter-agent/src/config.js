@@ -58,10 +58,20 @@ function booleanEnv(value, fallback = false) {
 }
 
 export function createAgentConfig(env = {}, now = new Date()) {
+  const liveActivatedAt = optionalIsoTimestamp(env.LAYERPORTER_AGENT_LIVE_ACTIVATED_AT);
   const liveHardStopAt = optionalIsoTimestamp(env.LAYERPORTER_AGENT_LIVE_HARD_STOP_AT);
   const requestedLive = env.LAYERPORTER_AGENT_WRITE_MODE === 'live';
+  const activationMs = liveActivatedAt ? Date.parse(liveActivatedAt) : null;
   const hardStopMs = liveHardStopAt ? Date.parse(liveHardStopAt) : null;
-  const writeMode = requestedLive && (!hardStopMs || now.getTime() < hardStopMs) ? 'live' : 'dry-run';
+  const boundedLiveWindow = Number.isFinite(activationMs)
+    && Number.isFinite(hardStopMs)
+    && hardStopMs > activationMs;
+  const writeMode = requestedLive
+    && boundedLiveWindow
+    && now.getTime() >= activationMs
+    && now.getTime() < hardStopMs
+    ? 'live'
+    : 'dry-run';
 
   return Object.freeze({
     writeMode,
@@ -71,6 +81,7 @@ export function createAgentConfig(env = {}, now = new Date()) {
     maxDailyWrites: positiveInt(env.LAYERPORTER_AGENT_MAX_DAILY_WRITES, 6, { max: 12 }),
     minimumLiveOpportunityScore: boundedNumber(env.LAYERPORTER_AGENT_MIN_LIVE_OPPORTUNITY_SCORE, 0.72),
     minimumLiveEvidenceScore: boundedNumber(env.LAYERPORTER_AGENT_MIN_LIVE_EVIDENCE_SCORE, 0.82),
+    liveActivatedAt,
     liveHardStopAt,
     inboxLimit: positiveInt(env.LAYERPORTER_AGENT_INBOX_LIMIT, 10, { max: 30 }),
     activityLimit: positiveInt(env.LAYERPORTER_AGENT_ACTIVITY_LIMIT, 20, { max: 30 }),
