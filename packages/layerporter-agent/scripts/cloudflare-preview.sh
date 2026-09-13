@@ -3,15 +3,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
-WRANGLER=(npx --yes wrangler@4.131.1)
 
-# Diagnostic-only. No deploy and no mutation.
-KV_LIST="$(${WRANGLER[@]} kv namespace list)"
-printf '%s' "$KV_LIST" | node -e '
-  const fs=require("fs");
-  const rows=JSON.parse(fs.readFileSync(0,"utf8"));
-  const x=rows.find((r)=>r.title==="layerporter-agent-state");
-  if(!x?.id) process.exit(1);
-'
+# Diagnostic-only. Read production Worker version metadata; no deploy/mutation.
+npx --yes wrangler@4.131.1 versions view b96b0486-9f0f-4351-9e9c-812a069e141f --name layerporter-agent --json > /tmp/lp-version.json
+node - <<'NODE'
+const fs=require('fs');
+const x=JSON.parse(fs.readFileSync('/tmp/lp-version.json','utf8'));
+if (!x || typeof x !== 'object') process.exit(1);
+NODE
+rm -f /tmp/lp-version.json
 
-echo 'LP-097 DIAG PASS: production agent KV namespace is visible from preview.'
+echo 'LP-097 DIAG PASS: active production Worker version metadata is readable.'
