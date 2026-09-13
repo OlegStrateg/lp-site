@@ -2,24 +2,18 @@ name: Verify LayerPorter Agent Runtime
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - Deploy LayerPorter Agent
-    types:
-      - completed
 
 permissions:
   contents: read
 
 concurrency:
-  group: layerporter-agent-control-plane
+  group: layerporter-agent-read-only-runtime-check
   cancel-in-progress: false
 
 jobs:
   verify-runtime:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_API: https://api.cloudflare.com/client/v4
@@ -27,17 +21,15 @@ jobs:
       SCRIPT_NAME: layerporter-agent
 
     steps:
-      - name: Checkout deployed revision
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Resolve Cloudflare account and KV
+      - name: Resolve Cloudflare account and dedicated KV
         shell: bash
         run: |
           set -euo pipefail
@@ -62,193 +54,88 @@ jobs:
           rm -f /tmp/lp-agent-whoami.json /tmp/lp-agent-account-id /tmp/lp-agent-kv-list.json
           echo 'Cloudflare account and dedicated agent KV resolved'
 
-      - name: Install temporary one-minute dry-run schedule
+      - name: Read-only schedule check
         shell: bash
         run: |
           set -euo pipefail
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
-          printf '[{"cron":"* * * * *"}]' > /tmp/lp-agent-schedule.json
-          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-schedule.json -o /tmp/lp-agent-schedule-result.json
-          jq -e '.success == true and any(.result.schedules[]?; .cron == "* * * * *")' /tmp/lp-agent-schedule-result.json >/dev/null
-          rm -f /tmp/lp-agent-schedule.json /tmp/lp-agent-schedule-result.json
-          echo 'Temporary dry-run cron accepted by Cloudflare control plane'
+          curl -fsS "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -o /tmp/lp-agent-schedules.json
+          jq -e '.success == true and (.result.schedules | length == 1) and .result.schedules[0].cron == "0 * * * *"' /tmp/lp-agent-schedules.json >/dev/null
+          echo 'Schedule PASS: exactly one hourly cron is configured'
 
-      - name: Wait for fresh verified dry-run heartbeat
+      - name: Read heartbeat and memory without mutations
         shell: bash
         run: |
           set -euo pipefail
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
-          SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
-          HEARTBEAT_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values/layerporter-agent%3Aheartbeat%3Av1"
-          VERIFY_STARTED_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
-          verified=0
-          failure_reason='no_fresh_heartbeat'
+          VALUE_BASE="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values"
+          curl -fsS "$VALUE_BASE/layerporter-agent%3Aheartbeat%3Av1" -H "$AUTH" -H 'Accept: application/json' -o /tmp/lp-agent-heartbeat.json
+          curl -fsS "$VALUE_BASE/layerporter-agent%3Amemory%3Av1" -H "$AUTH" -H 'Accept: application/json' -o /tmp/lp-agent-memory.json
+          chmod 600 /tmp/lp-agent-heartbeat.json /tmp/lp-agent-memory.json
+          echo 'Heartbeat and memory snapshots loaded read-only'
 
-          for attempt in {1..100}; do
-            STATUS="$(curl -sS -o /tmp/lp-agent-heartbeat.json -w '%{http_code}' "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
-            if [ "$STATUS" = '200' ]; then
-              set +e
-              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-heartbeat.json "$VERIFY_STARTED_MS" dry-run 0
-              gate_status=$?
-              set -e
-
-              if [ "$gate_status" -eq 0 ]; then
-                verified=1
-                break
-              fi
-              if [ "$gate_status" -eq 2 ]; then
-                failure_reason='fresh_runtime_error_or_unsafe_state'
-                break
-              fi
-            elif [ "$STATUS" != '404' ]; then
-              failure_reason="heartbeat_http_${STATUS}"
-              break
-            fi
-
-            if [ $((attempt % 12)) -eq 0 ]; then
-              echo "Runtime heartbeat still pending after schedule update (attempt $attempt/100)"
-            fi
-            sleep 10
-          done
-
-          if [ "$verified" -eq 1 ]; then
-            printf '[{"cron":"0 * * * *"}]' > /tmp/lp-agent-final-schedule.json
-            curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-final-schedule.json -o /tmp/lp-agent-final-result.json
-            jq -e '.success == true and any(.result.schedules[]?; .cron == "0 * * * *")' /tmp/lp-agent-final-result.json >/dev/null
-            echo 'REAL DRY-RUN PASS: fresh heartbeat verified, writes=0; hourly dry-run schedule accepted'
-            rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-final-schedule.json /tmp/lp-agent-final-result.json
-            exit 0
-          fi
-
-          printf '[]' > /tmp/lp-agent-disable-schedule.json
-          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-disable-schedule.json -o /tmp/lp-agent-disable-result.json
-          jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-disable-result.json >/dev/null
-          echo "REAL RUNTIME FAIL-CLOSED: $failure_reason; schedule disabled in Cloudflare control plane"
-          rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-disable-schedule.json /tmp/lp-agent-disable-result.json
-          exit 1
-
-      - name: Activate bounded live pilot after dry-run PASS
+      - name: Verify fresh bounded live runtime and circuit breaker
         shell: bash
         run: |
           set -euo pipefail
-          CONTROL='packages/layerporter-agent/pilot-control.json'
-          if [ ! -f "$CONTROL" ]; then
-            echo 'No live pilot control file; hourly dry-run remains active'
-            exit 0
-          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { evaluateHeartbeat } from './packages/layerporter-agent/src/heartbeat-gate.js';
+          import { evaluateLiveSafety } from './packages/layerporter-agent/src/live-safety-gate.js';
+          import { createAgentConfig } from './packages/layerporter-agent/src/config.js';
 
-          jq -e '
-            .id == "LP-097" and
-            .enabled == true and
-            .authorizedBy == "owner" and
-            (.activatedAt | type == "string") and
-            (.hardStopAt | type == "string") and
-            (.maxResearchPerRun | type == "number" and . >= 1 and . <= 2) and
-            (.maxWritesPerRun == 1) and
-            (.maxDailyWrites | type == "number" and . >= 1 and . <= 2) and
-            (.minimumOpportunityScore | type == "number" and . >= 0.72 and . <= 1) and
-            (.minimumEvidenceScore | type == "number" and . >= 0.82 and . <= 1) and
-            .enableThreadCreation == false
-          ' "$CONTROL" >/dev/null
+          const control = JSON.parse(fs.readFileSync('packages/layerporter-agent/pilot-control.json', 'utf8'));
+          const heartbeat = JSON.parse(fs.readFileSync('/tmp/lp-agent-heartbeat.json', 'utf8'));
+          const memory = JSON.parse(fs.readFileSync('/tmp/lp-agent-memory.json', 'utf8'));
+          const activatedMs = Date.parse(control.activatedAt || '');
+          const startedMs = Date.parse(heartbeat.startedAt || '');
+          const now = new Date();
+          const maxAgeMs = 90 * 60 * 1000;
 
-          ACTIVATED_AT="$(jq -r '.activatedAt' "$CONTROL")"
-          HARD_STOP_AT="$(jq -r '.hardStopAt' "$CONTROL")"
-          ACTIVATED_EPOCH="$(date -u -d "$ACTIVATED_AT" +%s)"
-          HARD_STOP_EPOCH="$(date -u -d "$HARD_STOP_AT" +%s)"
-          NOW_EPOCH="$(date -u +%s)"
-          test "$HARD_STOP_EPOCH" -gt "$ACTIVATED_EPOCH" || { echo 'Invalid pilot window'; exit 1; }
-          test $((HARD_STOP_EPOCH - ACTIVATED_EPOCH)) -le $((15 * 24 * 60 * 60)) || { echo 'Pilot hard stop exceeds 15 days'; exit 1; }
-          if [ "$NOW_EPOCH" -ge "$HARD_STOP_EPOCH" ]; then
-            echo 'Live pilot authorization expired; hourly dry-run remains active'
-            exit 0
-          fi
+          if (!Number.isFinite(activatedMs) || !Number.isFinite(startedMs)) {
+            throw new Error('Activation or heartbeat timestamp is invalid');
+          }
+          if (startedMs < activatedMs) throw new Error('Heartbeat predates current live activation');
+          if (now.getTime() - startedMs > maxAgeMs) throw new Error('Heartbeat is stale (>90 minutes)');
 
-          MAX_RESEARCH="$(jq -r '.maxResearchPerRun' "$CONTROL")"
-          MAX_WRITES_RUN="$(jq -r '.maxWritesPerRun' "$CONTROL")"
-          MAX_WRITES_DAY="$(jq -r '.maxDailyWrites' "$CONTROL")"
-          MIN_OPPORTUNITY="$(jq -r '.minimumOpportunityScore' "$CONTROL")"
-          MIN_EVIDENCE="$(jq -r '.minimumEvidenceScore' "$CONTROL")"
-          LIVE_CONFIG='.wrangler-layerporter-agent.live.toml'
-          LIVE_BOOTSTRAP_CONFIG='.wrangler-layerporter-agent.live-bootstrap.toml'
-          DRY_FALLBACK_CONFIG='.wrangler-layerporter-agent.dry-fallback.toml'
+          const hb = evaluateHeartbeat(heartbeat, activatedMs, {
+            expectedWriteMode: 'live',
+            maxWrites: Number(control.maxWritesPerRun),
+          });
+          if (hb.code !== 0) throw new Error(`Heartbeat gate failed: ${hb.status}`);
 
-          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" wrangler-layerporter-agent.toml.example \
-            | sed 's/LAYERPORTER_AGENT_WRITE_MODE = "dry-run"/LAYERPORTER_AGENT_WRITE_MODE = "live"/' \
-            | sed "s/LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = \"3\"/LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = \"${MAX_RESEARCH}\"/" \
-            | sed "s/LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = \"2\"/LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = \"${MAX_WRITES_RUN}\"/" \
-            | sed "s/LAYERPORTER_AGENT_MAX_DAILY_WRITES = \"6\"/LAYERPORTER_AGENT_MAX_DAILY_WRITES = \"${MAX_WRITES_DAY}\"/" \
-            > "$LIVE_CONFIG"
-          printf '\nLAYERPORTER_AGENT_MIN_LIVE_OPPORTUNITY_SCORE = "%s"\n' "$MIN_OPPORTUNITY" >> "$LIVE_CONFIG"
-          printf 'LAYERPORTER_AGENT_MIN_LIVE_EVIDENCE_SCORE = "%s"\n' "$MIN_EVIDENCE" >> "$LIVE_CONFIG"
-          printf 'LAYERPORTER_AGENT_LIVE_HARD_STOP_AT = "%s"\n' "$HARD_STOP_AT" >> "$LIVE_CONFIG"
+          const config = createAgentConfig({
+            LAYERPORTER_AGENT_WRITE_MODE: 'live',
+            LAYERPORTER_AGENT_LIVE_ACTIVATED_AT: control.activatedAt,
+            LAYERPORTER_AGENT_LIVE_HARD_STOP_AT: control.hardStopAt,
+            LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN: String(control.maxResearchPerRun),
+            LAYERPORTER_AGENT_MAX_WRITES_PER_RUN: String(control.maxWritesPerRun),
+            LAYERPORTER_AGENT_MAX_DAILY_WRITES: String(control.maxDailyWrites),
+            LAYERPORTER_AGENT_MIN_LIVE_OPPORTUNITY_SCORE: String(control.minimumOpportunityScore),
+            LAYERPORTER_AGENT_MIN_LIVE_EVIDENCE_SCORE: String(control.minimumEvidenceScore),
+            LAYERPORTER_AGENT_ENABLE_THREAD_CREATION: String(control.enableThreadCreation),
+          }, now);
 
-          sed '/^\[triggers\]$/,+1d' "$LIVE_CONFIG" > "$LIVE_BOOTSTRAP_CONFIG"
-          sed "s/REPLACE_WITH_DEDICATED_KV_NAMESPACE_ID/${KV_ID}/" wrangler-layerporter-agent.toml.example \
-            | sed '/^\[triggers\]$/,+1d' \
-            > "$DRY_FALLBACK_CONFIG"
+          const safety = evaluateLiveSafety(memory, config, now);
+          if (!safety.allowed) throw new Error(`Live circuit breaker is closed: ${safety.reason}`);
 
-          grep -F 'LAYERPORTER_AGENT_WRITE_MODE = "live"' "$LIVE_CONFIG"
-          grep -F "LAYERPORTER_AGENT_MAX_RESEARCH_PER_RUN = \"${MAX_RESEARCH}\"" "$LIVE_CONFIG"
-          grep -F "LAYERPORTER_AGENT_MAX_WRITES_PER_RUN = \"${MAX_WRITES_RUN}\"" "$LIVE_CONFIG"
-          grep -F "LAYERPORTER_AGENT_MAX_DAILY_WRITES = \"${MAX_WRITES_DAY}\"" "$LIVE_CONFIG"
-          grep -F "LAYERPORTER_AGENT_LIVE_HARD_STOP_AT = \"${HARD_STOP_AT}\"" "$LIVE_CONFIG"
-          grep -F 'LAYERPORTER_AGENT_ENABLE_THREAD_CREATION = "false"' "$LIVE_CONFIG"
-          ! grep -Fq '[triggers]' "$LIVE_BOOTSTRAP_CONFIG"
+          console.log(JSON.stringify({
+            status: 'PASS',
+            startedAt: heartbeat.startedAt,
+            finishedAt: heartbeat.finishedAt,
+            writeMode: heartbeat.writeMode,
+            writesThisRun: heartbeat.result?.writesThisRun ?? null,
+            candidates: heartbeat.result?.candidates ?? null,
+            researched: heartbeat.result?.researched ?? null,
+            strategyRecommendation: heartbeat.result?.pilot?.strategyRecommendation ?? null,
+          }));
+          NODE
+          rm -f /tmp/lp-agent-heartbeat.json /tmp/lp-agent-memory.json /tmp/lp-agent-schedules.json
+          echo 'READ-ONLY LIVE RUNTIME VERIFIED'
 
-          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
-          SCHEDULE_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/schedules"
-          HEARTBEAT_URL="${CF_API}/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_ID}/values/layerporter-agent%3Aheartbeat%3Av1"
-
-          printf '[]' > /tmp/lp-agent-disable-live-schedule.json
-          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-disable-live-schedule.json -o /tmp/lp-agent-disable-live-result.json
-          jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-disable-live-result.json >/dev/null
-
-          npx wrangler@4.131.1 deploy --config "$LIVE_BOOTSTRAP_CONFIG"
-          echo 'Bounded live Worker deployed without schedule; existing Worker secrets are preserved by Wrangler deploy'
-
-          LIVE_VERIFY_STARTED_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
-          printf '[{"cron":"* * * * *"}]' > /tmp/lp-agent-live-minute.json
-          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-live-minute.json -o /tmp/lp-agent-live-minute-result.json
-          jq -e '.success == true and any(.result.schedules[]?; .cron == "* * * * *")' /tmp/lp-agent-live-minute-result.json >/dev/null
-
-          live_verified=0
-          failure_reason='no_fresh_live_heartbeat'
-          for attempt in {1..100}; do
-            STATUS="$(curl -sS -o /tmp/lp-agent-live-heartbeat.json -w '%{http_code}' "$HEARTBEAT_URL" -H "$AUTH" -H 'Accept: application/json')"
-            if [ "$STATUS" = '200' ]; then
-              set +e
-              node packages/layerporter-agent/src/heartbeat-gate.js /tmp/lp-agent-live-heartbeat.json "$LIVE_VERIFY_STARTED_MS" live "$MAX_WRITES_RUN"
-              live_gate_status=$?
-              set -e
-              if [ "$live_gate_status" -eq 0 ]; then
-                live_verified=1
-                break
-              fi
-              if [ "$live_gate_status" -eq 2 ]; then
-                failure_reason='fresh_live_runtime_error_or_unsafe_state'
-                break
-              fi
-            elif [ "$STATUS" != '404' ]; then
-              failure_reason="live_heartbeat_http_${STATUS}"
-              break
-            fi
-            sleep 10
-          done
-
-          if [ "$live_verified" -eq 1 ]; then
-            printf '[{"cron":"0 * * * *"}]' > /tmp/lp-agent-live-hourly.json
-            curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-live-hourly.json -o /tmp/lp-agent-live-hourly-result.json
-            jq -e '.success == true and any(.result.schedules[]?; .cron == "0 * * * *")' /tmp/lp-agent-live-hourly-result.json >/dev/null
-            echo "REAL LIVE PILOT PASS: bounded live heartbeat verified; hourly schedule active until at most ${HARD_STOP_AT}"
-            rm -f "$LIVE_CONFIG" "$LIVE_BOOTSTRAP_CONFIG" "$DRY_FALLBACK_CONFIG" /tmp/lp-agent-disable-live-schedule.json /tmp/lp-agent-disable-live-result.json /tmp/lp-agent-live-minute.json /tmp/lp-agent-live-minute-result.json /tmp/lp-agent-live-heartbeat.json /tmp/lp-agent-live-hourly.json /tmp/lp-agent-live-hourly-result.json
-            exit 0
-          fi
-
-          printf '[]' > /tmp/lp-agent-live-disable.json
-          curl -fsS -X PUT "$SCHEDULE_URL" -H "$AUTH" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary @/tmp/lp-agent-live-disable.json -o /tmp/lp-agent-live-disable-result.json
-          jq -e '.success == true and (.result.schedules | length == 0)' /tmp/lp-agent-live-disable-result.json >/dev/null
-          npx wrangler@4.131.1 deploy --config "$DRY_FALLBACK_CONFIG"
-          echo "LIVE PILOT FAIL-CLOSED: $failure_reason; schedules disabled and Worker returned to dry-run"
-          rm -f "$LIVE_CONFIG" "$LIVE_BOOTSTRAP_CONFIG" "$DRY_FALLBACK_CONFIG" /tmp/lp-agent-disable-live-schedule.json /tmp/lp-agent-disable-live-result.json /tmp/lp-agent-live-minute.json /tmp/lp-agent-live-minute-result.json /tmp/lp-agent-live-heartbeat.json /tmp/lp-agent-live-disable.json /tmp/lp-agent-live-disable-result.json
-          exit 1
+      - name: Mutation guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'This workflow contains no Cloudflare POST/PUT/DELETE calls and performs no deploy or secret mutation.'
