@@ -1,219 +1,187 @@
 # LP-098 — Virtual Try-On
 
 Дата старта: 2026-09-13
+Последнее решение: 2026-09-14
 
-Статус: **CANDIDATE — код Sprint 1 собран, VERIFIED не присвоен**
+Статус: **READY-CORE CANDIDATE — самописный прототип отклонён, VERIFIED не присвоен**
 
 Рабочая ветка: `feat/LP-098-virtual-try-on-tool`
 
-Точка восстановления: `recovery/pre-LP-098-virtual-try-on-2026-09-13`
+Точки восстановления:
+- `recovery/pre-LP-098-virtual-try-on-2026-09-13` — до начала LP-098;
+- `recovery/LP-098-custom-prototype-rejected-2026-09-14` — архив отклонённого самописного прототипа.
 
-База: `master@e982caffb8a53e0dfde135d0d7610cd9fd459a89`
-
+База проекта: `master@e982caffb8a53e0dfde135d0d7610cd9fd459a89`
 Draft PR: `#242`
 
-## 1. Продуктовая граница
+## 1. Решение 2026-09-14
 
-Virtual Try-On — отдельный инструмент LayerPorter на `/tools/virtual-try-on/`.
+Первая самописная реализация LP-098 признана неверным инженерным shortcut и **не развивается дальше**.
 
-`/convert/` не меняется. Production не меняется до VERIFIED.
+Причина: при загрузке фотографии, на которой одежда находится на человеке/людях, прототип не выделял предмет одежды. Он мог деформировать всю исходную фотографию и использовать её как текстуру garment overlay. Это нарушает саму продуктовую задачу virtual try-on.
 
-Первый MVP — только верхняя одежда: футболки, рубашки, свитеры, куртки и аналогичные вещи. Это визуальная примерка, а не определение реального размера или физики ткани.
+Действия:
+- [x] Проблема подтверждена живым тестом пользователя.
+- [x] Самописный `public/tools/virtual-try-on/app.js` удалён из рабочей ветки.
+- [x] Самописный `geometry.js` удалён.
+- [x] Geometry test отклонённого движка удалён из build pipeline.
+- [x] Сохранена отдельная recovery branch для истории/разбора.
+- [x] Рабочий кандидат переведён на готовый `pravoobi/try-on` / `@practics/tryon-core`.
 
-Архитектура строится так, чтобы затем использовать то же ядро в Chrome-расширении.
+## 2. Новый принцип
 
-## 2. Архитектура
+Не изобретать virtual try-on заново.
 
-### Instant Preview
+Используем готовый browser-native pipeline:
 
-- локальная обработка в браузере;
-- без LayerPorter upload endpoint;
-- без платного inference API на каждую примерку;
-- MediaPipe Tasks Vision `1.0.1`;
-- Pose Landmarker Lite `float16/1`;
-- GPU с CPU fallback;
-- pose кэшируется для выбранного фото;
-- fit controls не запускают ML повторно;
-- arm-overlay кэшируется;
-- результат экспортируется в PNG.
+`person photo -> person segmentation + pose -> garment extraction/matting -> garment anchors -> TPS warp -> mask/occlusion compositor -> result`
 
-### HD Try-On
+Основной upstream:
+- repository: `pravoobi/try-on`;
+- package: `@practics/tryon-core@0.2.0`;
+- core license: MIT;
+- upstream live reference: `https://pravoobi.github.io/try-on/`.
 
-Отдельный будущий слой. Не включать до проверки качества, экономики и коммерческой чистоты всего модельного/preprocessing стека.
+Публичный пакет уже содержит:
+- `createInferenceWorker()`;
+- `createMattingWorker()`;
+- person segmentation;
+- MoveNet pose estimation;
+- `extractGarmentAlpha()`;
+- `cropToAlphaBBox()`;
+- `suggestAnchors()`;
+- body anchor mapping;
+- thin-plate-spline garment warp;
+- person-mask / arm occlusion compositing;
+- optional depth/relighting path.
 
-## 3. Open Source First
+## 3. Что проверено в upstream живьём
 
-Инженерный референс: `pravoobi/try-on` / `@practics/tryon-core`, MIT.
+- [x] Приложение открывается и работает как самостоятельный browser-native app.
+- [x] Есть `Your Photo`.
+- [x] Есть `Live webcam`.
+- [x] Есть `upload your own garment`.
+- [x] Есть готовый garment catalog.
+- [x] Есть mask/skeleton/color matching controls.
+- [x] Есть advanced `Enhance (3D)` path.
+- [x] Garment upload поддерживает flat-lay/hanger image.
+- [x] Garment upload поддерживает фото человека в одежде: background matting + clothes parsing выделяют сам garment.
+- [x] Если target garment не найден, upstream extraction path возвращает ошибку вместо использования всего изображения как garment.
 
-Ценные элементы референса:
+## 4. Текущий кандидат LayerPorter
 
-- on-device pipeline;
-- pose estimation;
-- segmentation;
-- garment warp;
-- compositing;
-- WebGPU/LiteRT;
-- framework-free core.
+Маршрут: `/tools/virtual-try-on/`.
 
-Первый кандидат не копирует demo-приложение и не тащит весь стек раньше необходимости.
+Текущий этап намеренно использует upstream deployment внутри изолированного noindex candidate, чтобы сначала проверить механику готового решения и не смешивать её с задачей self-hosting.
 
-## 4. Выполнено
+- [x] Старый LayerPorter runtime больше не используется страницей.
+- [x] Ready-core candidate встроен.
+- [x] Временная публичная тестовая страница создана.
+- [x] Старый тестовый URL заменён на ready-core candidate, чтобы пользователь не мог случайно снова открыть отклонённый движок.
+- [x] Browser automation подтвердил: LayerPorter top bar + upstream app + catalog/photo mode загружаются.
+- [x] `noindex` остаётся обязательным.
+- [x] Production merge запрещён.
 
-### Спринт 0 — изоляция и безопасность
+Важно: iframe/upstream deployment — **только промежуточный quality gate**, не финальная production-архитектура.
 
-- [x] Найден канонический репозиторий `OlegStrateg/layerporter-site`.
-- [x] Зафиксирован фактический `master` HEAD.
-- [x] Создана recovery branch.
-- [x] Создана отдельная feature branch.
-- [x] Создан draft PR #242.
-- [x] `/convert/` не затронут.
-- [x] Кандидат оставлен вне sitemap.
-- [x] Кандидат закрыт `noindex` в HTML и headers.
-- [x] CSP расширен только для `/tools/virtual-try-on/*`.
-- [x] API keys/secrets отсутствуют.
+## 5. Следующий спринт — self-host ready core
 
-### Спринт 1 — Instant Preview
+Цель: тот же pipeline должен работать из LayerPorter без внешнего iframe и без зависимости от чужого live deployment.
 
-- [x] Страница инструмента на Astro/BaseLayout.
-- [x] Загрузка фото человека.
-- [x] Загрузка изображения вещи PNG/JPG/WebP до 20 MB.
-- [x] Локальное определение позы.
-- [x] Проверка видимости плеч и таза.
-- [x] Автоматическая очистка простого edge-connected фона вещи.
-- [x] Размещение вещи по плечам и тазу.
-- [x] Базовая окклюзия: руки возвращаются поверх вещи.
-- [x] Ручная коррекция масштаба/X/Y.
-- [x] PNG export.
-- [x] Ошибки не затираются статусом `Ready`.
-- [x] Privacy/runtime disclosure показывается до запуска.
-- [ ] Живой Chrome test на минимум трёх парах `человек + вещь`.
+Порядок:
 
-## 5. Аудит геометрии 2026-09-13
+1. [ ] Подключить `@practics/tryon-core@0.2.0` в LayerPorter build.
+2. [ ] Закрепить package lock и transitive dependencies.
+3. [ ] Self-host LiteRT WASM и segmentation/pose models.
+4. [ ] Подключить `createInferenceWorker()`.
+5. [ ] Подключить `createMattingWorker()` лениво только при upload garment.
+6. [ ] Использовать upstream `extractGarmentAlpha`/`cropToAlphaBBox`/`suggestAnchors`.
+7. [ ] Использовать upstream TPS/compositor вместо собственной геометрии.
+8. [ ] Сделать минимальный LayerPorter UI поверх core.
+9. [ ] Убрать iframe после прохождения self-hosted gate.
 
-Во втором инженерном проходе найден критичный дефект исходного подхода: MediaPipe использует анатомические `left/right`, а на зеркальных/селфи-изображениях экранный порядок точек может быть противоположным. Прежний расчёт угла мог развернуть garment overlay неверно.
+## 6. Multi-person garment input
 
-Исправлено:
+Upstream clothes parsing умеет отделять garment от wearer, но multi-person input является отдельным риском: одна semantic label mask может содержать одежду нескольких людей.
 
-- [x] Геометрия теперь нормализует плечи и таз по экранной X-координате.
-- [x] Убран простой прямоугольный rotate/scale overlay.
-- [x] Добавлена деформация вещи по четырём точкам торса.
-- [x] Квадрилатераль делится на четыре треугольника с affine mapping.
-- [x] Геометрия вынесена в `public/tools/virtual-try-on/geometry.js`.
-- [x] Браузерный `app.js` использует именно этот общий модуль.
-- [x] Дублированная математика в `app.js` запрещена verifier-ом.
-- [x] Добавлен `scripts/test-virtual-try-on-geometry.mjs`.
-- [x] Локальный детерминированный тест реально выполнен и прошёл: mirrored semantic labels дают одинаковую сетку; affine mapping точно попадает в anchor points.
+Правило LayerPorter:
+- если найден один явный garment component — использовать его;
+- если найдено несколько кандидатов — пользователь выбирает нужный garment кликом/карточкой;
+- никогда не объединять несколько людей/предметов в один garment asset молча;
+- если уверенности нет — показать ошибку/selection UI, а не генерировать мусор.
 
-Важно: этот тест подтверждает геометрию, но не заменяет живой визуальный тест MediaPipe + Canvas в Chrome.
+Реализовать этот слой **после** self-host готового upstream extraction, не вместо него.
 
-## 6. Производительность
+## 7. Лицензионный gate
 
-- [x] Pose кэшируется на фото пользователя.
-- [x] ML не запускается при движении fit controls.
-- [x] Arm overlay кэшируется.
-- [x] Preview ограничен `1280px` по длинной стороне.
-- [x] Garment preprocess ограничен `900px`.
-- [x] Cold runtime и pose timing показываются отдельно.
-- [x] GPU -> CPU fallback.
-- [ ] Замерить фактическую render latency в Chrome.
-- [ ] Сравнить текущий torso warp с TPS из `@practics/tryon-core` на golden set.
-- [ ] Переходить на TPS только при доказанном приросте качества.
-- [ ] После стабилизации решить вопрос self-host runtime/model.
+MIT-лицензия repository/core **не является автоматическим подтверждением** коммерческой чистоты всех моделей и датасетов.
 
-## 7. Проверки
+Перед production self-host обязательна отдельная проверка:
+- `@practics/tryon-core`;
+- LiteRT.js;
+- Selfie Segmenter weights;
+- MoveNet weights;
+- `Xenova/modnet`;
+- `Xenova/segformer_b2_clothes`;
+- исходных моделей, датасетов и converted weights;
+- всех transitive ML dependencies.
 
-### A. Функциональная
+Пока этот gate не закрыт, статус только `CANDIDATE`.
 
-`person + garment -> pose -> torso geometry -> warp -> arm occlusion -> fit controls -> PNG`.
+## 8. Три обязательные проверки результата
 
-Статус: код реализован; живой browser gate ещё не закрыт.
+### Проверка A — extraction
+Минимум:
+- transparent garment PNG;
+- flat-lay garment photo;
+- one-person worn garment photo;
+- multi-person photo.
 
-### B. Приватность/экономика
+Критерий: в pipeline передаётся garment, а не исходная фотография целиком.
 
-Статический verifier запрещает `FormData`, XHR, `sendBeacon`, LayerPorter `/api` fetch, `apiKey` и `Authorization` в runtime инструмента.
+### Проверка B — try-on quality
+Минимум 5 person photos × 3 garments.
+Проверить shoulders/waist/hem, arm occlusion, mirror/selfie pose, разные body proportions.
 
-Статус: статически защищено; требуется живой Network audit.
+### Проверка C — runtime/privacy
+Проверить WebGPU + CPU/WASM fallback, повторную примерку, network log и отсутствие upload пользовательских изображений на LayerPorter backend.
 
-### C. Регрессия сайта
+## 9. Chrome Extension
 
-В общий `npm run build` включены:
+Только после self-hosted website core:
+- общий core contract;
+- product-image extraction со страницы магазина;
+- `Try on` action / Side Panel;
+- локальное сохранение user photo;
+- тот же extraction/TPS/compositor pipeline;
+- никаких API keys в extension.
 
-1. существующие smoke/site checks;
-2. `scripts/test-virtual-try-on-geometry.mjs`;
-3. Astro build и существующие site gates;
-4. `scripts/verify-virtual-try-on-tool.mjs`.
+Сайт и расширение не должны иметь два разных try-on engines.
 
-Статус GitHub Actions: **инфраструктурный блокер**. Jobs для LP-098 и независимого LP-097 создаются, но runner не назначается: `steps=[]`, `runner_id=0`, логов нет. Дополнительно проверен `macos-latest` — тот же результат до первого шага. Workflow после диагностики возвращён на `ubuntu-latest`.
+## 10. HD слой
 
-Следствие: нельзя утверждать ни `build PASS`, ни `build FAIL из-за LP-098`. Production merge запрещён до реального выполнения build.
+Отдельный будущий уровень. Browser preview не заменяется server HD model.
 
-## 8. Следующие спринты
+`instant ready-core preview -> explicit HD action -> photorealistic VTON`
 
-### Спринт 2 — живой quality gate
+HD не запускается на каждый просмотр/свайп.
 
-- [ ] Получить работающий preview/deploy.
-- [ ] Desktop Chrome: 3+ пары person+garment.
-- [ ] Отдельно проверить зеркальное селфи.
-- [ ] Проверить PNG export.
-- [ ] Проверить повторную вещь без reload.
-- [ ] Проверить повторное фото без reload.
-- [ ] Проверить fit controls и отсутствие повторного pose inference.
-- [ ] Network audit пользовательских изображений.
-- [ ] Проверить runtime failure/offline behavior.
-- [ ] Проверить mobile layout.
+## 11. Production gate
 
-### Спринт 3 — качество
+До merge одновременно должны пройти:
+- [x] LP-098 изолирован от `/convert/`.
+- [x] Rejected custom engine сохранён только в recovery history.
+- [x] Candidate закрыт `noindex`.
+- [x] Ready upstream mechanics проверены в браузере.
+- [ ] Self-hosted `@practics/tryon-core` работает внутри LayerPorter.
+- [ ] Full build реально проходит.
+- [ ] License audit закрыт.
+- [ ] Desktop Chrome quality set проходит.
+- [ ] Mobile layout проходит.
+- [ ] Multi-person ambiguity не выдаёт мусорный result.
+- [ ] Network/privacy audit проходит.
+- [ ] Error/offline paths проходят.
 
-- [ ] Golden dataset tops.
-- [ ] TPS A/B test.
-- [ ] Segmentation/matting A/B test.
-- [ ] Решение о следующем уровне качества только по результатам сравнений.
+## 12. VERIFIED
 
-### Спринт 4 — Chrome Extension
-
-- [ ] Общий try-on core contract.
-- [ ] Product image extractor из карточки товара.
-- [ ] Выбор корректного изображения галереи.
-- [ ] Side Panel / `Try on` action.
-- [ ] Локальный профиль фото.
-- [ ] Никаких secrets/API keys в extension.
-
-### Спринт 5 — HD Try-On
-
-- [ ] Benchmark dataset.
-- [ ] Проверка коммерческой лицензии всех компонентов.
-- [ ] Сравнение коммерческих и open-source моделей.
-- [ ] HD только как явный второй уровень, не на каждый свайп.
-
-### Спринт 6 — продуктовый слой
-
-- [ ] Saved looks.
-- [ ] Несколько фото/ракурсов.
-- [ ] Предварительно рассчитанная swipe-лента.
-- [ ] Метрики `upload -> run -> result -> repeat -> download -> HD -> outbound`.
-- [ ] B2B widget/API только после доказанного спроса.
-
-## 9. Production gate
-
-До merge должны быть одновременно выполнены:
-
-- [x] Изоляция LP-098.
-- [x] `/convert/` не изменён.
-- [x] Noindex до VERIFIED.
-- [x] Runtime/model pinned.
-- [x] Privacy disclosure.
-- [x] Geometry regression test создан и локально проходит.
-- [x] Shared geometry используется реальным browser app.
-- [x] Static verifier добавлен.
-- [ ] Полный `npm run build` реально прошёл.
-- [ ] Desktop Chrome test прошёл.
-- [ ] Mobile layout test прошёл.
-- [ ] Минимум 3 визуальных пары приняты.
-- [ ] Mirror/selfie case принят.
-- [ ] PNG download принят.
-- [ ] Network audit принят.
-- [ ] Runtime error path принят.
-
-## 10. VERIFIED
-
-VERIFIED присваивается только после живого браузерного прогона и реального build gate. До этого состояние остаётся `CANDIDATE` независимо от количества статических проверок.
+VERIFIED присваивается только self-hosted LayerPorter build после живого браузерного прогона и полного production gate. Внешний iframe/upstream candidate никогда не считается VERIFIED production-версией.
