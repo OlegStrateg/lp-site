@@ -16,12 +16,12 @@ const html = fs.readFileSync(pageFile, 'utf8');
 const sitemap = fs.readFileSync(sitemapFile, 'utf8');
 const storeId = 'hombbkmdpbfjokmbobhpakdldmchbcnn';
 
-must(html.includes('<title>Audio Extractor from Video — MP3, WAV &amp; M4A | LayerPorter</title>') || html.includes('<title>Audio Extractor from Video — MP3, WAV & M4A | LayerPorter</title>'), 'Expected Audio Extractor title missing');
+must(html.includes('<title>Audio Extractor from Video Extension — MP3, WAV &amp; M4A | LayerPorter</title>') || html.includes('<title>Audio Extractor from Video Extension — MP3, WAV & M4A | LayerPorter</title>'), 'Expected Audio Extractor title missing');
 must(html.includes('rel="canonical" href="https://layerporter.com/audio-extractor/"'), 'Audio Extractor canonical missing');
-must(html.includes('<h1><span class="accent">Extract audio</span> from video. Right in Chrome.</h1>'), 'Audio Extractor H1 missing');
+must(html.includes('Extract audio <span class="accent">without the download-and-reopen detour.</span>'), 'Audio Extractor CRO H1 missing');
 must(html.includes(storeId), 'Chrome Web Store ID missing');
 
-for (const placement of ['header', 'hero', 'final', 'mobile_sticky']) {
+for (const placement of ['header', 'hero', 'compare', 'final', 'mobile_sticky']) {
   must(html.includes(`utm_content=${placement}`), `Missing UTM placement: ${placement}`);
 }
 
@@ -38,8 +38,16 @@ must(html.includes('/tools/extract-audio-from-video/'), 'Internal link to web au
 must(html.includes('lp-product-analytics:v1'), 'Shared product analytics was not injected');
 must(sitemap.includes('<loc>https://layerporter.com/audio-extractor/</loc>'), 'Audio Extractor missing from sitemap');
 
-for (const claim of ['MP3', 'WAV', 'M4A', 'Range selection', 'Local video files', 'Supported page media']) {
-  must(html.includes(claim), `Expected product claim missing: ${claim}`);
+for (const claim of ['supported current-page media', 'choose start and end', 'MP3 · WAV · M4A', 'one-off local MP3 extraction']) {
+  must(html.toLowerCase().includes(claim.toLowerCase()), `Expected positioning claim missing: ${claim}`);
 }
 
-console.log('Audio Extractor landing PASS: SEO + UTM + schema + analytics + sitemap');
+for (const image of ['travel-reference-960.webp', 'fashion-board-reference-640.webp', 'creative-workflow-reference-640.webp']) {
+  must(html.includes(image), `Optimized product image missing: ${image}`);
+}
+
+must(html.includes('fetchpriority="high"'), 'Hero image priority hint missing');
+must(html.includes('loading="lazy"'), 'Below-fold lazy image loading missing');
+must(html.includes('srcset='), 'Responsive image srcset missing');
+
+console.log('Audio Extractor landing PASS: CRO + SEO + UTM + schema + analytics + responsive images + sitemap');
