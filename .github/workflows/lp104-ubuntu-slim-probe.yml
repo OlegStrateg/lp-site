@@ -1,0 +1,21 @@
+name: LP-104 Ubuntu Slim Probe
+
+on:
+  push:
+    branches:
+      - diagnostic/LP-104-ubuntu-slim-probe
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
+    steps:
+      - name: Runner acquired
+        run: |
+          echo "RUNNER_ACQUIRED=1"
+          uname -a
+          node --version
+          npm --version
