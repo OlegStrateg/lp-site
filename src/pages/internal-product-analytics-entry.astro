@@ -12,18 +12,23 @@
   const path = window.location.pathname.toLowerCase();
   const isPictureConverter = path.includes('/picture-converter/');
   const isPinterestDownloader = path.includes('/pinterest-downloader/');
+  const isAudioExtractor = path.includes('/audio-extractor/');
 
   const product = isPictureConverter
     ? 'picture_converter'
     : isPinterestDownloader
       ? 'pinterest_downloader'
-      : '';
+      : isAudioExtractor
+        ? 'audio_extractor'
+        : '';
 
   const storeId = isPictureConverter
     ? 'oegpbmdpckfdgodnkdnoggedamfflfcl'
     : isPinterestDownloader
       ? 'nmpahchhmcdejmfcmkphnbhckmlhhnon'
-      : '';
+      : isAudioExtractor
+        ? 'hombbkmdpbfjokmbobhpakdldmchbcnn'
+        : '';
 
   const allowedPlacements = new Set([
     'header',
