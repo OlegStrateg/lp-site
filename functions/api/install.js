@@ -9,6 +9,7 @@ import {
   putInstallSession,
   installSessionMessage,
 } from '../_lib/analytics.js';
+import { eavStatsTotal } from '../_lib/eav-stats.js';
 
 const PRODUCTS = new Set(['ic', 'h2f', 'pex', 's2c', 'ds', 'pd', 'eav']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,7 +22,8 @@ function json(body, status = 200) {
 }
 function productLabel(text, p) { return p === 'eav' ? String(text).replaceAll('eav', 'Audio Extractor from Video') : text; }
 async function sendOrEdit(env, record) {
-  const [today, total] = await Promise.all([statsForDays(env, record.p, 1), statsTotal(env, record.p)]);
+  const totalPromise = record.p === 'eav' ? eavStatsTotal(env) : statsTotal(env, record.p);
+  const [today, total] = await Promise.all([statsForDays(env, record.p, 1), totalPromise]);
   const text = productLabel(installSessionMessage({ record, today, total }), record.p);
   if (record.telegram_message_id) { await editTelegram(env, record.telegram_message_id, text).catch(() => null); return Number(record.telegram_message_id); }
   const sent = await sendTelegram(env, text); return sent?.message_id ? Number(sent.message_id) : null;
