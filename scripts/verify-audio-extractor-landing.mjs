@@ -1,0 +1,45 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = process.cwd();
+const pageFile = path.join(root, 'dist', 'audio-extractor', 'index.html');
+const sitemapFile = path.join(root, 'dist', 'sitemap.xml');
+
+function must(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+must(fs.existsSync(pageFile), 'Audio Extractor landing was not built');
+must(fs.existsSync(sitemapFile), 'sitemap.xml was not built');
+
+const html = fs.readFileSync(pageFile, 'utf8');
+const sitemap = fs.readFileSync(sitemapFile, 'utf8');
+const storeId = 'hombbkmdpbfjokmbobhpakdldmchbcnn';
+
+must(html.includes('<title>Audio Extractor from Video — MP3, WAV &amp; M4A | LayerPorter</title>') || html.includes('<title>Audio Extractor from Video — MP3, WAV & M4A | LayerPorter</title>'), 'Expected Audio Extractor title missing');
+must(html.includes('rel="canonical" href="https://layerporter.com/audio-extractor/"'), 'Audio Extractor canonical missing');
+must(html.includes('<h1><span class="accent">Extract audio</span> from video. Right in Chrome.</h1>'), 'Audio Extractor H1 missing');
+must(html.includes(storeId), 'Chrome Web Store ID missing');
+
+for (const placement of ['header', 'hero', 'final', 'mobile_sticky']) {
+  must(html.includes(`utm_content=${placement}`), `Missing UTM placement: ${placement}`);
+}
+
+must(html.includes('utm_source=layerporter'), 'UTM source missing');
+must(html.includes('utm_medium=website'), 'UTM medium missing');
+must(html.includes('utm_campaign=audio_extractor'), 'UTM campaign missing');
+must(!html.includes('authuser='), 'Public Chrome Web Store links must not contain authuser');
+
+for (const schemaType of ['SoftwareApplication', 'FAQPage', 'WebPage', 'Organization']) {
+  must(html.includes(`"@type":"${schemaType}"`) || html.includes(`&quot;@type&quot;:&quot;${schemaType}&quot;`), `Schema type missing: ${schemaType}`);
+}
+
+must(html.includes('/tools/extract-audio-from-video/'), 'Internal link to web audio tool missing');
+must(html.includes('lp-product-analytics:v1'), 'Shared product analytics was not injected');
+must(sitemap.includes('<loc>https://layerporter.com/audio-extractor/</loc>'), 'Audio Extractor missing from sitemap');
+
+for (const claim of ['MP3', 'WAV', 'M4A', 'Range selection', 'Local video files', 'Supported page media']) {
+  must(html.includes(claim), `Expected product claim missing: ${claim}`);
+}
+
+console.log('Audio Extractor landing PASS: SEO + UTM + schema + analytics + sitemap');
