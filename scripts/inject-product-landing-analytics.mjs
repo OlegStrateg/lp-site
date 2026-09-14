@@ -48,6 +48,7 @@ for (const row of pinterestRows) {
   if (!row.file) throw new Error(`Pinterest manifest missing file for ${row.code}`);
   targets.push(path.join(DIST, row.file));
 }
+targets.push(path.join(DIST, 'audio-extractor', 'index.html'));
 
 for (const file of targets) inject(file, scriptBlock);
 
@@ -75,4 +76,4 @@ const leftoverEntry = [
 ].find((file) => fs.existsSync(file));
 if (leftoverEntry) throw new Error(`Internal analytics entry leaked into dist: ${leftoverEntry}`);
 
-console.log(`Product landing analytics PASS: ${targets.length}/101 pages`);
+console.log(`Product landing analytics PASS: ${targets.length}/${pictureRows.length + pinterestRows.length + 1} pages`);
