@@ -1,30 +1,36 @@
 LayerPorter Virtual Try-On — Third-Party Notices
-Candidate build: LP-098
-Date: 2026-09-13
+Candidate build: LP-098 Ready Core
+Date: 2026-09-14
 
-1. MediaPipe Tasks Vision
-Package: @mediapipe/tasks-vision
-Pinned version: 1.0.1
-Publisher: Google / MediaPipe
-License: Apache License 2.0
-Package: https://www.npmjs.com/package/@mediapipe/tasks-vision
-Project: https://github.com/google-ai-edge/mediapipe
-License: https://www.apache.org/licenses/LICENSE-2.0
-
-The candidate loads the browser runtime from:
-https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/
-
-Pose model:
-MediaPipe Pose Landmarker Lite, float16, version 1
-https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
-
-MediaPipe privacy notice (as published with the package): input data such as images is processed on-device and is not sent by MediaPipe to Google servers. MediaPipe Tasks may send technical performance and utilization metrics to Google. LayerPorter surfaces this disclosure before the user starts the candidate preview.
-
-2. Engineering reference — @practics/tryon-core
+1. Upstream browser-native virtual try-on project
+Project: pravoobi/try-on
 Repository: https://github.com/pravoobi/try-on
+Live reference deployment: https://pravoobi.github.io/try-on/
+
+The LP-098 candidate intentionally uses the upstream reference deployment while LayerPorter migrates the same published core into its own build. This replaces the rejected LayerPorter custom geometric-warp prototype.
+
+The upstream project describes the browser pipeline as:
+- person segmentation;
+- pose estimation;
+- thin-plate-spline garment warp;
+- person-mask / arm occlusion compositing;
+- optional garment-upload matting and clothes parsing.
+
+2. Published core package
 Package: @practics/tryon-core
+Pinned integration target: 0.2.0
+Repository: https://github.com/pravoobi/try-on/tree/main/packages/tryon-core
 License: MIT
 
-The LP-098 candidate uses this project as an engineering/architecture reference for browser-native virtual try-on. The first implementation does not bundle the @practics/tryon-core package; it uses a smaller MediaPipe pose pipeline while the TPS/segmentation stack is evaluated separately.
+The published package is framework-free and exposes the same pipeline used by the upstream application, including ready-made inference/matting/depth worker factories.
 
-LayerPorter-specific UI, fitting rules, product-background cleanup, arm compositing, fit controls, export logic and integration code in this candidate are maintained in the LayerPorter site repository.
+3. Garment upload / extraction path in upstream
+The upstream matting worker uses a background-removal model plus a clothes-parsing model to isolate a garment from an uploaded image. Its extraction logic explicitly returns an error when a person is detected but a target garment cannot be isolated, instead of treating the whole source image as a garment.
+
+IMPORTANT FOR PRODUCTION:
+The upstream repository/core license does not by itself prove that every model weight, converted model, dataset lineage, or transitive ML dependency is commercially clean. Before self-hosting the full model stack in production, LayerPorter must complete a separate model-by-model commercial-license audit and pin every runtime/model artifact.
+
+Current status:
+- candidate page: noindex;
+- production merge: prohibited until self-hosted build + license audit + live Chrome regression test;
+- rejected custom app.js/geometry.js: removed from the working candidate branch and preserved only in recovery history.
