@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
+const site = 'https://layerporter.com';
 const title = 'Extract Audio from Video Online — MP3 | LayerPorter';
 const description = 'Extract an MP3 audio track from a local MP4, MOV, WebM or MKV video in your browser. No account required. Files up to 250 MB.';
 ---
@@ -9,6 +10,11 @@ const description = 'Extract an MP3 audio track from a local MP4, MOV, WebM or M
   title={title}
   description={description}
   canonicalPath="/tools/extract-audio-from-video/"
+  alternates={[
+    { hreflang: 'en', href: `${site}/tools/extract-audio-from-video/` },
+    { hreflang: 'ru', href: `${site}/ru/tools/extract-audio-from-video/` },
+    { hreflang: 'x-default', href: `${site}/tools/extract-audio-from-video/` },
+  ]}
   headerLabels={{
     converters: 'Converters',
     extensions: 'Extensions',
