@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ImageWorkspaceNav from '../../components/ImageWorkspaceNav.astro';
 import '../../styles/image-tools.css';
 
+const site = 'https://layerporter.com';
 const title = 'Crop Image Online — Exact Pixels & Aspect Ratio | LayerPorter';
 const description = 'Crop JPG, PNG and WebP images by exact width, height, X and Y pixels, or choose a common aspect ratio. Process images in your browser.';
 ---
@@ -12,6 +13,11 @@ const description = 'Crop JPG, PNG and WebP images by exact width, height, X and
   description={description}
   canonicalPath="/tools/crop-image/"
   clientRouter={true}
+  alternates={[
+    { hreflang: 'en', href: `${site}/tools/crop-image/` },
+    { hreflang: 'ru', href: `${site}/ru/tools/crop-image/` },
+    { hreflang: 'x-default', href: `${site}/tools/crop-image/` },
+  ]}
   headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
   footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
 >
