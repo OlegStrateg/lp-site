@@ -1,18 +1,37 @@
 ---
 interface Props {
   active: 'resize' | 'crop';
+  locale?: 'en' | 'ru';
 }
 
-const { active } = Astro.props;
+const { active, locale = 'en' } = Astro.props;
+const prefix = locale === 'ru' ? '/ru' : '';
+const copy = locale === 'ru'
+  ? {
+      aria: 'Инструменты редактирования изображения',
+      label: 'Редактировать изображение',
+      crop: 'Обрезка',
+      resize: 'Размер',
+      state: 'Одно изображение · переключайте инструменты',
+      stateAria: 'Текущее изображение сохраняется при переключении инструментов',
+    }
+  : {
+      aria: 'Image editing tools',
+      label: 'Edit image',
+      crop: 'Crop',
+      resize: 'Resize',
+      state: 'One image · switch tools',
+      stateAria: 'Current image stays loaded while switching tools',
+    };
 const tools = [
-  { id: 'crop', label: 'Crop', href: '/tools/crop-image/' },
-  { id: 'resize', label: 'Resize', href: '/tools/resize-image/' },
+  { id: 'crop', label: copy.crop, href: `${prefix}/tools/crop-image/` },
+  { id: 'resize', label: copy.resize, href: `${prefix}/tools/resize-image/` },
 ] as const;
 ---
 
-<nav class="image-workspace-nav" aria-label="Image editing tools">
+<nav class="image-workspace-nav" aria-label={copy.aria}>
   <div class="image-workspace-nav-inner">
-    <span class="image-workspace-nav-label">Edit image</span>
+    <span class="image-workspace-nav-label">{copy.label}</span>
     <div class="image-workspace-tabs" role="list">
       {tools.map((tool) => (
         <a
@@ -25,6 +44,6 @@ const tools = [
         </a>
       ))}
     </div>
-    <span class="image-workspace-state" aria-label="Current image stays loaded while switching tools">One image · switch tools</span>
+    <span class="image-workspace-state" aria-label={copy.stateAria}>{copy.state}</span>
   </div>
 </nav>

@@ -1,46 +1,51 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 
 const site = 'https://layerporter.com';
-const title = 'Extract Audio from Video Online — MP3 | LayerPorter';
-const description = 'Extract an MP3 audio track from a local MP4, MOV, WebM or MKV video in your browser. No account required. Files up to 250 MB.';
+const title = 'Извлечь аудио из видео онлайн в MP3 | LayerPorter';
+const description = 'Извлеките аудиодорожку MP3 из локального MP4, MOV, WebM или MKV прямо в браузере. Без регистрации. Видео до 250 МБ.';
 ---
 
 <BaseLayout
   title={title}
   description={description}
-  canonicalPath="/tools/extract-audio-from-video/"
+  canonicalPath="/ru/tools/extract-audio-from-video/"
+  lang="ru"
+  dir="ltr"
+  homePath="/ru/"
+  extensionsPath="/ru/extensions/"
+  learnPath="/ru/#workflows"
   alternates={[
     { hreflang: 'en', href: `${site}/tools/extract-audio-from-video/` },
     { hreflang: 'ru', href: `${site}/ru/tools/extract-audio-from-video/` },
     { hreflang: 'x-default', href: `${site}/tools/extract-audio-from-video/` },
   ]}
   headerLabels={{
-    converters: 'Converters',
-    extensions: 'Extensions',
-    learn: 'Learn',
-    mainAria: 'Main',
-    localEngine: 'Browser processing',
-    localTitle: 'Media processing runs in your browser',
+    converters: 'Конвертеры',
+    extensions: 'Расширения',
+    learn: 'Материалы',
+    mainAria: 'Основная навигация',
+    localEngine: 'Обработка в браузере',
+    localTitle: 'Медиа обрабатывается в вашем браузере',
   }}
   footerLabels={{
-    tagline: 'LayerPorter — focused browser tools for files and media.',
-    about: 'About',
-    extensions: 'Extensions',
-    privacy: 'Privacy',
-    terms: 'Terms',
-    footerAria: 'Footer',
+    tagline: 'LayerPorter — инструменты для файлов и медиа прямо в браузере.',
+    about: 'О проекте',
+    extensions: 'Расширения',
+    privacy: 'Конфиденциальность',
+    terms: 'Условия',
+    footerAria: 'Подвал сайта',
   }}
 >
   <section class="audio-hero" aria-labelledby="audio-title">
     <div class="audio-copy">
-      <p class="audio-kicker">Video → MP3</p>
-      <h1 id="audio-title">Extract audio from video</h1>
-      <p class="audio-lede">Choose a local video, extract its audio track, and download a playable MP3. No account required.</p>
-      <div class="audio-limits" aria-label="Supported files and limits">
+      <p class="audio-kicker">Видео → MP3</p>
+      <h1 id="audio-title">Извлечь аудио из видео</h1>
+      <p class="audio-lede">Выберите локальное видео, извлеките его аудиодорожку и скачайте готовый MP3. Регистрация не нужна.</p>
+      <div class="audio-limits" aria-label="Поддерживаемые файлы и ограничения">
         <span>MP4, M4V, MOV, WebM, MKV</span>
-        <span>Up to 250 MB</span>
-        <span>MP3 · 320 kbps</span>
+        <span>До 250 МБ</span>
+        <span>MP3 · 320 кбит/с</span>
       </div>
     </div>
 
@@ -54,88 +59,88 @@ const description = 'Extract an MP3 audio track from a local MP4, MOV, WebM or M
 
       <label class="audio-drop" id="eav-drop" for="eav-file" tabindex="0">
         <span class="audio-drop-icon" aria-hidden="true">＋</span>
-        <strong>Choose a video</strong>
-        <small>or drop it here</small>
+        <strong>Выбрать видео</strong>
+        <small>или перетащите его сюда</small>
       </label>
 
       <div class="audio-job" id="eav-job" hidden>
         <div class="audio-file-row">
           <div>
-            <strong id="eav-file-label">Video selected</strong>
+            <strong id="eav-file-label">Видео выбрано</strong>
             <span id="eav-file-meta"></span>
           </div>
-          <button class="audio-link-button" id="eav-change" type="button">Choose another</button>
+          <button class="audio-link-button" id="eav-change" type="button">Выбрать другое</button>
         </div>
 
-        <div class="audio-status" id="eav-status" role="status" aria-live="polite">Checking the audio track…</div>
+        <div class="audio-status" id="eav-status" role="status" aria-live="polite">Проверяем аудиодорожку…</div>
         <progress id="eav-progress" max="1" value="0" hidden>0%</progress>
 
-        <button class="audio-primary" id="eav-extract" type="button" disabled>Extract MP3</button>
+        <button class="audio-primary" id="eav-extract" type="button" disabled>Извлечь MP3</button>
       </div>
 
       <div class="audio-result" id="eav-result" hidden>
         <div class="audio-result-mark" aria-hidden="true">✓</div>
         <div>
-          <strong>MP3 is ready</strong>
-          <span id="eav-result-meta">320 kbps</span>
+          <strong>MP3 готов</strong>
+          <span id="eav-result-meta">320 кбит/с</span>
         </div>
         <audio id="eav-player" controls preload="metadata"></audio>
-        <a class="audio-primary audio-download" id="eav-download" href="#" download>Download MP3</a>
-        <button class="audio-link-button" id="eav-again" type="button">Extract from another video</button>
+        <a class="audio-primary audio-download" id="eav-download" href="#" download>Скачать MP3</a>
+        <button class="audio-link-button" id="eav-again" type="button">Выбрать другое видео</button>
       </div>
     </div>
 
     <p class="audio-pinterest" id="eav-pinterest-note" hidden>
-      Coming from Pinterest Downloader? Select the video you already downloaded and extract its audio here.
+      Перешли из Pinterest Downloader? Выберите уже скачанное видео и извлеките его аудио здесь.
     </p>
   </section>
 
   <section class="audio-info" aria-labelledby="how-title">
     <div>
-      <p class="audio-section-label">How it works</p>
-      <h2 id="how-title">Three steps, one result.</h2>
+      <p class="audio-section-label">Как это работает</p>
+      <h2 id="how-title">Три шага — один результат.</h2>
     </div>
     <ol class="audio-steps">
-      <li><span>01</span><div><strong>Select a video</strong><p>Use a local MP4, M4V, MOV, WebM or MKV file up to 250 MB.</p></div></li>
-      <li><span>02</span><div><strong>Extract the audio</strong><p>The browser reads the primary audio track and converts it to MP3 at 320 kbps.</p></div></li>
-      <li><span>03</span><div><strong>Play or download</strong><p>Preview the result in the page, then download the MP3 file.</p></div></li>
+      <li><span>01</span><div><strong>Выберите видео</strong><p>Используйте локальный MP4, M4V, MOV, WebM или MKV размером до 250 МБ.</p></div></li>
+      <li><span>02</span><div><strong>Извлеките аудио</strong><p>Браузер читает основную аудиодорожку и преобразует её в MP3 с битрейтом 320 кбит/с.</p></div></li>
+      <li><span>03</span><div><strong>Прослушайте или скачайте</strong><p>Проверьте результат прямо на странице и скачайте готовый MP3.</p></div></li>
     </ol>
   </section>
 
   <section class="audio-info audio-details" aria-labelledby="support-title">
     <div>
-      <p class="audio-section-label">Support</p>
-      <h2 id="support-title">What this version handles.</h2>
+      <p class="audio-section-label">Поддержка</p>
+      <h2 id="support-title">Что умеет текущая версия.</h2>
     </div>
     <div class="audio-table" role="list">
-      <div role="listitem"><strong>Input containers</strong><span>MP4, M4V, MOV, WebM, MKV</span></div>
-      <div role="listitem"><strong>Output</strong><span>MP3 · 320 kbps</span></div>
-      <div role="listitem"><strong>File size</strong><span>Maximum 250 MB</span></div>
-      <div role="listitem"><strong>Audio track</strong><span>The video must contain a browser-decodable audio track</span></div>
-      <div role="listitem"><strong>Not in this web version</strong><span>AVI, HLS/DASH URLs, DRM streams, YouTube links</span></div>
+      <div role="listitem"><strong>Входные контейнеры</strong><span>MP4, M4V, MOV, WebM, MKV</span></div>
+      <div role="listitem"><strong>Результат</strong><span>MP3 · 320 кбит/с</span></div>
+      <div role="listitem"><strong>Размер файла</strong><span>Максимум 250 МБ</span></div>
+      <div role="listitem"><strong>Аудиодорожка</strong><span>Видео должно содержать аудиодорожку, которую браузер может декодировать</span></div>
+      <div role="listitem"><strong>Не поддерживается в веб-версии</strong><span>AVI, HLS/DASH URL, DRM-потоки, ссылки YouTube</span></div>
     </div>
   </section>
 
   <section class="audio-faq" aria-labelledby="faq-title">
     <p class="audio-section-label">FAQ</p>
-    <h2 id="faq-title">Common questions</h2>
+    <h2 id="faq-title">Частые вопросы</h2>
     <details>
-      <summary>What audio format do I get?</summary>
-      <p>This version exports one format: MP3 at 320 kbps.</p>
+      <summary>В каком формате будет аудио?</summary>
+      <p>Текущая веб-версия экспортирует MP3 с битрейтом 320 кбит/с.</p>
     </details>
     <details>
-      <summary>What happens if the video has no sound?</summary>
-      <p>The tool checks for a primary audio track before extraction and shows a clear error if none is present.</p>
+      <summary>Что будет, если в видео нет звука?</summary>
+      <p>Инструмент проверяет наличие основной аудиодорожки до извлечения и показывает понятную ошибку, если дорожки нет.</p>
     </details>
     <details>
-      <summary>Why can a supported video container still fail?</summary>
-      <p>A container such as MP4 or MKV can hold different audio codecs. If the browser cannot decode that codec, the tool stops before conversion and reports the limitation.</p>
+      <summary>Почему поддерживаемый видеоформат всё равно может не обработаться?</summary>
+      <p>Контейнеры MP4 или MKV могут содержать разные аудиокодеки. Если браузер не умеет декодировать конкретный кодек, обработка остановится до конвертации.</p>
     </details>
     <details>
-      <summary>Can I process another video without reloading the page?</summary>
-      <p>Yes. Use “Extract from another video” or “Choose another” and select the next file.</p>
+      <summary>Можно ли обработать ещё одно видео без перезагрузки страницы?</summary>
+      <p>Да. Нажмите «Выбрать другое видео» и откройте следующий файл.</p>
     </details>
-    <p class="audio-notices"><a href="/tools/extract-audio-from-video/THIRD_PARTY_NOTICES.txt">Third-party notices</a></p>
+    <p class="audio-notices"><a href="/tools/extract-audio-from-video/THIRD_PARTY_NOTICES.txt">Уведомления о сторонних компонентах</a></p>
   </section>
 
   <style>
@@ -143,7 +148,9 @@ const description = 'Extract an MP3 audio track from a local MP4, MOV, WebM or M
   </style>
 
   <script>
-    import { initExtractAudioTool } from '../../scripts/extractAudioTool';
+    import { initExtractAudioTool } from '../../../scripts/extractAudioTool';
+    import { installToolRuntimeRu } from '../../../scripts/toolRuntimeRu';
+    installToolRuntimeRu();
     initExtractAudioTool();
   </script>
 </BaseLayout>

@@ -80,7 +80,13 @@ const LOCALIZED_EXACT_CONVERTER_PATHS = [
   '/pt-br/convert/canva-to-google-slides/',
 ];
 
-const STATIC_PATHS = ['/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/', '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/', '/privacy/', '/terms/', '/formats/', '/guides/', '/audio-extractor/', '/tools/extract-audio-from-video/', '/tools/resize-image/', '/tools/crop-image/'];
+const STATIC_PATHS = [
+  '/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/',
+  '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/',
+  '/privacy/', '/terms/', '/formats/', '/guides/', '/audio-extractor/',
+  '/tools/extract-audio-from-video/', '/tools/resize-image/', '/tools/crop-image/',
+  '/ru/tools/extract-audio-from-video/', '/ru/tools/resize-image/', '/ru/tools/crop-image/',
+];
 
 export const GET: APIRoute = async () => {
   const converters = await getCollection('converters');
