@@ -6,6 +6,16 @@ LayerPorter Website Image Optimizer is a Model Context Protocol server that anal
 
 It is intentionally **not** a generic image editor, full browser crawler, CDN, hosted image service, or autonomous production writer.
 
+## Security status
+
+`@layerporter/image-optimizer-mcp@0.1.0` is public on npm, but that version is currently under a **security hold**.
+
+Do not use `0.1.0` with untrusted image input. A separate security-hardened release is being validated before LayerPorter recommends new installations.
+
+The public `0.1.0` package has been checked for source/package identity. That evidence confirms what was published; it is **not** a security clearance for untrusted image processing.
+
+While this hold is active, this page intentionally provides no install command or install CTA for `0.1.0`. Official MCP Registry publication and a hosted MCP endpoint are also not claimed.
+
 ## What it solves
 
 For browser-aware workflows, the caller can supply normalized page context including intrinsic/rendered dimensions, DPR, `srcset`, `sizes`, loading priority and confirmed LCP evidence. For a faster URL-only workflow, the MCP server can inspect static HTML and fetch a bounded set of public image URLs through a dedicated SSRF-protected read-only network boundary.
@@ -63,11 +73,17 @@ Image-core protections include no-upscale by default, `never-increase-bytes`, al
 
 ## Format policy
 
-WebP is the conservative automatic baseline for JPEG/PNG sources. AVIF is supported explicitly, but is not automatically selected solely because it can produce a smaller file.
+WebP is the conservative automatic baseline for JPEG/PNG sources. AVIF is supported explicitly as an output format, but is not automatically selected solely because it can produce a smaller file.
+
+Input-format hardening for the next release is being validated separately and is not claimed as part of public `0.1.0`.
 
 ## Verified technical status
 
-The current candidate has automated coverage for image-core transforms, MCP tool contracts, SSRF boundaries, temporary artifact integrity, `resource_link → resources/read`, and live URL ingestion against a controlled public target. Release status is still **technical candidate** until public npm and Official MCP Registry publication are separately verified.
+The source candidate has automated coverage for image-core transforms, MCP tool contracts, SSRF boundaries, temporary artifact integrity, `resource_link → resources/read`, and controlled URL ingestion.
+
+Public npm `0.1.0` has also been verified for source/package identity. That verification does not override the current security hold and does not make `0.1.0` a recommended install target.
+
+The next security-hardened version must independently pass exact runtime tests, package/clean-install checks, MCP client/resource flow, security-negative tests, dependency review and external public-package read-back before its status can change.
 
 ## Benchmark status
 
@@ -75,6 +91,8 @@ Synthetic fixture numbers are engineering evidence only and must not be treated 
 
 ## Release status
 
-**Technical candidate.** Public npm/registry distribution and a hosted endpoint are not claimed on this page until they actually exist and pass their own release gate.
+**Public npm `0.1.0`: security hold.** Do not use it with untrusted image input.
+
+A security-hardened replacement is pending verification. Official MCP Registry publication and a hosted endpoint remain unpublished, and this page does not recommend an install path until the replacement version passes its release gates.
 
 For implementation details, tool inputs, privacy boundaries, compatibility and known limitations, see the [Website Image Optimizer MCP documentation](/docs/mcp/website-image-optimizer/).

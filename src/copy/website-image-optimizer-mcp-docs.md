@@ -2,9 +2,13 @@
 
 ## Status
 
-Current status: **technical candidate**.
+Current public status: **npm `0.1.0` exists and is under a security hold**.
 
-The server and image core have passed technical verification gates. Public npm publication, Official MCP Registry publication, and a hosted endpoint are separate release steps and are not represented here as completed.
+The public package has been verified for source/package identity, but that evidence is not a security clearance. Do not use `0.1.0` with untrusted image input.
+
+A separate security-hardened release is being validated before LayerPorter recommends new installations. Official MCP Registry publication and a hosted endpoint remain separate future release steps and are not represented here as completed.
+
+No public install command for `0.1.0` is provided while this hold is active.
 
 ## Runtime
 
@@ -89,6 +93,8 @@ npm test
 node src/server.js
 ```
 
+This section is for source-development verification. It is not an install recommendation for public npm `0.1.0` while the security hold is active.
+
 `npm pack` independently runs `sync:core` through the package `prepack` hook, so source setup and packed-artifact setup are separate verification paths.
 
 ## URL security boundary
@@ -108,6 +114,25 @@ Network access exists only in the URL tools and passes through the dedicated sec
 
 The accepted-total-image byte budget limits the set retained for analysis/optimization. It is not advertised as a strict cap on aggregate network bytes already downloaded before the final accepted-set decision.
 
+## Input-format security status
+
+Public npm `0.1.0` is not approved for untrusted image input while the current security hold is active.
+
+The next security-hardened release candidate is being validated with a fail-closed input boundary before native decoding. The intended supported untrusted input contract is JPEG, PNG and WebP only; other input formats remain blocked until separately reviewed and verified.
+
+This hardening is **not** claimed as already shipped in `0.1.0`.
+
+The release gate requires independent evidence across:
+
+1. exact runtime behavior;
+2. packed/clean-installed MCP behavior;
+3. direct and URL-ingestion security-negative cases;
+4. MCP client/resource flow;
+5. dependency review;
+6. external read-back of the exact newly published package.
+
+Until those gates pass, no replacement version is represented here as verified or recommended.
+
 ## Default image policy
 
 ```text
@@ -124,7 +149,7 @@ maxHeight: 8192
 maxPixels: 40,000,000
 ```
 
-Automatic format selection remains conservative. AVIF support does not imply automatic AVIF conversion for every input.
+Automatic output-format selection remains conservative. AVIF support refers to output capability and does not mean AVIF input is approved during the security hold.
 
 ## MCP risk metadata
 
@@ -143,7 +168,9 @@ A release candidate is not accepted merely because the server starts. The releas
 7. REJECT behavior without exposing an unverified artifact;
 8. unknown/expired/repeated resource reads and store limits;
 9. URL security tests and controlled URL-mode partial/no-image cases;
-10. package identity/files/secrets checks before any authorized publication.
+10. input-format security-negative cases;
+11. package identity/files/secrets checks before any authorized publication;
+12. external verification of the exact public replacement package after publication.
 
 ## Engineering benchmark
 
@@ -156,13 +183,20 @@ Synthetic fixture benchmark values are engineering evidence only. They must not 
 - no JavaScript-driven lazy-content discovery in URL mode;
 - no rendered-size/currentSrc/LCP measurement inside URL mode;
 - no hosted endpoint yet;
-- no public npm/Official Registry release yet;
+- public npm `0.1.0` exists but is on security hold and is not a recommended install target;
+- no Official MCP Registry release yet;
 - no production write/apply step;
 - no universal visual-quality guarantee;
 - current batch and URL orchestration remain intentionally bounded.
 
 ## Release sequence
 
-Public-release status changes only after external evidence exists for the exact published package/version and, separately, the exact Official MCP Registry entry.
+1. Finish exact security/runtime verification for the hardened candidate.
+2. Pass pack, clean-install, MCP client/resource and dependency gates.
+3. Publish a new version only through a separately authorized release action.
+4. Verify the exact public replacement package externally after publication.
+5. Only then update public install guidance and separately evaluate Official MCP Registry publication.
+
+Public `0.1.0` remains immutable; this documentation update does not replace or modify that npm artifact.
 
 Return to the [Website Image Optimizer MCP product page](/mcp/website-image-optimizer/).
