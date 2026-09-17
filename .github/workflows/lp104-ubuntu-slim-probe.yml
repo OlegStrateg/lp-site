@@ -1,4 +1,4 @@
-name: LP-104 Ubuntu Slim Probe
+name: LP-104 Cross-OS Hosted Runner Probe
 
 on:
   push:
@@ -9,8 +9,30 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  ubuntu-slim:
     runs-on: ubuntu-slim
+    timeout-minutes: 3
+    steps:
+      - name: Runner acquired
+        run: |
+          echo "RUNNER_ACQUIRED=1"
+          uname -a
+          node --version
+          npm --version
+
+  windows-latest:
+    runs-on: windows-latest
+    timeout-minutes: 3
+    steps:
+      - name: Runner acquired
+        shell: pwsh
+        run: |
+          Write-Output "RUNNER_ACQUIRED=1"
+          node --version
+          npm --version
+
+  macos-latest:
+    runs-on: macos-latest
     timeout-minutes: 3
     steps:
       - name: Runner acquired
