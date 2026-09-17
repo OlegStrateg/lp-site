@@ -1,6 +1,9 @@
 ---
 import ConvertHubPage from '../../../components/ConvertHubPage.astro';
 import { CONVERT_HUB_LOCALES, CONVERT_HUB_BY_CODE } from '../../../data/convertHubLocales';
+import { applyConvertHubEditorialOverrides } from '../../../data/convertHubEditorialOverrides';
+
+applyConvertHubEditorialOverrides(CONVERT_HUB_LOCALES);
 
 export function getStaticPaths() {
   return CONVERT_HUB_LOCALES
