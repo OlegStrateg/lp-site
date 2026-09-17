@@ -88,5 +88,7 @@ export function installToolRuntimeRu(): void {
     }
   });
   observer.observe(document.body, { subtree: true, childList: true, characterData: true });
-  window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
+  const disconnect = () => observer.disconnect();
+  document.addEventListener('astro:before-swap', disconnect, { once: true });
+  window.addEventListener('pagehide', disconnect, { once: true });
 }
