@@ -3,22 +3,21 @@ import {
   CONVERT_HUB_LOCALES as CORE_CONVERT_HUB_LOCALES,
   type ConvertHubLocale,
 } from './convertHubLocales';
-import { ADDITIONAL_HUB_EDITORIAL } from './convertHubAdditionalLocaleEditorial';
 
 const normalizeCode = (code: string) => code.toLowerCase().replaceAll('_', '-');
 const coreCodes = new Set(CORE_CONVERT_HUB_LOCALES.map((locale) => normalizeCode(locale.code)));
 
-function editorialLocale(row: any): ConvertHubLocale {
-  const edit = ADDITIONAL_HUB_EDITORIAL[row.code];
-  if (!edit) throw new Error(`Missing Convert Hub editorial locale: ${row.code}`);
-
-  // Picture Converter localized copy is reused ONLY inside the Picture Converter
-  // cross-sell section, where it describes that product truthfully. It is never
-  // reused as Convert Hub title/meta/H1/body copy.
-  const pictureWeb = row.copy?.[0] || row.storeSummary || row.meta;
-  const pictureConversion = row.copy?.[1] || row.meta;
+function sourceBackedLocale(row: any): ConvertHubLocale {
+  const localConversion = row.copy?.[1] || row.meta;
+  const localPdf = row.copy?.[2] || row.storeSummary || row.meta;
   const localPrivacy = row.copy?.[3] || row.meta;
+  const localWeb = row.copy?.[0] || row.meta;
+  const root = row.root || row.seoTitle || 'LayerPorter';
 
+  // LP-054 conservative fallback: for languages that do not yet have a dedicated
+  // Convert Hub semantic pass, reuse only already-approved v10 localized product
+  // copy and language metadata. Format names/arrows remain language-neutral.
+  // This deliberately avoids inventing unvalidated keyword translations.
   return {
     code: row.code,
     lang: row.lang,
@@ -26,42 +25,42 @@ function editorialLocale(row: any): ConvertHubLocale {
     name: row.name,
     route: row.route,
     dir: row.dir === 'rtl' ? 'rtl' : 'ltr',
-    title: `${edit.root} — JPG, PDF, WebP & PSD | LayerPorter`,
-    description: edit.description,
-    schemaName: edit.root,
+    title: `${root}: JPG · PDF · WebP · PSD | LayerPorter`,
+    description: row.meta,
+    schemaName: root,
     nav: {
-      converters: edit.root,
+      converters: root,
       extensions: 'Chrome',
       learn: 'LayerPorter',
-      mainAria: edit.root,
+      mainAria: root,
       localEngine: 'LOCAL',
-      localTitle: edit.local,
+      localTitle: localPrivacy,
     },
     footer: {
-      tagline: edit.local,
+      tagline: localPrivacy,
       about: 'LayerPorter',
       extensions: 'Chrome',
-      privacy: 'Privacy',
-      terms: 'Terms',
-      footerAria: edit.root,
+      privacy: 'LOCAL',
+      terms: 'LayerPorter',
+      footerAria: root,
     },
     copy: {
       language: row.name,
-      heroEyebrow: edit.root,
-      heroA: edit.root,
+      heroEyebrow: root,
+      heroA: root,
       heroB: 'JPG · PNG · PDF · WebP · PSD · ICO',
-      heroBody: edit.description,
+      heroBody: row.meta,
       proofConverters: '8 · JPG · PDF · WebP · PSD',
       proofChecker: 'Canva → Google Slides',
-      proofLocal: edit.local,
-      proofAria: edit.root,
-      chooseConversion: edit.choose,
-      allCurrentTools: edit.allTools,
-      routeAria: edit.root,
-      filesStay: edit.local,
+      proofLocal: 'LOCAL',
+      proofAria: root,
+      chooseConversion: root,
+      allCurrentTools: '8 + 1',
+      routeAria: root,
+      filesStay: localPrivacy,
       checkerJump: 'Canva → Google Slides ↓',
 
-      jpgPdfShort: 'JPG / PNG → PDF',
+      jpgPdfShort: 'JPG → PDF',
       pdfJpgShort: 'PDF → JPG',
       webpJpgShort: 'WebP → JPG',
       faviconShort: 'IMG → ICO',
@@ -71,29 +70,29 @@ function editorialLocale(row: any): ConvertHubLocale {
       jpgPsdShort: 'JPG → PSD',
 
       popularLabel: '01 · JPG · PDF · WebP · ICO',
-      popularHeading: edit.choose,
-      popularIntro: edit.description,
-      jpgPdfDesc: 'JPG / PNG → PDF',
+      popularHeading: row.seoTitle || root,
+      popularIntro: row.storeSummary || row.meta,
+      jpgPdfDesc: localPdf,
       pdfJpgDesc: 'PDF → JPG',
-      webpJpgDesc: 'WebP → JPG',
-      faviconDesc: 'IMG → ICO',
-      openConverter: edit.open,
-      openTool: edit.open,
-      jpgPdfAlt: 'JPG / PNG → PDF',
-      webpJpgAlt: 'WebP → JPG',
+      webpJpgDesc: localConversion,
+      faviconDesc: localWeb,
+      openConverter: '↗',
+      openTool: '↗',
+      jpgPdfAlt: row.seoTitle || root,
+      webpJpgAlt: row.seoTitle || root,
 
       designLabel: '02 · PSD · PNG · JPG',
       designHeading: 'PSD → PNG · PSD → JPG · PNG → PSD · JPG → PSD',
-      designIntro: 'PSD · PNG · JPG',
-      psdPngDesc: 'PSD → PNG',
-      psdJpgDesc: 'PSD → JPG',
-      pngPsdDesc: 'PNG → PSD',
-      jpgPsdDesc: 'JPG → PSD',
+      designIntro: localConversion,
+      psdPngDesc: localConversion,
+      psdJpgDesc: localConversion,
+      pngPsdDesc: localConversion,
+      jpgPsdDesc: localConversion,
 
       compatibilityChecker: 'Canva → Google Slides',
-      checkerDesc: edit.checkerDesc,
-      openChecker: edit.open,
-      analysis: 'PPTX',
+      checkerDesc: 'PPTX · Canva → Google Slides',
+      openChecker: '↗',
+      analysis: 'PPTX · LOCAL',
       fontCompatibility: 'Aa',
       fontResult: '',
       groupedObjects: '▣',
@@ -104,36 +103,43 @@ function editorialLocale(row: any): ConvertHubLocale {
       ok: '✓',
 
       chromeExtension: 'Chrome',
-      extensionHeading: row.seoTitle || row.root || 'Picture Converter',
-      extensionBody: `${pictureWeb} ${pictureConversion}`,
+      extensionHeading: row.seoTitle || root,
+      extensionBody: `${localWeb} ${localConversion}`,
       addChrome: 'Chrome ↗',
-      seePicture: row.root || 'Picture Converter',
-      pictureAlt: row.seoTitle || row.root || 'Picture Converter',
-      pictureIconAlt: row.root || 'Picture Converter',
+      seePicture: root,
+      pictureAlt: row.seoTitle || root,
+      pictureIconAlt: root,
 
-      // Legacy shape retained for the shared type; trust block is no longer rendered.
-      trustLabel: '', trustHeading: '', noUploads: '', noUploadsDesc: localPrivacy,
-      noAccount: '', noAccountDesc: '', oneJob: '', oneJobDesc: '',
+      trustLabel: '03 · LOCAL',
+      trustHeading: localPrivacy,
+      noUploads: 'LOCAL',
+      noUploadsDesc: localPrivacy,
+      noAccount: root,
+      noAccountDesc: row.storeSummary || row.meta,
+      oneJob: 'JPG · PNG · PDF · WebP · PSD · ICO',
+      oneJobDesc: localConversion,
 
-      // No generic FAQ is published for locales without a dedicated Hub semantic pass.
-      faqLabel: '', faqHeading: '', faq1q: '', faq1a: '', faq2q: '', faq2a: '',
-      faq3q: '', faq3a: '', faq4q: '', faq4a: '',
+      faqLabel: '04 · JPG · PNG · PDF · WebP · PSD · ICO',
+      faqHeading: row.seoTitle || root,
+      faq1q: 'JPG · PNG · PDF · WebP · PSD · ICO',
+      faq1a: row.storeSummary || row.meta,
+      faq2q: 'LOCAL',
+      faq2a: localPrivacy,
+      faq3q: root,
+      faq3a: `${localWeb} ${localConversion}`,
+      faq4q: 'JPG → PDF · PDF → JPG · WebP → JPG · PSD ↔ PNG · JPG',
+      faq4a: localConversion,
     },
   };
 }
 
-const EDITORIAL_LOCALES = PICTURE_CONVERTER_LOCALES
+const SOURCE_BACKED_LOCALES = PICTURE_CONVERTER_LOCALES
   .filter((row: any) => !coreCodes.has(normalizeCode(row.code)))
-  .map(editorialLocale);
-
-const expectedAdditional = PICTURE_CONVERTER_LOCALES.length - CORE_CONVERT_HUB_LOCALES.length;
-if (Object.keys(ADDITIONAL_HUB_EDITORIAL).length !== expectedAdditional) {
-  throw new Error(`Expected ${expectedAdditional} additional Convert Hub editorial locales, got ${Object.keys(ADDITIONAL_HUB_EDITORIAL).length}`);
-}
+  .map(sourceBackedLocale);
 
 export const ALL_CONVERT_HUB_LOCALES: ConvertHubLocale[] = [
   ...CORE_CONVERT_HUB_LOCALES,
-  ...EDITORIAL_LOCALES,
+  ...SOURCE_BACKED_LOCALES,
 ];
 
 if (ALL_CONVERT_HUB_LOCALES.length !== 49) {
