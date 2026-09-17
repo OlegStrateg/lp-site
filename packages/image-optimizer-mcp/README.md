@@ -1,19 +1,32 @@
 # LayerPorter Website Image Optimizer MCP
 
-Technical candidate for page-aware website image optimization through Model Context Protocol.
+Page-aware website image analysis and bounded image optimization through Model Context Protocol.
 
 ## Status
 
-The package is release-prepared but is **not yet claimed as a public npm or Official MCP Registry release**. Publication status changes only after the exact npm version and Registry entry are externally verified.
+The npm bootstrap release `@layerporter/image-optimizer-mcp@0.1.0` is public.
 
-Registry identity:
+That does **not** mean every client combination has been verified, and it does not mean the server is listed in the Official MCP Registry. LayerPorter treats public-package verification, client compatibility and Registry publication as separate gates.
+
+Current identity:
 
 - npm package: `@layerporter/image-optimizer-mcp`
 - MCP server: `com.layerporter/website-image-optimizer`
 - transport: `stdio`
 - Node.js: `>=22.12.0`
+- license: proprietary LayerPorter software
 
-The npm package carries `mcpName: com.layerporter/website-image-optimizer`, matching `server.json`, so the Official MCP Registry can verify package ownership after the package exists publicly on npm.
+The npm package carries `mcpName: com.layerporter/website-image-optimizer`, matching `server.json`.
+
+## Install from npm
+
+The public developer install path is:
+
+```bash
+npx -y @layerporter/image-optimizer-mcp@0.1.0
+```
+
+Client-specific compatibility is claimed only after that exact package/version has been independently tested in the relevant client and operating-system combination.
 
 ## Tools
 
@@ -27,7 +40,9 @@ The current server registers seven bounded tools:
 - `analyze_url_images`
 - `optimize_url_images`
 
-The first five operate on caller-provided image data or normalized page facts. The two URL tools perform bounded read-only HTTP(S) fetching through a dedicated SSRF-protected network boundary. URL mode is intentionally a fast static-HTML mode: it does not claim browser-rendered size, `currentSrc`, LCP, CSS-background discovery, or JavaScript-driven lazy content.
+The first five operate on caller-provided image data or normalized page facts. The two URL tools perform bounded read-only HTTP(S) fetching through a dedicated SSRF-protected network boundary.
+
+URL mode is intentionally a fast static-HTML mode. It does not claim browser-rendered size, `currentSrc`, LCP, CSS-background discovery, or JavaScript-driven lazy content.
 
 Accepted optimized binaries are exposed as temporary MCP `resource_link` values and are read separately with `resources/read`; they are not embedded in the initial tool text response.
 
@@ -57,13 +72,26 @@ node src/server.js
 
 The last command starts the stdio MCP server and waits for a client connection. `npm pack` also runs `sync:core` through `prepack`; source setup and packed-artifact setup are verified separately.
 
-## Installation after public release
+## Security and privacy
 
-Do not treat this command as available until the npm package has actually been published and verified:
+The package has a deliberately bounded capability surface:
 
-```bash
-npx -y @layerporter/image-optimizer-mcp
-```
+- no shell or arbitrary command execution;
+- no arbitrary filesystem read/write/delete/rename tools;
+- no production website mutation;
+- bounded public HTTP(S) GET only through the two URL tools;
+- SSRF protections for schemes, credentials, localhost/private/reserved targets, DNS answers and redirects;
+- bounded response sizes, redirects, image counts, timeouts and concurrency;
+- generated binaries stored only in an isolated temporary artifact store;
+- no LayerPorter account or LayerPorter API key required for the current local stdio package;
+- no LayerPorter analytics/telemetry client in the current local `0.1.x` package.
+
+Read the package-specific documents before using sensitive content:
+
+- `SECURITY.md`
+- `PRIVACY.md`
+
+The MCP client and model provider may have their own logging, retention, training and privacy behavior. LayerPorter does not control those client/provider policies.
 
 ## License
 
@@ -73,9 +101,11 @@ The software is licensed, not sold. Third-party dependencies remain governed by 
 
 ## Release model
 
-The first npm version is a bootstrap release: npm staged publishing and Trusted Publisher configuration require the package to already exist. The first public package therefore must be published by the package owner with npm account 2FA. After that bootstrap, GitHub Actions Trusted Publishing can be configured for `.github/workflows/image-mcp-release.yml`, and later versions can use the staged OIDC release path.
+The first npm bootstrap release has been completed for version `0.1.0`.
 
-Official MCP Registry publication happens only **after** the matching npm version is publicly available. The Registry namespace uses ownership of `layerporter.com` and the server name `com.layerporter/website-image-optimizer`.
+Future releases may use the staged GitHub Actions / npm trusted-publishing path only after the relevant release workflow and package identity are verified. A future release must not silently replace an already published version.
+
+Official MCP Registry publication is a separate owner-gated action. Registry publication occurs only after the matching public npm artifact has passed the required external verification gate.
 
 ## Safety boundary
 
@@ -95,30 +125,36 @@ Temporary artifacts are process-local and ephemeral. Their default TTL is 30 min
 
 ## Verification
 
-Release preparation verifies:
+Release preparation verifies the source/package candidate with multiple independent layers, including:
 
 - package/server identity consistency;
 - proprietary license metadata and packaged `LICENSE` presence;
 - image-core and MCP tests;
 - packed npm artifact metadata;
 - clean installation of the packed tarball;
-- real stdio startup and client handshake from the packed artifact;
+- real stdio startup and MCP client handshake;
 - `tools/list`, transform calls, temporary `resource_link` and `resources/read`;
 - Official MCP Registry `server.json` validation;
-- full LayerPorter Astro build in the integrated repository tree.
+- integrated LayerPorter site build.
+
+Public npm availability is not treated as proof by itself. The public artifact has its own clean-install/source-equivalence/protocol verification gate, and client compatibility is recorded only after real client testing.
+
+## Support and security reports
+
+The package source repository is private because the package is proprietary. External users should not rely on the GitHub repository URL as a public support channel.
+
+For bug reports, compatibility reports, privacy questions or security reports, use **hello@layerporter.com**. For security reports, use the subject `LayerPorter MCP security` and do not include credentials or private files.
 
 ## Public documentation
 
-Canonical product pages after site release:
+LayerPorter product and technical documentation is published on `layerporter.com` as each surface becomes production-ready. Do not infer that a page, client integration or Registry entry exists solely because it is mentioned in development metadata.
 
-- `https://layerporter.com/mcp/website-image-optimizer/`
-- `https://layerporter.com/docs/mcp/website-image-optimizer/`
+## Not yet claimed
 
-## Not yet included
-
-- confirmed public npm release;
-- confirmed Official MCP Registry publication;
-- hosted endpoint;
+- Official MCP Registry publication;
+- hosted Remote MCP endpoint;
+- OAuth-backed hosted connection;
+- universal client compatibility;
 - full browser crawler/runtime metrics collection;
 - production apply/write tool;
 - universal performance or quality claims.
