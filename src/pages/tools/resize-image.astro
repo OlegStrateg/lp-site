@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ImageWorkspaceNav from '../../components/ImageWorkspaceNav.astro';
 import '../../styles/image-tools.css';
 
+const site = 'https://layerporter.com';
 const title = 'Resize Image Online — Exact Pixel Dimensions | LayerPorter';
 const description = 'Resize JPG, PNG and WebP images to exact width and height in pixels in your browser. Keep aspect ratio or set exact dimensions.';
 ---
@@ -12,6 +13,11 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
   description={description}
   canonicalPath="/tools/resize-image/"
   clientRouter={true}
+  alternates={[
+    { hreflang: 'en', href: `${site}/tools/resize-image/` },
+    { hreflang: 'ru', href: `${site}/ru/tools/resize-image/` },
+    { hreflang: 'x-default', href: `${site}/tools/resize-image/` },
+  ]}
   headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
   footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
 >
