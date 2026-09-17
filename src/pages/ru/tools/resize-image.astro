@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ImageWorkspaceNav from '../../../components/ImageWorkspaceNav.astro';
+import '../../../styles/image-tools.css';
+
+const site = 'https://layerporter.com';
+const title = 'Изменить размер фото онлайн в пикселях | LayerPorter';
+const description = 'Измените ширину и высоту JPG, PNG или WebP в пикселях прямо в браузере. Сохраняйте пропорции или задавайте точные размеры без обрезки.';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/ru/tools/resize-image/"
+  lang="ru"
+  dir="ltr"
+  homePath="/ru/"
+  extensionsPath="/ru/extensions/"
+  learnPath="/ru/#workflows"
+  clientRouter={true}
+  alternates={[
+    { hreflang: 'en', href: `${site}/tools/resize-image/` },
+    { hreflang: 'ru', href: `${site}/ru/tools/resize-image/` },
+    { hreflang: 'x-default', href: `${site}/tools/resize-image/` },
+  ]}
+  headerLabels={{ converters: 'Конвертеры', extensions: 'Расширения', learn: 'Материалы', mainAria: 'Основная навигация', localEngine: 'Обработка в браузере', localTitle: 'Изображение обрабатывается в вашем браузере' }}
+  footerLabels={{ tagline: 'LayerPorter — инструменты для файлов и медиа прямо в браузере.', about: 'О проекте', extensions: 'Расширения', privacy: 'Конфиденциальность', terms: 'Условия', footerAria: 'Подвал сайта' }}
+>
+  <section class="image-tool-hero" aria-labelledby="resize-title">
+    <div class="image-tool-copy">
+      <p class="image-tool-kicker">Точный размер</p>
+      <h1 id="resize-title">Изменить размер изображения в пикселях</h1>
+      <p class="image-tool-lede">Измените ширину и высоту всего изображения без обрезки. Сохраняйте пропорции или отключите фиксацию, если нужны строго заданные размеры.</p>
+      <div class="image-tool-badges" aria-label="Поддерживаемые файлы и обработка"><span>JPG, PNG, WebP</span><span>Ширина × Высота в пкс</span><span>Обработка в браузере</span></div>
+    </div>
+
+    <div class="image-workspace-frame" transition:name="image-workspace-frame">
+      <ImageWorkspaceNav active="resize" locale="ru" />
+
+      <div class="image-tool-shell" id="resize-image-tool" data-state="empty">
+        <input id="resize-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+        <label class="image-tool-drop" id="resize-drop" for="resize-file" tabindex="0"><span class="image-tool-drop-icon" aria-hidden="true">＋</span><strong>Выбрать изображение</strong><small>или перетащите сюда JPG, PNG или WebP</small></label>
+
+        <div class="image-tool-workspace" id="resize-workspace" hidden>
+          <div class="image-tool-preview-panel"><div class="image-tool-preview-wrap"><img id="resize-preview" alt="Предпросмотр выбранного изображения" /></div><p class="image-tool-file-meta" id="resize-file-meta"></p></div>
+          <div class="image-tool-controls">
+            <div class="image-tool-control-heading"><span class="image-tool-mode-label">Размер</span><h2>Новые размеры</h2></div>
+            <div class="image-tool-grid">
+              <label class="image-tool-field"><span>Ширина (пкс)</span><input class="image-tool-input" id="resize-width" type="number" min="1" max="16384" inputmode="numeric" /></label>
+              <label class="image-tool-field"><span>Высота (пкс)</span><input class="image-tool-input" id="resize-height" type="number" min="1" max="16384" inputmode="numeric" /></label>
+            </div>
+            <div class="image-tool-row"><input id="resize-lock" type="checkbox" checked /><label for="resize-lock"><strong>Сохранять пропорции</strong><br />Измените одну сторону — вторая пересчитается автоматически.</label></div>
+            <div class="image-tool-row"><input id="resize-no-enlarge" type="checkbox" /><label for="resize-no-enlarge"><strong>Не увеличивать маленькие изображения</strong><br />Включите, если нужно только уменьшать размеры.</label></div>
+            <div class="image-tool-status" id="resize-status" role="status" aria-live="polite"></div>
+            <button class="image-tool-primary" id="resize-action" type="button" disabled>Изменить размер</button>
+          </div>
+        </div>
+
+        <div class="image-tool-result" id="resize-result" hidden>
+          <div class="image-tool-result-head"><div><strong>Изображение готово</strong><span id="resize-result-meta"></span></div></div>
+          <div class="image-tool-result-preview"><img id="resize-result-image" alt="Предпросмотр изображения нового размера" /></div>
+          <div class="image-tool-result-actions"><a class="image-tool-primary" id="resize-download" href="#" download>Скачать изображение</a><button class="image-tool-secondary" id="resize-another" type="button">Выбрать другое изображение</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="image-tool-info" aria-labelledby="resize-how-title">
+    <div><p class="image-tool-section-label">Как это работает</p><h2 id="resize-how-title">Точные размеры без обрезки.</h2></div>
+    <ol class="image-tool-steps">
+      <li><span>01</span><div><strong>Выберите изображение</strong><p>Откройте локальный JPG, PNG или WebP. Файл декодируется прямо в браузере.</p></div></li>
+      <li><span>02</span><div><strong>Введите ширину и высоту</strong><p>Оставьте сохранение пропорций для обычного масштабирования или отключите его, если нужны строго заданные обе стороны.</p></div></li>
+      <li><span>03</span><div><strong>Измените размер и скачайте</strong><p>Всё изображение масштабируется до заданных размеров и сохраняется в том же формате.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="image-tool-faq" aria-labelledby="resize-faq-title">
+    <p class="image-tool-section-label">FAQ</p><h2 id="resize-faq-title">Вопросы об изменении размера</h2>
+    <details><summary>Обрезается ли изображение при изменении размера?</summary><p>Нет. Инструмент масштабирует всё изображение. Чтобы убрать края или оставить только часть картинки, используйте инструмент «Обрезка».</p></details>
+    <details><summary>Можно ли задать точную ширину и высоту?</summary><p>Да. Отключите «Сохранять пропорции», чтобы обе стороны точно соответствовали введённым значениям. Пропорции изображения при этом могут измениться.</p></details>
+    <details><summary>Можно ли увеличить изображение?</summary><p>Да. Оставьте «Не увеличивать маленькие изображения» выключенным. Обычное масштабирование интерполирует пиксели и не восстанавливает отсутствующие детали как ИИ-апскейлер.</p></details>
+    <details><summary>Какие форматы поддерживаются?</summary><p>Поддерживаются JPG, PNG и WebP. Результат сохраняется в том же формате.</p></details>
+  </section>
+
+  <script>
+    import { installImageWorkspaceBootstrap } from '../../../scripts/imageWorkspaceBootstrap';
+    import { installToolRuntimeRu } from '../../../scripts/toolRuntimeRu';
+    installToolRuntimeRu();
+    installImageWorkspaceBootstrap();
+  </script>
+</BaseLayout>
