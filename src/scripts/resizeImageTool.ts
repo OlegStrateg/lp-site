@@ -169,11 +169,21 @@ export function initResizeImageTool(): void {
         mime: image.mime,
         quality: 0.92,
       });
+      const workspaceBefore = getWorkspaceSnapshot();
+      const outputName = downloadName(image, `${width}x${height}`);
+      const outputFile = new File([blob], outputName, { type: image.mime, lastModified: Date.now() });
+
       resultUrl = URL.createObjectURL(blob);
       resultImage.src = resultUrl;
       resultMeta.textContent = `${width} × ${height} px · ${formatImageBytes(blob.size)}`;
       download.href = resultUrl;
-      download.download = downloadName(image, `${width}x${height}`);
+      download.download = outputName;
+
+      image = await setWorkspaceFile(outputFile, workspaceBefore.source);
+      const workspaceAfter = getWorkspaceSnapshot();
+      preview.src = workspaceAfter.sourceUrl;
+      fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
+
       result.hidden = false;
       root.dataset.state = 'success';
       setStatus('Image resized to the requested pixel dimensions.', 'success');
