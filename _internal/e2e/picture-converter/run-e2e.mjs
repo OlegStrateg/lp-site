@@ -321,11 +321,37 @@ try {
   await cdp.send('Runtime.enable', {}, siteSession);
   await cdp.send('Page.enable', {}, siteSession);
 
-  const evidence = await waitFor(async () => {
-    const value = await evaluate(cdp, siteSession, `(()=> {
+  let evidence;
+  try {
+    evidence = await waitFor(async () => {
+      const value = await evaluate(cdp, siteSession, `(()=> {
+        const workspace = document.querySelector('#crop-workspace');
+        const drop = document.querySelector('#crop-drop');
+        const fileMeta = document.querySelector('#crop-file-meta');
+        const status = document.querySelector('#crop-status');
+        const root = document.documentElement;
+        return {
+          href: location.href,
+          path: location.pathname,
+          search: location.search,
+          state: root.dataset.lpWorkspaceState || '',
+          importState: root.dataset.lpExtensionImport || '',
+          workspaceHidden: workspace ? workspace.hidden : null,
+          dropHidden: drop ? drop.hidden : null,
+          fileMeta: fileMeta?.textContent || '',
+          status: status?.textContent || '',
+          chromeRuntime: !!globalThis.chrome?.runtime?.sendMessage,
+          readyState: document.readyState
+        };
+      })()`);
+      return value?.state === 'active' && value?.workspaceHidden === false && value?.dropHidden === true && value?.fileMeta ? value : null;
+    }, 30000, 'production workspace active');
+  } catch (error) {
+    const diagnostics = await evaluate(cdp, siteSession, `(()=> {
       const workspace = document.querySelector('#crop-workspace');
       const drop = document.querySelector('#crop-drop');
       const fileMeta = document.querySelector('#crop-file-meta');
+      const status = document.querySelector('#crop-status');
       const root = document.documentElement;
       return {
         href: location.href,
@@ -335,11 +361,17 @@ try {
         importState: root.dataset.lpExtensionImport || '',
         workspaceHidden: workspace ? workspace.hidden : null,
         dropHidden: drop ? drop.hidden : null,
-        fileMeta: fileMeta?.textContent || ''
+        fileMeta: fileMeta?.textContent || '',
+        status: status?.textContent || '',
+        chromeRuntime: !!globalThis.chrome?.runtime?.sendMessage,
+        readyState: document.readyState,
+        bodyClass: document.body?.className || ''
       };
-    })()`);
-    return value?.state === 'active' && value?.workspaceHidden === false && value?.dropHidden === true && value?.fileMeta ? value : null;
-  }, 30000, 'production workspace active');
+    })()`).catch(() => null);
+    report.productionDiagnostics = diagnostics;
+    console.error('PRODUCTION DIAGNOSTICS', JSON.stringify(diagnostics));
+    throw error;
+  }
 
   evidence.elapsedMs = Date.now() - handoffStartedAt;
 
