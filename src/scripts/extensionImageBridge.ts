@@ -36,8 +36,10 @@ export async function importExtensionImageFromUrl(): Promise<boolean> {
   const extensionId = url.searchParams.get('lp_extension_id') || '';
   if (!token || !extensionId) return false;
   document.documentElement.dataset.lpExtensionImport = 'pending';
+  document.documentElement.dataset.lpWorkspaceState = 'loading';
   if (!TOKEN_RE.test(token) || !EXTENSION_ID_RE.test(extensionId)) {
     document.documentElement.dataset.lpExtensionImport = 'failed';
+    document.documentElement.dataset.lpWorkspaceState = 'empty';
     cleanBridgeParams();
     return false;
   }
@@ -55,10 +57,12 @@ export async function importExtensionImageFromUrl(): Promise<boolean> {
     const file = payload instanceof File ? payload : new File([payload], name, { type });
     await setWorkspaceFile(file, 'extension');
     document.documentElement.dataset.lpExtensionImport = 'success';
+    document.documentElement.dataset.lpWorkspaceState = 'active';
     cleanBridgeParams();
     return true;
   } catch {
     document.documentElement.dataset.lpExtensionImport = 'failed';
+    document.documentElement.dataset.lpWorkspaceState = 'empty';
     cleanBridgeParams();
     return false;
   }
