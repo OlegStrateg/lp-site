@@ -26,6 +26,20 @@ const description = 'Измените ширину и высоту JPG, PNG ил
   headerLabels={{ converters: 'Конвертеры', extensions: 'Расширения', learn: 'Материалы', mainAria: 'Основная навигация', localEngine: 'Обработка в браузере', localTitle: 'Изображение обрабатывается в вашем браузере' }}
   footerLabels={{ tagline: 'LayerPorter — инструменты для файлов и медиа прямо в браузере.', about: 'О проекте', extensions: 'Расширения', privacy: 'Конфиденциальность', terms: 'Условия', footerAria: 'Подвал сайта' }}
 >
+  <script is:inline slot="head">
+    (() => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('lp_edit_token') || '';
+        const extensionId = params.get('lp_extension_id') || '';
+        if (/^[A-Za-z0-9_-]{20,160}$/.test(token) && /^[a-p]{32}$/.test(extensionId)) {
+          document.documentElement.dataset.lpWorkspaceState = 'loading';
+          document.documentElement.dataset.lpExtensionImport = 'pending';
+        }
+      } catch {}
+    })();
+  </script>
+
   <section class="image-tool-hero" aria-labelledby="resize-title">
     <div class="image-tool-copy">
       <p class="image-tool-kicker">Точный размер</p>

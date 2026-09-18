@@ -21,6 +21,20 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
   headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
   footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
 >
+  <script is:inline slot="head">
+    (() => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('lp_edit_token') || '';
+        const extensionId = params.get('lp_extension_id') || '';
+        if (/^[A-Za-z0-9_-]{20,160}$/.test(token) && /^[a-p]{32}$/.test(extensionId)) {
+          document.documentElement.dataset.lpWorkspaceState = 'loading';
+          document.documentElement.dataset.lpExtensionImport = 'pending';
+        }
+      } catch {}
+    })();
+  </script>
+
   <section class="image-tool-hero" aria-labelledby="resize-title">
     <div class="image-tool-copy">
       <p class="image-tool-kicker">Exact pixels</p>
