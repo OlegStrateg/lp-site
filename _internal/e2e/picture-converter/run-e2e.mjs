@@ -227,22 +227,36 @@ try {
   await cdp.open();
   await cdp.send('Target.setDiscoverTargets', { discover: true });
 
-  const extensionTarget = await waitFor(async () => {
+  const extensionMatch = await waitFor(async () => {
     const targets = await cdp.send('Target.getTargets');
-    report.initialTargets = targets.targetInfos?.map((t) => ({ targetId: t.targetId, type: t.type, url: t.url })) || [];
-    return targets.targetInfos?.find((t) =>
+    const candidates = (targets.targetInfos || []).filter((t) =>
       String(t.url || '').startsWith('chrome-extension://') &&
-      String(t.url || '').endsWith('/background.js') &&
       (t.type === 'service_worker' || t.type === 'background_page')
-    ) || null;
-  }, 30000, 'Picture Converter service worker target');
+    );
+    report.initialTargets = targets.targetInfos?.map((t) => ({ targetId: t.targetId, type: t.type, url: t.url })) || [];
 
+    for (const candidate of candidates) {
+      try {
+        const attached = await cdp.send('Target.attachToTarget', { targetId: candidate.targetId, flatten: true });
+        const sessionId = attached.sessionId;
+        await cdp.send('Runtime.enable', {}, sessionId);
+        const manifest = await evaluate(cdp, sessionId, 'chrome.runtime.getManifest()');
+        if (manifest?.name === 'LayerPorter Picture Converter bridge E2E') {
+          return { target: candidate, sessionId, manifest };
+        }
+        await cdp.send('Target.detachFromTarget', { sessionId }).catch(() => {});
+      } catch {}
+    }
+    return null;
+  }, 30000, 'Picture Converter service worker target by manifest name');
+
+  const extensionTarget = extensionMatch.target;
+  const workerSession = extensionMatch.sessionId;
   const extensionId = new URL(extensionTarget.url).host;
   report.extensionId = extensionId;
-  console.log('E2E extension:', extensionId);
+  report.loadedManifest = extensionMatch.manifest;
+  console.log('E2E extension:', extensionId, extensionMatch.manifest?.name);
 
-  const workerAttach = await cdp.send('Target.attachToTarget', { targetId: extensionTarget.targetId, flatten: true });
-  const workerSession = workerAttach.sessionId;
   await cdp.send('Runtime.enable', {}, workerSession);
   const workerDiagnostics = await evaluate(
     cdp,
