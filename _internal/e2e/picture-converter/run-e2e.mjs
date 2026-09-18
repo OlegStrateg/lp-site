@@ -244,6 +244,25 @@ try {
   const workerAttach = await cdp.send('Target.attachToTarget', { targetId: extensionTarget.targetId, flatten: true });
   const workerSession = workerAttach.sessionId;
   await cdp.send('Runtime.enable', {}, workerSession);
+  const workerDiagnostics = await evaluate(
+    cdp,
+    workerSession,
+    `(async () => {
+      const url = chrome.runtime.getURL('editor.html');
+      let fetchResult = null;
+      try {
+        const response = await fetch(url);
+        fetchResult = { ok: response.ok, status: response.status, url: response.url, text: (await response.text()).slice(0, 500) };
+      } catch (error) {
+        fetchResult = { error: String(error?.stack || error) };
+      }
+      return { manifest: chrome.runtime.getManifest(), runtimeId: chrome.runtime.id, editorUrl: url, fetchResult };
+    })()`,
+    true
+  );
+  report.workerDiagnostics = workerDiagnostics;
+  console.log('WORKER DIAGNOSTICS', JSON.stringify(workerDiagnostics));
+
   const openedTabId = await evaluate(
     cdp,
     workerSession,
