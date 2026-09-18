@@ -119,7 +119,6 @@ await new Promise((resolve, reject) => {
 
 const debugPort = await freePort();
 const chrome = spawn(chromePath, [
-  '--headless=new',
   '--no-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
