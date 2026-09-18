@@ -466,5 +466,6 @@ export function initCropImageTool(): void {
     if (image) track('download_click', { tool: 'crop_image', output_format: image.mime });
   });
   window.addEventListener('resize', draw);
+  document.addEventListener('lp:image-workspace-imported', hydrateFromWorkspace, { once: true });
   hydrateFromWorkspace();
 }

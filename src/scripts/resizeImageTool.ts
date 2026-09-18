@@ -232,5 +232,6 @@ export function initResizeImageTool(): void {
     if (image) track('download_click', { tool: 'resize_image', output_format: image.mime });
   });
 
+  document.addEventListener('lp:image-workspace-imported', hydrateFromWorkspace, { once: true });
   hydrateFromWorkspace();
 }
