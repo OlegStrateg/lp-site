@@ -67,7 +67,12 @@ async function freePort() {
   });
 }
 
-const chromeVersion = spawnSync(chromePath, ['--version'], { encoding: 'utf8' }).stdout.trim();
+const chromeVersionProbe = spawnSync(chromePath, ['--version'], { encoding: 'utf8' });
+const chromeVersion = chromeVersionProbe.stdout.trim();
+console.log('CHROME PATH:', chromePath);
+console.log('CHROME VERSION:', chromeVersion);
+console.log('DISPLAY:', process.env.DISPLAY || '');
+if (chromeVersionProbe.stderr) console.log('CHROME VERSION STDERR:', chromeVersionProbe.stderr.trim());
 const major = Number(chromeVersion.match(/(\d+)/)?.[1] || 0);
 if (major < 148) throw new Error(`Chrome >=148 required, got ${chromeVersion}`);
 
@@ -188,7 +193,14 @@ async function evaluate(cdp, sessionId, expression, awaitPromise = false) {
 let cdp;
 const report = { chromeVersion, testLang, expectedPath, result: 'FAIL', requests: [] };
 try {
-  const version = await endpointJson(`http://127.0.0.1:${debugPort}/json/version`);
+  let version;
+  try {
+    version = await endpointJson(`http://127.0.0.1:${debugPort}/json/version`);
+  } catch (error) {
+    console.error('CHROME STARTUP STDERR:', chromeStderr);
+    console.error('CHROME EXIT CODE:', chrome.exitCode, 'SIGNAL:', chrome.signalCode);
+    throw error;
+  }
   cdp = new Cdp(version.webSocketDebuggerUrl);
   await cdp.open();
   await cdp.send('Target.setDiscoverTargets', { discover: true });
@@ -268,6 +280,7 @@ try {
 } catch (error) {
   report.error = String(error?.stack || error);
   report.chromeStderr = chromeStderr.slice(-12000);
+  console.error('E2E FAILURE STDERR:', report.chromeStderr);
   throw error;
 } finally {
   report.requests = requests;
