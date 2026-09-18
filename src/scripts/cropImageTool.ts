@@ -355,11 +355,22 @@ export function initCropImageTool(): void {
         mime: image.mime,
         quality: 0.92,
       });
+      const workspaceBefore = getWorkspaceSnapshot();
+      const outputName = downloadName(image, `crop-${rect.width}x${rect.height}`);
+      const outputFile = new File([blob], outputName, { type: image.mime, lastModified: Date.now() });
+
       resultUrl = URL.createObjectURL(blob);
       resultImage.src = resultUrl;
       resultMeta.textContent = `${rect.width} × ${rect.height} px · ${formatImageBytes(blob.size)}`;
       download.href = resultUrl;
-      download.download = downloadName(image, `crop-${rect.width}x${rect.height}`);
+      download.download = outputName;
+
+      image = await setWorkspaceFile(outputFile, workspaceBefore.source);
+      selection = { x: 0, y: 0, width: image.width, height: image.height };
+      fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
+      syncInputs();
+      draw();
+
       result.hidden = false;
       root.dataset.state = 'success';
       setStatus('Crop ready.', 'success');
