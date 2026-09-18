@@ -2,8 +2,8 @@ const EDIT_ORIGIN = 'https://layerporter.com';
 
 function editBaseUrl() {
   try {
-    const language = String(chrome.i18n?.getUILanguage?.() || '').toLowerCase();
-    return language === 'ru' || language.startsWith('ru-')
+    const webLocale = String(chrome.i18n?.getMessage?.('layerPorterWebLocale') || 'en').toLowerCase();
+    return webLocale === 'ru'
       ? 'https://layerporter.com/ru/tools/crop-image/'
       : 'https://layerporter.com/tools/crop-image/';
   } catch {
