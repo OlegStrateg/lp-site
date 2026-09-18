@@ -153,12 +153,17 @@ function canvasBlob(canvas) {
   });
 }
 
+let blobMessagingSupport;
+
 async function supportsBlobMessaging() {
+  if (typeof blobMessagingSupport === 'boolean') return blobMessagingSupport;
   try {
     const probe = new Blob(['lp'], { type: 'application/octet-stream' });
     const response = await sendRuntimeMessage({ cmd: 'lp-blob-message-probe', file: probe });
-    return response?.ok === true;
+    blobMessagingSupport = response?.ok === true;
+    return blobMessagingSupport;
   } catch {
+    // Do not cache transient runtime/service-worker failures.
     return false;
   }
 }
@@ -212,7 +217,7 @@ function installEditorButton() {
     const button = document.createElement('button');
     button.id = 'lpWebEditBtn';
     button.type = 'button';
-    const label = chrome.i18n?.getMessage?.('editImageOnLayerPorter') || 'Edit image';
+    const label = 'EDIT';
     button.title = label;
     button.setAttribute('aria-label', label);
 
@@ -292,16 +297,30 @@ function installEditorButton() {
     window.addEventListener('resize', placeButton, { passive: true });
     placeButton();
 
+    // Warm structured-clone support and the extension-side handoff store
+    // before the user clicks EDIT so the click path has no probe round-trip.
+    const warmBlobMessaging = () => { void supportsBlobMessaging(); };
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(warmBlobMessaging, { timeout: 1200 });
+    } else {
+      window.setTimeout(warmBlobMessaging, 250);
+    }
+
     button.addEventListener('click', async () => {
       if (!document.body.classList.contains('has-img') || document.body.classList.contains('batch-mode') || !canvas.width || !canvas.height) return;
       button.disabled = true;
       try {
-        if (!(await supportsBlobMessaging())) {
+        // First click overlaps the capability check with PNG encoding.
+        // On normal sessions the capability check is already pre-warmed and cached.
+        const [supported, blob] = await Promise.all([
+          supportsBlobMessaging(),
+          canvasBlob(canvas),
+        ]);
+        if (!supported) {
           fallbackOpen();
           return;
         }
 
-        const blob = await canvasBlob(canvas);
         const response = await sendRuntimeMessage({
           cmd: 'lp-open-web-editor',
           file: blob,
@@ -334,8 +353,19 @@ function senderOrigin(sender) {
 function installServiceWorkerBridge() {
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.cmd === 'lp-blob-message-probe') {
-      sendResponse({ ok: message.file instanceof Blob });
-      return false;
+      (async () => {
+        const ok = message.file instanceof Blob;
+        if (ok) {
+          try {
+            const db = await openDb();
+            db.close();
+          } catch {
+            // IndexedDB will be retried during the real handoff.
+          }
+        }
+        sendResponse({ ok });
+      })();
+      return true;
     }
 
     if (message?.cmd !== 'lp-open-web-editor') return false;
