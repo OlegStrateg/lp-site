@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
-const chromePath = process.env.CHROME_PATH;
+const detectedChrome = spawnSync('bash', ['-lc', 'command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chrome'], { encoding: 'utf8' }).stdout.trim();
+const chromePath = process.env.CHROME_PATH || detectedChrome;
 const testLang = (process.env.LP_TEST_LANG || 'en').toLowerCase();
 if (!chromePath) throw new Error('CHROME_PATH is required');
 if (!['en', 'ru'].includes(testLang)) throw new Error(`Unsupported LP_TEST_LANG: ${testLang}`);
