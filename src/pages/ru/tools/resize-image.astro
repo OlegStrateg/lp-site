@@ -30,8 +30,7 @@ const description = 'Измените ширину и высоту JPG, PNG ил
     <div class="image-tool-copy">
       <p class="image-tool-kicker">Точный размер</p>
       <h1 id="resize-title">Изменить размер изображения в пикселях</h1>
-      <p class="image-tool-lede">Измените ширину и высоту всего изображения без обрезки. Сохраняйте пропорции или отключите фиксацию, если нужны строго заданные размеры.</p>
-      <div class="image-tool-badges" aria-label="Поддерживаемые файлы и обработка"><span>JPG, PNG, WebP</span><span>Ширина × Высота в пкс</span><span>Обработка в браузере</span></div>
+      <p class="image-tool-lede">Измените JPG, PNG или WebP до точных размеров в пикселях прямо в браузере.</p>
     </div>
 
     <div class="image-workspace-frame" transition:name="image-workspace-frame">
@@ -53,15 +52,18 @@ const description = 'Измените ширину и высоту JPG, PNG ил
             <div class="image-tool-row"><input id="resize-no-enlarge" type="checkbox" /><label for="resize-no-enlarge"><strong>Не увеличивать маленькие изображения</strong><br />Включите, если нужно только уменьшать размеры.</label></div>
             <div class="image-tool-status" id="resize-status" role="status" aria-live="polite"></div>
             <button class="image-tool-primary" id="resize-action" type="button" disabled>Изменить размер</button>
+            <div class="image-tool-workspace-actions">
+              <a class="image-tool-download" id="resize-download" href="#" download>Скачать текущее изображение</a>
+              <button class="image-tool-secondary" id="resize-another" type="button">Заменить изображение</button>
+            </div>
           </div>
         </div>
 
-        <div class="image-tool-result" id="resize-result" hidden>
-          <div class="image-tool-result-head"><div><strong>Изображение готово</strong><span id="resize-result-meta"></span></div></div>
-          <div class="image-tool-result-preview"><img id="resize-result-image" alt="Предпросмотр изображения нового размера" /></div>
-          <div class="image-tool-result-actions"><a class="image-tool-primary" id="resize-download" href="#" download>Скачать изображение</a><button class="image-tool-secondary" id="resize-another" type="button">Выбрать другое изображение</button></div>
-        </div>
       </div>
+    </div>
+    <div class="image-tool-supporting-copy">
+      <p>Измените ширину и высоту всего изображения без обрезки. Сохраняйте пропорции или отключите фиксацию, если нужны строго заданные размеры.</p>
+      <div class="image-tool-badges" aria-label="Поддерживаемые файлы и обработка"><span>JPG, PNG, WebP</span><span>Ширина × Высота в пкс</span><span>Обработка в браузере</span></div>
     </div>
   </section>
 

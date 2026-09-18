@@ -30,8 +30,7 @@ const description = 'Обрежьте JPG, PNG или WebP по точной ш�
     <div class="image-tool-copy">
       <p class="image-tool-kicker">Точная обрезка</p>
       <h1 id="crop-title">Обрезать изображение до точного размера</h1>
-      <p class="image-tool-lede">Выделите нужную область мышью, затем точно настройте ширину, высоту, X и Y в пикселях. Для типовых задач можно выбрать готовое соотношение сторон.</p>
-      <div class="image-tool-badges" aria-label="Поддерживаемые файлы и режимы обрезки"><span>JPG, PNG, WebP</span><span>Ширина · Высота · X · Y</span><span>1:1 · 4:5 · 16:9 · 3:2</span></div>
+      <p class="image-tool-lede">Обрежьте JPG, PNG или WebP визуально или задайте точные координаты в пикселях.</p>
     </div>
 
     <div class="image-workspace-frame" transition:name="image-workspace-frame">
@@ -54,15 +53,18 @@ const description = 'Обрежьте JPG, PNG или WebP по точной ш�
             </div>
             <div class="image-tool-status" id="crop-status" role="status" aria-live="polite"></div>
             <button class="image-tool-primary" id="crop-action" type="button" disabled>Обрезать изображение</button>
+            <div class="image-tool-workspace-actions">
+              <a class="image-tool-download" id="crop-download" href="#" download>Скачать текущее изображение</a>
+              <button class="image-tool-secondary" id="crop-another" type="button">Заменить изображение</button>
+            </div>
           </div>
         </div>
 
-        <div class="image-tool-result" id="crop-result" hidden>
-          <div class="image-tool-result-head"><div><strong>Обрезанное изображение готово</strong><span id="crop-result-meta"></span></div></div>
-          <div class="image-tool-result-preview"><img id="crop-result-image" alt="Предпросмотр обрезанного изображения" /></div>
-          <div class="image-tool-result-actions"><a class="image-tool-primary" id="crop-download" href="#" download>Скачать изображение</a><button class="image-tool-secondary" id="crop-another" type="button">Выбрать другое изображение</button></div>
-        </div>
       </div>
+    </div>
+    <div class="image-tool-supporting-copy">
+      <p>Выделите нужную область мышью, затем точно настройте ширину, высоту, X и Y в пикселях. Для типовых задач можно выбрать готовое соотношение сторон.</p>
+      <div class="image-tool-badges" aria-label="Поддерживаемые файлы и режимы обрезки"><span>JPG, PNG, WebP</span><span>Ширина · Высота · X · Y</span><span>1:1 · 4:5 · 16:9 · 3:2</span></div>
     </div>
   </section>
 

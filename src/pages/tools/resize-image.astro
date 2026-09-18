@@ -25,8 +25,7 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
     <div class="image-tool-copy">
       <p class="image-tool-kicker">Exact pixels</p>
       <h1 id="resize-title">Resize image to exact pixels</h1>
-      <p class="image-tool-lede">Change the width and height of the whole image without cutting content. Keep the aspect ratio, or unlock it when a specification requires exact dimensions.</p>
-      <div class="image-tool-badges" aria-label="Supported files and processing"><span>JPG, PNG, WebP</span><span>Width × Height in px</span><span>Processed in your browser</span></div>
+      <p class="image-tool-lede">Resize JPG, PNG or WebP to exact pixel dimensions in your browser.</p>
     </div>
 
     <div class="image-workspace-frame" transition:name="image-workspace-frame">
@@ -48,15 +47,18 @@ const description = 'Resize JPG, PNG and WebP images to exact width and height i
             <div class="image-tool-row"><input id="resize-no-enlarge" type="checkbox" /><label for="resize-no-enlarge"><strong>Do not enlarge smaller images</strong><br />Useful when you only want to reduce dimensions.</label></div>
             <div class="image-tool-status" id="resize-status" role="status" aria-live="polite"></div>
             <button class="image-tool-primary" id="resize-action" type="button" disabled>Resize image</button>
+            <div class="image-tool-workspace-actions">
+              <a class="image-tool-download" id="resize-download" href="#" download>Download current image</a>
+              <button class="image-tool-secondary" id="resize-another" type="button">Replace image</button>
+            </div>
           </div>
         </div>
 
-        <div class="image-tool-result" id="resize-result" hidden>
-          <div class="image-tool-result-head"><div><strong>Resized image is ready</strong><span id="resize-result-meta"></span></div></div>
-          <div class="image-tool-result-preview"><img id="resize-result-image" alt="Resized image preview" /></div>
-          <div class="image-tool-result-actions"><a class="image-tool-primary" id="resize-download" href="#" download>Download resized image</a><button class="image-tool-secondary" id="resize-another" type="button">Choose another image</button></div>
-        </div>
       </div>
+    </div>
+    <div class="image-tool-supporting-copy">
+      <p>Change the width and height of the whole image without cutting content. Keep the aspect ratio, or unlock it when a specification requires exact dimensions.</p>
+      <div class="image-tool-badges" aria-label="Supported files and processing"><span>JPG, PNG, WebP</span><span>Width × Height in px</span><span>Processed in your browser</span></div>
     </div>
   </section>
 

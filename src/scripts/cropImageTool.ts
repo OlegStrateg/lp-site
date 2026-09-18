@@ -58,16 +58,12 @@ export function initCropImageTool(): void {
   const preset = byId<HTMLSelectElement>('crop-preset');
   const button = byId<HTMLButtonElement>('crop-action');
   const status = byId<HTMLElement>('crop-status');
-  const result = byId<HTMLElement>('crop-result');
-  const resultImage = byId<HTMLImageElement>('crop-result-image');
-  const resultMeta = byId<HTMLElement>('crop-result-meta');
   const download = byId<HTMLAnchorElement>('crop-download');
   const another = byId<HTMLButtonElement>('crop-another');
 
   let image: LoadedImage | null = null;
   let selection: CropRect = { x: 0, y: 0, width: 1, height: 1 };
   let drag: DragState | null = null;
-  let resultUrl = '';
 
   track('tool_view', { tool: 'crop_image' });
 
@@ -77,12 +73,16 @@ export function initCropImageTool(): void {
     status.classList.toggle('is-success', kind === 'success');
   }
 
-  function clearResult(): void {
-    if (resultUrl) URL.revokeObjectURL(resultUrl);
-    resultUrl = '';
-    resultImage.removeAttribute('src');
-    download.removeAttribute('href');
-    result.hidden = true;
+  function syncDownloadFromWorkspace(): void {
+    const snapshot = getWorkspaceSnapshot();
+    if (!snapshot.image || !snapshot.sourceUrl) {
+      download.removeAttribute('href');
+      download.hidden = true;
+      return;
+    }
+    download.href = snapshot.sourceUrl;
+    download.download = snapshot.image.file.name || 'image';
+    download.hidden = false;
   }
 
   function normalizedRect(rect: CropRect): CropRect {
@@ -315,11 +315,11 @@ export function initCropImageTool(): void {
     root.dataset.state = 'ready';
     button.disabled = false;
     setStatus(snapshot.source === 'extension' ? 'Image received from the extension. Drag the crop or enter exact pixels.' : 'Drag the corners to resize the crop, drag inside to move it, or draw a new area outside.', 'success');
+    syncDownloadFromWorkspace();
     return true;
   }
 
   async function chooseFile(file: File): Promise<void> {
-    clearResult();
     root.dataset.state = 'loading';
     drop.hidden = true;
     workspace.hidden = false;
@@ -339,7 +339,6 @@ export function initCropImageTool(): void {
 
   async function crop(): Promise<void> {
     if (!image) return;
-    clearResult();
     const rect = normalizedRect(selection);
     try {
       root.dataset.state = 'processing';
@@ -359,19 +358,13 @@ export function initCropImageTool(): void {
       const outputName = downloadName(image, `crop-${rect.width}x${rect.height}`);
       const outputFile = new File([blob], outputName, { type: image.mime, lastModified: Date.now() });
 
-      resultUrl = URL.createObjectURL(blob);
-      resultImage.src = resultUrl;
-      resultMeta.textContent = `${rect.width} × ${rect.height} px · ${formatImageBytes(blob.size)}`;
-      download.href = resultUrl;
-      download.download = outputName;
-
       image = await setWorkspaceFile(outputFile, workspaceBefore.source);
       selection = { x: 0, y: 0, width: image.width, height: image.height };
       fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
       syncInputs();
       draw();
+      syncDownloadFromWorkspace();
 
-      result.hidden = false;
       root.dataset.state = 'success';
       setStatus('Crop ready.', 'success');
       saveState();
@@ -473,7 +466,5 @@ export function initCropImageTool(): void {
     if (image) track('download_click', { tool: 'crop_image', output_format: image.mime });
   });
   window.addEventListener('resize', draw);
-  document.addEventListener('astro:before-swap', clearResult, { once: true });
-
   hydrateFromWorkspace();
 }
