@@ -153,6 +153,16 @@ function canvasBlob(canvas) {
   });
 }
 
+async function supportsBlobMessaging() {
+  try {
+    const probe = new Blob(['lp'], { type: 'application/octet-stream' });
+    const response = await sendRuntimeMessage({ cmd: 'lp-blob-message-probe', file: probe });
+    return response?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 function installEditorButton() {
   const install = () => {
     const canvas = document.getElementById('canvas');
@@ -286,6 +296,11 @@ function installEditorButton() {
       if (!document.body.classList.contains('has-img') || document.body.classList.contains('batch-mode') || !canvas.width || !canvas.height) return;
       button.disabled = true;
       try {
+        if (!(await supportsBlobMessaging())) {
+          fallbackOpen();
+          return;
+        }
+
         const blob = await canvasBlob(canvas);
         const response = await sendRuntimeMessage({
           cmd: 'lp-open-web-editor',
@@ -318,6 +333,11 @@ function senderOrigin(sender) {
 
 function installServiceWorkerBridge() {
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.cmd === 'lp-blob-message-probe') {
+      sendResponse({ ok: message.file instanceof Blob });
+      return false;
+    }
+
     if (message?.cmd !== 'lp-open-web-editor') return false;
     (async () => {
       try {
