@@ -64,9 +64,17 @@ await fs.writeFile(
 );
 await fs.writeFile(path.join(extensionDir, 'layerporter-edit-bridge.js'), bridge);
 await fs.writeFile(path.join(extensionDir, 'background.js'), "import './layerporter-edit-bridge.js';\n");
-await fs.writeFile(path.join(extensionDir, 'editor.html'), `<!doctype html><html><body>
-<canvas id="canvas"></canvas>
-<button id="downloadBtn" type="button">Download</button>
+await fs.writeFile(path.join(extensionDir, 'editor.html'), `<!doctype html><html><head><style>
+body{margin:0}.stage{position:relative;width:330px;height:220px;margin:20px;border:1px solid #ddd}
+#replaceBtn{position:absolute;top:16px;right:16px;width:112px;height:34px}
+#canvas{width:120px;height:90px}.download-wrap{width:330px;margin:20px}
+#downloadBtn{width:100%;height:44px}
+</style></head><body>
+<div id="stage" class="stage">
+  <canvas id="canvas"></canvas>
+  <button id="replaceBtn" type="button">Replace image</button>
+</div>
+<div class="download-wrap"><button id="downloadBtn" type="button">Download</button></div>
 <script type="module" src="layerporter-edit-bridge.js"></script>
 </body></html>`);
 
@@ -324,8 +332,20 @@ try {
   await waitFor(async () => evaluate(cdp, editorSession, `!!document.getElementById('lpWebEditBtn')`), 15000, 'Edit in LayerPorter button');
 
   const normalDisplay = await evaluate(cdp, editorSession, `getComputedStyle(document.getElementById('lpWebEditBtn')).display`);
+  const placement = await waitFor(async () => {
+    const value = await evaluate(cdp, editorSession, `(()=>{const e=document.getElementById('lpWebEditBtn');const r=document.getElementById('replaceBtn');const s=document.getElementById('stage');const er=e.getBoundingClientRect();const rr=r.getBoundingClientRect();const sr=s.getBoundingClientRect();return {floating:e.classList.contains('lp-edit-floating'),compact:e.classList.contains('lp-edit-compact'),edit:{left:er.left,right:er.right,top:er.top,width:er.width},replace:{left:rr.left,right:rr.right,top:rr.top,width:rr.width},stage:{left:sr.left,right:sr.right,width:sr.width},gap:rr.left-er.right,overlap:!(er.right<=rr.left||er.left>=rr.right)};})()`);
+    return value?.floating && !value?.overlap && value?.gap >= 6 ? value : null;
+  }, 10000, 'Edit button next to Replace without overlap');
+
   const batchDisplay = await evaluate(cdp, editorSession, `(()=>{document.body.classList.add('batch-mode');const d=getComputedStyle(document.getElementById('lpWebEditBtn')).display;document.body.classList.remove('batch-mode');return d})()`);
   if (normalDisplay !== 'flex' || batchDisplay !== 'none') throw new Error(`button visibility gate failed normal=${normalDisplay} batch=${batchDisplay}`);
+
+  const narrowPlacement = await waitFor(async () => {
+    await evaluate(cdp, editorSession, `document.getElementById('stage').style.width='190px'; true`);
+    const value = await evaluate(cdp, editorSession, `(()=>{const e=document.getElementById('lpWebEditBtn');const r=document.getElementById('replaceBtn');const er=e.getBoundingClientRect();const rr=r.getBoundingClientRect();return {compact:e.classList.contains('lp-edit-compact'),editWidth:er.width,gap:rr.left-er.right,overlap:!(er.right<=rr.left||er.left>=rr.right)};})()`);
+    return value?.compact && !value?.overlap && value?.gap >= 6 ? value : null;
+  }, 10000, 'compact Edit button on narrow panel');
+  await evaluate(cdp, editorSession, `document.getElementById('stage').style.width='330px'; true`);
 
   await evaluate(cdp, editorSession, `document.getElementById('lpWebEditBtn').click(); true`);
 
@@ -351,7 +371,7 @@ try {
   if (evidence.blobType !== 'image/png' || evidence.blobSize <= 0) throw new Error('Blob metadata invalid');
   if (JSON.stringify(evidence.pngSignature) !== JSON.stringify([137,80,78,71])) throw new Error('PNG signature invalid');
 
-  report.button = { normalDisplay, batchDisplay };
+  report.button = { normalDisplay, batchDisplay, placement, narrowPlacement };
   report.externalBridge = evidence;
   report.requests = requests;
   report.result = 'PASS';
