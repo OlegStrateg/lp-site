@@ -1,54 +1,29 @@
-name: Temporary Picture Converter Handoff E2E
-
+name: Picture Converter Handoff E2E
 on:
   push:
     branches:
       - test/picture-converter-handoff-e2e-2026-09-18
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   e2e:
-    strategy:
-      fail-fast: false
-      matrix:
-        lang: [en, ru]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-
-      - name: Setup current stable Chrome
-        id: chrome
+          node-version: 22
+      - id: chrome
         uses: browser-actions/setup-chrome@v2
         with:
           chrome-version: stable
-          install-dependencies: true
-
-      - name: Show Chrome version
-        run: "$CHROME_PATH" --version
+      - run: "$CHROME_PATH" --version
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
-
-      - name: Run Picture Converter → LayerPorter E2E
-        run: sudo -E "$(command -v node)" _internal/e2e/picture-converter/run-e2e.mjs
+      - run: sudo -E "$(command -v node)" _internal/e2e/picture-converter/run-e2e.mjs
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
-          LP_TEST_LANG: ${{ matrix.lang }}
-
-      - name: Upload evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: picture-converter-handoff-e2e-${{ matrix.lang }}
-          path: picture-converter-handoff-e2e-${{ matrix.lang }}.json
-          if-no-files-found: warn
-          retention-days: 7
+          LP_TEST_LANG: en
