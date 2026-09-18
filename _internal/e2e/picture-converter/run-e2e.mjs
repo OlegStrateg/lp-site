@@ -45,6 +45,7 @@ const manifest = {
   manifest_version: 3,
   name: 'LayerPorter Picture Converter bridge E2E',
   version: '0.0.0',
+  default_locale: testLang,
   message_serialization: 'structured_clone',
   externally_connectable: { matches: ['https://layerporter.com/*'] },
   permissions: ['storage'],
@@ -53,6 +54,14 @@ const manifest = {
 };
 
 await fs.writeFile(path.join(extensionDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+await fs.mkdir(path.join(extensionDir, '_locales', testLang), { recursive: true });
+await fs.writeFile(
+  path.join(extensionDir, '_locales', testLang, 'messages.json'),
+  JSON.stringify({
+    layerPorterWebLocale: { message: testLang },
+    editImageOnLayerPorter: { message: testLang === 'ru' ? 'Редактировать в LayerPorter' : 'Edit in LayerPorter' }
+  }, null, 2)
+);
 await fs.writeFile(path.join(extensionDir, 'layerporter-edit-bridge.js'), bridge);
 await fs.writeFile(path.join(extensionDir, 'background.js'), "import './layerporter-edit-bridge.js';\n");
 await fs.writeFile(path.join(extensionDir, 'editor.html'), `<!doctype html><html><body>
