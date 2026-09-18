@@ -35,7 +35,9 @@ export async function importExtensionImageFromUrl(): Promise<boolean> {
   const token = url.searchParams.get('lp_edit_token') || '';
   const extensionId = url.searchParams.get('lp_extension_id') || '';
   if (!token || !extensionId) return false;
+  document.documentElement.dataset.lpExtensionImport = 'pending';
   if (!TOKEN_RE.test(token) || !EXTENSION_ID_RE.test(extensionId)) {
+    document.documentElement.dataset.lpExtensionImport = 'failed';
     cleanBridgeParams();
     return false;
   }
