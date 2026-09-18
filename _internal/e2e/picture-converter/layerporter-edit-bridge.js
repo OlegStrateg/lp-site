@@ -157,24 +157,130 @@ function installEditorButton() {
   const install = () => {
     const canvas = document.getElementById('canvas');
     const download = document.getElementById('downloadBtn');
-    if (!(canvas instanceof HTMLCanvasElement) || !(download instanceof HTMLElement) || document.getElementById('lpWebEditBtn')) return;
+    const replace = document.getElementById('replaceBtn');
+    const stage = document.getElementById('stage');
+    if (
+      !(canvas instanceof HTMLCanvasElement)
+      || !(download instanceof HTMLElement)
+      || !(replace instanceof HTMLElement)
+      || !(stage instanceof HTMLElement)
+      || document.getElementById('lpWebEditBtn')
+    ) return;
 
     const style = document.createElement('style');
     style.textContent = `
-      #lpWebEditBtn{display:none;width:100%;min-height:44px;margin-top:8px;border:1px solid rgba(74,50,203,.26);border-radius:12px;background:#fff;color:#4a32cb;font:700 13px/1.2 Inter,Geist,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer;align-items:center;justify-content:center;gap:8px;transition:background .15s,border-color .15s,transform .15s}
+      #lpWebEditBtn{
+        display:none;width:100%;min-height:44px;margin-top:8px;
+        border:1px solid rgba(74,50,203,.26);border-radius:12px;
+        background:#fff;color:#4a32cb;
+        font:700 13px/1.2 Inter,Geist,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        cursor:pointer;align-items:center;justify-content:center;gap:7px;
+        transition:background .15s,border-color .15s,transform .15s,box-shadow .15s
+      }
       body.has-img:not(.batch-mode) #lpWebEditBtn{display:flex}
       #lpWebEditBtn:hover{background:#f6f3ff;border-color:#4a32cb;transform:translateY(-1px)}
       #lpWebEditBtn:focus-visible{outline:2px solid #4a32cb;outline-offset:2px}
       #lpWebEditBtn:disabled{opacity:.55;cursor:wait;transform:none}
+      #lpWebEditBtn .lp-edit-icon{width:16px;height:16px;flex:0 0 16px}
+      #lpWebEditBtn.lp-edit-floating{
+        position:absolute;z-index:3;width:auto;min-width:96px;height:34px;min-height:34px;
+        margin:0;padding:0 10px;border-radius:10px;
+        background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,247,253,.95));
+        box-shadow:0 4px 12px rgba(32,22,75,.12),inset 0 1px 0 rgba(255,255,255,.9);
+        white-space:nowrap
+      }
+      #lpWebEditBtn.lp-edit-floating:hover{
+        box-shadow:0 7px 16px rgba(58,39,145,.16),inset 0 1px 0 #fff
+      }
+      #lpWebEditBtn.lp-edit-floating.lp-edit-compact{
+        width:34px;min-width:34px;padding:0;gap:0
+      }
+      #lpWebEditBtn.lp-edit-floating.lp-edit-compact .lp-edit-label{display:none}
     `;
     document.head.appendChild(style);
 
     const button = document.createElement('button');
     button.id = 'lpWebEditBtn';
     button.type = 'button';
-    const label = chrome.i18n?.getMessage?.('editImageOnLayerPorter') || 'Edit image on LayerPorter';
-    button.innerHTML = `<span aria-hidden="true">✦</span><span>${label}</span>`;
+    const label = chrome.i18n?.getMessage?.('editImageOnLayerPorter') || 'Edit image';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'lp-edit-icon');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('fill', 'none');
+    icon.setAttribute('stroke', 'currentColor');
+    icon.setAttribute('stroke-width', '2');
+    icon.setAttribute('stroke-linecap', 'round');
+    icon.setAttribute('stroke-linejoin', 'round');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>';
+
+    const labelNode = document.createElement('span');
+    labelNode.className = 'lp-edit-label';
+    labelNode.textContent = label;
+    button.append(icon, labelNode);
+
+    // Full editor keeps the previous non-invasive placement below Download.
     download.insertAdjacentElement('afterend', button);
+
+    let placementFrame = 0;
+    const placeButton = () => {
+      cancelAnimationFrame(placementFrame);
+      placementFrame = requestAnimationFrame(() => {
+        const sidePanelPlacement = replace.parentElement === stage;
+
+        if (!sidePanelPlacement) {
+          if (button.previousElementSibling !== download) download.insertAdjacentElement('afterend', button);
+          button.classList.remove('lp-edit-floating', 'lp-edit-compact');
+          button.style.top = '';
+          button.style.right = '';
+          button.style.left = '';
+          return;
+        }
+
+        if (button.parentElement !== stage) stage.appendChild(button);
+        button.classList.add('lp-edit-floating');
+        button.classList.remove('lp-edit-compact');
+
+        const stageRect = stage.getBoundingClientRect();
+        const replaceRect = replace.getBoundingClientRect();
+        const gap = 8;
+        const edgeGap = Math.max(0, stageRect.right - replaceRect.right);
+        const right = Math.max(0, edgeGap + replaceRect.width + gap);
+        const top = Math.max(0, replaceRect.top - stageRect.top);
+
+        button.style.top = `${Math.round(top)}px`;
+        button.style.right = `${Math.round(right)}px`;
+        button.style.left = 'auto';
+
+        // Narrow side panels must never wrap or push the existing Replace button.
+        const requiredWidth = right + button.getBoundingClientRect().width + 8;
+        if (requiredWidth > stageRect.width) button.classList.add('lp-edit-compact');
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(placeButton);
+    resizeObserver.observe(stage);
+    resizeObserver.observe(replace);
+
+    const replaceObserver = new MutationObserver(placeButton);
+    replaceObserver.observe(replace, {
+      attributes: true,
+      attributeFilter: ['style', 'hidden'],
+    });
+
+    const bodyObserver = new MutationObserver(placeButton);
+    bodyObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+      subtree: true,
+    });
+
+    window.addEventListener('resize', placeButton, { passive: true });
+    placeButton();
 
     button.addEventListener('click', async () => {
       if (!document.body.classList.contains('has-img') || document.body.classList.contains('batch-mode') || !canvas.width || !canvas.height) return;
