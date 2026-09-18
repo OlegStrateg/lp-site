@@ -196,10 +196,16 @@ try {
 
   const extensionId = await waitFor(async () => {
     const targets = await cdp.send('Target.getTargets');
-    const target = targets.targetInfos?.find((t) => String(t.url || '').startsWith('chrome-extension://') && (t.type === 'service_worker' || t.type === 'background_page'));
+    report.initialTargets = targets.targetInfos?.map((t) => ({ type: t.type, url: t.url })) || [];
+    const target = targets.targetInfos?.find((t) =>
+      String(t.url || '').startsWith('chrome-extension://') &&
+      String(t.url || '').endsWith('/background.js') &&
+      (t.type === 'service_worker' || t.type === 'background_page')
+    );
     return target ? new URL(target.url).host : null;
-  }, 30000, 'extension service worker target');
+  }, 30000, 'Picture Converter service worker target');
   report.extensionId = extensionId;
+  console.log('E2E extension:', extensionId);
 
   const editorTarget = await cdp.send('Target.createTarget', { url: `chrome-extension://${extensionId}/editor.html` });
   const editorAttach = await cdp.send('Target.attachToTarget', { targetId: editorTarget.targetId, flatten: true });
@@ -207,11 +213,21 @@ try {
   await cdp.send('Runtime.enable', {}, editorSession);
   await cdp.send('Page.enable', {}, editorSession);
 
-  await waitFor(
-    async () => evaluate(cdp, editorSession, `document.readyState === 'complete' && !!document.getElementById('canvas') && !!document.getElementById('downloadBtn')`),
-    30000,
-    'extension editor DOM'
-  );
+  try {
+    await waitFor(
+      async () => evaluate(cdp, editorSession, `document.readyState === 'complete' && location.protocol === 'chrome-extension:' && !!document.getElementById('canvas') && !!document.getElementById('downloadBtn')`),
+      30000,
+      'extension editor DOM'
+    );
+  } catch (error) {
+    report.editorDiagnostics = {
+      href: await evaluate(cdp, editorSession, `location.href`).catch(() => ''),
+      readyState: await evaluate(cdp, editorSession, `document.readyState`).catch(() => ''),
+      html: await evaluate(cdp, editorSession, `document.documentElement?.outerHTML?.slice(0,4000) || ''`).catch(() => ''),
+    };
+    console.error('EDITOR DIAGNOSTICS', JSON.stringify(report.editorDiagnostics));
+    throw error;
+  }
 
   await evaluate(cdp, editorSession, `(()=>{const c=document.getElementById('canvas');c.width=4;c.height=3;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,4,3);document.body.classList.add('has-img');document.body.classList.remove('batch-mode');return true})()`);
   await waitFor(async () => evaluate(cdp, editorSession, `!!document.getElementById('lpWebEditBtn')`), 15000, 'Edit in LayerPorter button');
