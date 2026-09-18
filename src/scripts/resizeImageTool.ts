@@ -47,14 +47,10 @@ export function initResizeImageTool(): void {
   const noEnlargeInput = byId<HTMLInputElement>('resize-no-enlarge');
   const button = byId<HTMLButtonElement>('resize-action');
   const status = byId<HTMLElement>('resize-status');
-  const result = byId<HTMLElement>('resize-result');
-  const resultImage = byId<HTMLImageElement>('resize-result-image');
-  const resultMeta = byId<HTMLElement>('resize-result-meta');
   const download = byId<HTMLAnchorElement>('resize-download');
   const another = byId<HTMLButtonElement>('resize-another');
 
   let image: LoadedImage | null = null;
-  let resultUrl = '';
   let syncing = false;
 
   track('tool_view', { tool: 'resize_image' });
@@ -65,12 +61,16 @@ export function initResizeImageTool(): void {
     status.classList.toggle('is-success', kind === 'success');
   }
 
-  function clearResult(): void {
-    if (resultUrl) URL.revokeObjectURL(resultUrl);
-    resultUrl = '';
-    resultImage.removeAttribute('src');
-    download.removeAttribute('href');
-    result.hidden = true;
+  function syncDownloadFromWorkspace(): void {
+    const snapshot = getWorkspaceSnapshot();
+    if (!snapshot.image || !snapshot.sourceUrl) {
+      download.removeAttribute('href');
+      download.hidden = true;
+      return;
+    }
+    download.href = snapshot.sourceUrl;
+    download.download = snapshot.image.file.name || 'image';
+    download.hidden = false;
   }
 
   function saveState(): void {
@@ -111,6 +111,7 @@ export function initResizeImageTool(): void {
     root.dataset.state = 'ready';
     button.disabled = false;
     setStatus(snapshot.source === 'extension' ? 'Image received from the extension. Set the exact output dimensions.' : 'Set the exact output dimensions.', 'success');
+    syncDownloadFromWorkspace();
     return true;
   }
 
@@ -131,7 +132,6 @@ export function initResizeImageTool(): void {
   }
 
   async function chooseFile(file: File): Promise<void> {
-    clearResult();
     root.dataset.state = 'loading';
     drop.hidden = true;
     workspace.hidden = false;
@@ -151,7 +151,6 @@ export function initResizeImageTool(): void {
 
   async function resize(): Promise<void> {
     if (!image) return;
-    clearResult();
     const width = integerValue(widthInput);
     const height = integerValue(heightInput);
 
@@ -173,18 +172,12 @@ export function initResizeImageTool(): void {
       const outputName = downloadName(image, `${width}x${height}`);
       const outputFile = new File([blob], outputName, { type: image.mime, lastModified: Date.now() });
 
-      resultUrl = URL.createObjectURL(blob);
-      resultImage.src = resultUrl;
-      resultMeta.textContent = `${width} × ${height} px · ${formatImageBytes(blob.size)}`;
-      download.href = resultUrl;
-      download.download = outputName;
-
       image = await setWorkspaceFile(outputFile, workspaceBefore.source);
       const workspaceAfter = getWorkspaceSnapshot();
       preview.src = workspaceAfter.sourceUrl;
       fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
+      syncDownloadFromWorkspace();
 
-      result.hidden = false;
       root.dataset.state = 'success';
       setStatus('Image resized to the requested pixel dimensions.', 'success');
       saveState();
@@ -239,6 +232,5 @@ export function initResizeImageTool(): void {
     if (image) track('download_click', { tool: 'resize_image', output_format: image.mime });
   });
 
-  document.addEventListener('astro:before-swap', clearResult, { once: true });
   hydrateFromWorkspace();
 }
