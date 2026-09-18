@@ -5,16 +5,37 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
-const detectedChrome = spawnSync('bash', ['-lc', 'command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chrome'], { encoding: 'utf8' }).stdout.trim();
-const chromePath = process.env.CHROME_PATH || detectedChrome;
 const testLang = (process.env.LP_TEST_LANG || 'en').toLowerCase();
-if (!chromePath) throw new Error('CHROME_PATH is required');
 if (!['en', 'ru'].includes(testLang)) throw new Error(`Unsupported LP_TEST_LANG: ${testLang}`);
 
 const repo = process.cwd();
 const fixturePath = path.join(repo, '_internal/e2e/picture-converter/layerporter-edit-bridge.js');
 const bridge = await fs.readFile(fixturePath, 'utf8');
 const work = await fs.mkdtemp(path.join(os.tmpdir(), 'lp-picture-converter-e2e-'));
+
+async function installChromeForTesting() {
+  const metadataUrl = 'https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json';
+  const metadataResponse = await fetch(metadataUrl);
+  if (!metadataResponse.ok) throw new Error(`Chrome for Testing metadata failed: ${metadataResponse.status}`);
+  const metadata = await metadataResponse.json();
+  const stable = metadata?.channels?.Stable;
+  const download = stable?.downloads?.chrome?.find((item) => item.platform === 'linux64');
+  if (!stable?.version || !download?.url) throw new Error('Chrome for Testing stable linux64 download missing');
+
+  const archive = path.join(work, 'chrome-for-testing.zip');
+  const curl = spawnSync('curl', ['-L', '--fail', '--retry', '3', '--silent', '--show-error', '-o', archive, download.url], { encoding: 'utf8' });
+  if (curl.status !== 0) throw new Error(`Chrome for Testing download failed: ${curl.stderr}`);
+
+  const unzip = spawnSync('unzip', ['-q', archive, '-d', work], { encoding: 'utf8' });
+  if (unzip.status !== 0) throw new Error(`Chrome for Testing unzip failed: ${unzip.stderr}`);
+
+  const binary = path.join(work, 'chrome-linux64', 'chrome');
+  await fs.access(binary);
+  return { binary, version: stable.version };
+}
+
+const chromeForTesting = await installChromeForTesting();
+const chromePath = chromeForTesting.binary;
 const extensionDir = path.join(work, 'extension');
 const profile = path.join(work, 'profile');
 await fs.mkdir(extensionDir, { recursive: true });
@@ -69,9 +90,9 @@ async function freePort() {
 
 const chromeVersionProbe = spawnSync(chromePath, ['--version'], { encoding: 'utf8' });
 const chromeVersion = chromeVersionProbe.stdout.trim();
-console.log('CHROME PATH:', chromePath);
+console.log('CHROME FOR TESTING PATH:', chromePath);
+console.log('CHROME FOR TESTING METADATA VERSION:', chromeForTesting.version);
 console.log('CHROME VERSION:', chromeVersion);
-console.log('DISPLAY:', process.env.DISPLAY || '');
 if (chromeVersionProbe.stderr) console.log('CHROME VERSION STDERR:', chromeVersionProbe.stderr.trim());
 const major = Number(chromeVersion.match(/(\d+)/)?.[1] || 0);
 if (major < 148) throw new Error(`Chrome >=148 required, got ${chromeVersion}`);
@@ -124,6 +145,7 @@ await new Promise((resolve, reject) => {
 
 const debugPort = await freePort();
 const chrome = spawn(chromePath, [
+  '--headless=new',
   '--no-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
