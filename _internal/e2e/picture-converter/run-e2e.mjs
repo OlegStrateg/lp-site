@@ -115,50 +115,7 @@ const major = Number(chromeVersion.match(/(\d+)/)?.[1] || 0);
 if (major < 148) throw new Error(`Chrome >=148 required, got ${chromeVersion}`);
 
 const expectedPath = testLang === 'ru' ? '/ru/tools/crop-image/' : '/tools/crop-image/';
-const key = path.join(work, 'key.pem');
-const cert = path.join(work, 'cert.pem');
-const openssl = spawnSync('openssl', [
-  'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
-  '-keyout', key, '-out', cert, '-subj', '/CN=layerporter.com',
-  '-addext', 'subjectAltName=DNS:layerporter.com',
-], { encoding: 'utf8' });
-if (openssl.status !== 0) throw new Error(`openssl failed: ${openssl.stderr}`);
-
 const requests = [];
-const expectedPathLiteral = JSON.stringify(expectedPath);
-const siteHtml = `<!doctype html><html><head><meta charset="utf-8"><title>LayerPorter bridge E2E</title></head><body><pre id="out">running</pre><script>
-window.__lpEvidence={};
-function extSend(extensionId,message){return new Promise((resolve,reject)=>{try{chrome.runtime.sendMessage(extensionId,message,(response)=>{const e=chrome.runtime.lastError;if(e)reject(new Error(e.message));else resolve(response);});}catch(e){reject(e);}})}
-(async()=>{try{
- const q=new URL(location.href).searchParams;
- const extensionId=q.get('lp_extension_id')||'';
- const token=q.get('lp_edit_token')||'';
- const source=q.get('lp_source')||'';
- if(!extensionId||!token) throw new Error('handoff parameters missing');
- if(location.pathname!==${expectedPathLiteral}) throw new Error('wrong localized route: '+location.pathname);
- const first=await extSend(extensionId,{type:'LP_IMAGE_EDITOR_PULL',token,origin:location.origin});
- if(!first?.ok||!(first.file instanceof Blob)) throw new Error('first external pull did not return Blob');
- const bytes=new Uint8Array(await first.file.arrayBuffer());
- if(bytes.length<8||bytes[0]!==137||bytes[1]!==80||bytes[2]!==78||bytes[3]!==71) throw new Error('PNG payload corrupted');
- const second=await extSend(extensionId,{type:'LP_IMAGE_EDITOR_PULL',token,origin:location.origin});
- if(second?.ok!==false||!/missing|expired/i.test(String(second?.error||''))) throw new Error('token was not one-time');
- const bad=await extSend(extensionId,{type:'LP_IMAGE_EDITOR_PULL',token:'x'.repeat(32),origin:'https://evil.example'});
- if(bad?.ok!==false||!/Untrusted origin/i.test(String(bad?.error||''))) throw new Error('message origin gate failed');
- window.__lpEvidence={ok:true,path:location.pathname,extensionId,tokenLength:token.length,source,blobType:first.file.type,blobSize:first.file.size,pngSignature:[...bytes.slice(0,4)],oneTimeRejected:true,badOriginRejected:true};
- document.documentElement.dataset.lpBridge='pass';
- document.getElementById('out').textContent=JSON.stringify(window.__lpEvidence);
-}catch(error){window.__lpEvidence={ok:false,error:String(error?.stack||error)};document.documentElement.dataset.lpBridge='fail';document.getElementById('out').textContent=JSON.stringify(window.__lpEvidence);}})();
-</script></body></html>`;
-
-const server = https.createServer({ key: await fs.readFile(key), cert: await fs.readFile(cert) }, (req, res) => {
-  requests.push({ method: req.method, url: req.url, contentLength: req.headers['content-length'] || '' });
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-  res.end(siteHtml);
-});
-await new Promise((resolve, reject) => {
-  server.once('error', reject);
-  server.listen(443, '127.0.0.1', resolve);
-});
 
 const debugPort = await freePort();
 const chrome = spawn(chromePath, [
@@ -171,9 +128,6 @@ const chrome = spawn(chromePath, [
   `--user-data-dir=${profile}`,
   `--disable-extensions-except=${extensionDir}`,
   `--load-extension=${extensionDir}`,
-  '--ignore-certificate-errors',
-  '--allow-insecure-localhost',
-  '--host-resolver-rules=MAP layerporter.com 127.0.0.1,EXCLUDE localhost',
   'about:blank',
 ], { stdio: ['ignore', 'pipe', 'pipe'] });
 
@@ -347,36 +301,58 @@ try {
   }, 10000, 'compact Edit button on narrow panel');
   await evaluate(cdp, editorSession, `document.getElementById('stage').style.width='330px'; true`);
 
+  const handoffStartedAt = Date.now();
   await evaluate(cdp, editorSession, `document.getElementById('lpWebEditBtn').click(); true`);
 
   const siteTarget = await waitFor(async () => {
     const targets = await cdp.send('Target.getTargets');
-    return targets.targetInfos?.find((t) => String(t.url || '').startsWith('https://layerporter.com/') && String(t.url || '').includes('lp_edit_token=')) || null;
-  }, 30000, 'LayerPorter handoff tab');
+    return targets.targetInfos?.find((t) => {
+      try {
+        const url = new URL(String(t.url || ''));
+        return url.origin === 'https://layerporter.com' && url.pathname === expectedPath;
+      } catch {
+        return false;
+      }
+    }) || null;
+  }, 30000, 'production LayerPorter handoff tab');
 
   const siteAttach = await cdp.send('Target.attachToTarget', { targetId: siteTarget.targetId, flatten: true });
   const siteSession = siteAttach.sessionId;
   await cdp.send('Runtime.enable', {}, siteSession);
   await cdp.send('Page.enable', {}, siteSession);
 
-  const bridgeState = await waitFor(async () => {
-    const state = await evaluate(cdp, siteSession, `document.documentElement.dataset.lpBridge || ''`);
-    return state === 'pass' || state === 'fail' ? state : null;
-  }, 30000, 'external structured-clone pull');
+  const evidence = await waitFor(async () => {
+    const value = await evaluate(cdp, siteSession, `(()=> {
+      const workspace = document.querySelector('#crop-workspace');
+      const drop = document.querySelector('#crop-drop');
+      const fileMeta = document.querySelector('#crop-file-meta');
+      const root = document.documentElement;
+      return {
+        href: location.href,
+        path: location.pathname,
+        search: location.search,
+        state: root.dataset.lpWorkspaceState || '',
+        importState: root.dataset.lpExtensionImport || '',
+        workspaceHidden: workspace ? workspace.hidden : null,
+        dropHidden: drop ? drop.hidden : null,
+        fileMeta: fileMeta?.textContent || ''
+      };
+    })()`);
+    return value?.state === 'active' && value?.workspaceHidden === false && value?.dropHidden === true && value?.fileMeta ? value : null;
+  }, 30000, 'production workspace active');
 
-  const evidence = await evaluate(cdp, siteSession, `window.__lpEvidence || null`);
-  if (bridgeState !== 'pass' || !evidence?.ok) throw new Error(`external bridge failed: ${JSON.stringify(evidence)}`);
-  if (evidence.source !== 'picture_converter') throw new Error(`wrong source: ${evidence.source}`);
+  evidence.elapsedMs = Date.now() - handoffStartedAt;
+
   if (evidence.path !== expectedPath) throw new Error(`wrong route: ${evidence.path}`);
-  if (evidence.blobType !== 'image/png' || evidence.blobSize <= 0) throw new Error('Blob metadata invalid');
-  if (JSON.stringify(evidence.pngSignature) !== JSON.stringify([137,80,78,71])) throw new Error('PNG signature invalid');
+  if (evidence.search.includes('lp_edit_token') || evidence.search.includes('lp_extension_id')) throw new Error('handoff parameters were not cleaned');
+  if (evidence.importState !== 'success') throw new Error(`unexpected import state: ${evidence.importState}`);
 
   report.button = { normalDisplay, batchDisplay, placement, narrowPlacement };
-  report.externalBridge = evidence;
+  report.productionHandoff = evidence;
   report.requests = requests;
   report.result = 'PASS';
 
-  console.log(`PICTURE CONVERTER → LAYERPORTER E2E PASS — ${chromeVersion} — lang=${testLang} — path=${evidence.path} — blob=${evidence.blobSize} bytes`);
+  console.log(`PICTURE CONVERTER → PRODUCTION LAYERPORTER PASS — ${chromeVersion} — lang=${testLang} — path=${evidence.path} — ready=${evidence.elapsedMs}ms — meta=${evidence.fileMeta}`);
 } catch (error) {
   report.error = String(error?.stack || error);
   report.chromeStderr = chromeStderr.slice(-12000);
@@ -387,5 +363,4 @@ try {
   await fs.writeFile(path.join(repo, `picture-converter-handoff-e2e-${testLang}.json`), `${JSON.stringify(report, null, 2)}\n`, 'utf8').catch(() => {});
   cdp?.close();
   chrome.kill('SIGTERM');
-  await new Promise((resolve) => server.close(resolve));
 }
