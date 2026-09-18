@@ -227,20 +227,36 @@ try {
   await cdp.open();
   await cdp.send('Target.setDiscoverTargets', { discover: true });
 
-  const extensionId = await waitFor(async () => {
+  const extensionTarget = await waitFor(async () => {
     const targets = await cdp.send('Target.getTargets');
-    report.initialTargets = targets.targetInfos?.map((t) => ({ type: t.type, url: t.url })) || [];
-    const target = targets.targetInfos?.find((t) =>
+    report.initialTargets = targets.targetInfos?.map((t) => ({ targetId: t.targetId, type: t.type, url: t.url })) || [];
+    return targets.targetInfos?.find((t) =>
       String(t.url || '').startsWith('chrome-extension://') &&
       String(t.url || '').endsWith('/background.js') &&
       (t.type === 'service_worker' || t.type === 'background_page')
-    );
-    return target ? new URL(target.url).host : null;
+    ) || null;
   }, 30000, 'Picture Converter service worker target');
+
+  const extensionId = new URL(extensionTarget.url).host;
   report.extensionId = extensionId;
   console.log('E2E extension:', extensionId);
 
-  const editorTarget = await cdp.send('Target.createTarget', { url: `chrome-extension://${extensionId}/editor.html` });
+  const workerAttach = await cdp.send('Target.attachToTarget', { targetId: extensionTarget.targetId, flatten: true });
+  const workerSession = workerAttach.sessionId;
+  await cdp.send('Runtime.enable', {}, workerSession);
+  const openedTabId = await evaluate(
+    cdp,
+    workerSession,
+    `new Promise((resolve, reject) => { chrome.tabs.create({ url: chrome.runtime.getURL('editor.html'), active: true }, (tab) => { const e = chrome.runtime.lastError; if (e) reject(new Error(e.message)); else resolve(tab?.id || 0); }); })`,
+    true
+  );
+  report.openedTabId = openedTabId;
+
+  const editorTarget = await waitFor(async () => {
+    const targets = await cdp.send('Target.getTargets');
+    return targets.targetInfos?.find((t) => t.type === 'page' && t.url === `chrome-extension://${extensionId}/editor.html`) || null;
+  }, 30000, 'extension editor target');
+
   const editorAttach = await cdp.send('Target.attachToTarget', { targetId: editorTarget.targetId, flatten: true });
   const editorSession = editorAttach.sessionId;
   await cdp.send('Runtime.enable', {}, editorSession);
