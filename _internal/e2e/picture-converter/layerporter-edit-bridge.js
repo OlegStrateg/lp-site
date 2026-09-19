@@ -185,21 +185,21 @@ function installEditorButton() {
     const style = document.createElement('style');
     style.textContent = `
       #lpWebEditBtn{
-        display:none;width:100%;min-height:44px;margin-top:8px;
+        display:none;width:100%;min-height:40px;margin-top:8px;
         border:1px solid rgba(74,50,203,.26);border-radius:12px;
         background:#fff;color:#4a32cb;
         font:700 13px/1.2 Inter,Geist,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-        cursor:pointer;align-items:center;justify-content:center;gap:7px;
+        cursor:pointer;align-items:center;justify-content:center;gap:4px;
         transition:background .15s,border-color .15s,transform .15s,box-shadow .15s
       }
       body.has-img:not(.batch-mode) #lpWebEditBtn{display:flex}
       #lpWebEditBtn:hover{background:#f6f3ff;border-color:#4a32cb;transform:translateY(-1px)}
       #lpWebEditBtn:focus-visible{outline:2px solid #4a32cb;outline-offset:2px}
       #lpWebEditBtn:disabled{opacity:.55;cursor:wait;transform:none}
-      #lpWebEditBtn .lp-edit-icon{width:16px;height:16px;flex:0 0 16px}
+      #lpWebEditBtn .lp-edit-icon{width:14px;height:14px;flex:0 0 14px}
       #lpWebEditBtn.lp-edit-floating{
-        position:absolute;z-index:3;width:auto;min-width:96px;height:34px;min-height:34px;
-        margin:0;padding:0 10px;border-radius:10px;
+        position:absolute;z-index:3;width:auto;min-width:0;height:30px;min-height:30px;
+        margin:0;padding:0 8px;border-radius:8px;
         background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,247,253,.95));
         box-shadow:0 4px 12px rgba(32,22,75,.12),inset 0 1px 0 rgba(255,255,255,.9);
         white-space:nowrap
@@ -208,7 +208,7 @@ function installEditorButton() {
         box-shadow:0 7px 16px rgba(58,39,145,.16),inset 0 1px 0 #fff
       }
       #lpWebEditBtn.lp-edit-floating.lp-edit-compact{
-        width:34px;min-width:34px;padding:0;gap:0
+        width:30px;min-width:30px;padding:0;gap:0
       }
       #lpWebEditBtn.lp-edit-floating.lp-edit-compact .lp-edit-label{display:none}
     `;
