@@ -1,7 +1,7 @@
 {
   "locale": "zh-CN",
   "chrome_locale": "zh_CN",
-  "status": "pilot_draft_blind_to_existing_locale",
+  "status": "pilot_reviewed_draft_v2",
   "source": "02-translation-safe-source.json",
   "strings": {
     "extName": "Picture Converter",
@@ -10,7 +10,7 @@
     "pickFromSiteSub": "直接在页面上选择图片",
     "badgeLocal": "✓ 在设备上",
     "localNote": "处理在设备上完成，不会上传任何内容。",
-    "gotIt": "不固定，继续",
+    "gotIt": "不固定到工具栏，继续",
     "fbCardText": "已完成转换：$N$ — 简单评分可以帮助其他人找到 Picture Converter。",
     "batchTitle": "已选图片：$N$ → 生成一个 PDF",
     "batchSkippedBad": "已跳过无法读取的文件：$N$",
