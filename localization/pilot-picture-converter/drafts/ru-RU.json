@@ -1,7 +1,7 @@
 {
   "locale": "ru-RU",
   "chrome_locale": "ru",
-  "status": "pilot_draft_blind_to_existing_locale",
+  "status": "pilot_reviewed_draft_v2",
   "source": "02-translation-safe-source.json",
   "strings": {
     "extName": "Picture Converter",
@@ -13,9 +13,9 @@
     "gotIt": "Продолжить без закрепления",
     "fbCardText": "Конвертаций выполнено: $N$ — быстрая оценка поможет другим найти Picture Converter.",
     "batchTitle": "Выбрано изображений: $N$ → один PDF",
-    "batchSkippedBad": "Пропущено нечитаемых файлов: $N$",
+    "batchSkippedBad": "Пропущено файлов из-за ошибки чтения: $N$",
     "batchTooMany": "Не добавлено файлов: $N$ · Лимит PDF: $MAX$",
-    "batchReady": "Готово страниц: $N$ — при необходимости измените порядок и скачайте.",
+    "batchReady": "Страниц готово: $N$ — при необходимости измените порядок и скачайте.",
     "downloadPdfPages": "Скачать PDF · Страниц: $N$",
     "popupBlocked": "На этой странице нельзя выбрать изображение. Откройте сайт и попробуйте снова.",
     "pickerSelectingHint": "Нажмите на изображение или Esc для отмены",
@@ -27,7 +27,7 @@
     "convertAnotherBtn": "Конвертировать другое изображение",
     "menuQuick": "Быстрая конвертация ($FMT$)",
     "menuTo": "Конвертировать в $FMT$",
-    "openFullEditor": "Открыть редактор на отдельной странице",
+    "openFullEditor": "Открыть редактор отдельно",
     "fullEditorSub": "Те же инструменты, больше места",
     "alphaWarnFlatten": "⚠ Прозрачность будет заменена белым фоном.",
     "decodingHeic": "Декодирование HEIC (декодер загружается при первом запуске)…",
@@ -35,6 +35,6 @@
     "fromPageFail": "Не удалось загрузить выбранное изображение: $ERR$",
     "inputFormats": "Поддерживаются: PNG · JPG · WEBP · GIF · BMP · JFIF · SVG · AVIF · HEIC",
     "tipShortcut": "⌨ Нажмите Alt+Shift+C, чтобы выбрать изображение на любом сайте",
-    "tipRightClick": "⚡ Быстрее: конвертируйте изображение через меню правой кнопки мыши"
+    "tipRightClick": "⚡ Быстрее: конвертируйте изображение через контекстное меню"
   }
 }
