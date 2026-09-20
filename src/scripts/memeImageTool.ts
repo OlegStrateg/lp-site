@@ -634,10 +634,10 @@ export function initMemeImageTool(): void {
     try {
       const layerCount = layers.length;
       const blob = await renderComposition();
-      const before = getWorkspaceSnapshot();
+      const workspaceBefore = getWorkspaceSnapshot();
       const m = metrics();
       const outputFile = new File([blob], downloadName(image, 'meme'), { type: image.mime, lastModified: Date.now() });
-      image = await setWorkspaceFile(outputFile, before.source);
+      image = await setWorkspaceFile(outputFile, workspaceBefore.source);
       mode = 'inside';
       layers = [];
       selectedId = null;
