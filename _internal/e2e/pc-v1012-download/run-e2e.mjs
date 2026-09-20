@@ -195,6 +195,16 @@ try {
     throw new Error(`downloads warning remains: ${JSON.stringify(warnings.warnings)}`);
   }
 
+  const actualWarnings = await evaluate(
+    cdp,
+    pageSession,
+    `chrome.management.getPermissionWarningsByManifest(${JSON.stringify(JSON.stringify({"update_url":"https://clients2.google.com/service/update2/crx","manifest_version":3,"name":"__MSG_extName__","version":"1.0.12","description":"__MSG_extDesc__","default_locale":"en","message_serialization":"structured_clone","externally_connectable":{"matches":["https://layerporter.com/*"]},"permissions":["activeTab","scripting","contextMenus","offscreen","storage","sidePanel"],"host_permissions":["<all_urls>"],"side_panel":{"default_path":"src/editor.html"},"content_scripts":[{"matches":["https://layerporter.com/picture-converter/welcome/*"],"js":["src/welcome-bridge.js"],"run_at":"document_idle"},{"matches":["http://*/*","https://*/*"],"exclude_matches":["https://layerporter.com/picture-converter/welcome/*"],"js":["src/panel.js"],"run_at":"document_end"}],"web_accessible_resources":[{"resources":["icons/icon48.png","icons/icon128.png"],"matches":["<all_urls>"]}],"content_security_policy":{"extension_pages":"script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"},"background":{"service_worker":"src/background.js","type":"module"},"commands":{"launch-picker":{"suggested_key":{"default":"Alt+Shift+C"},"description":"__MSG_cmdPicker__"}},"action":{"default_title":"Picture Converter","default_icon":{"16":"icons/icon16.png","48":"icons/icon48.png","128":"icons/icon128.png"}},"icons":{"16":"icons/icon16.png","48":"icons/icon48.png","128":"icons/icon128.png"},"version_name":"1.0.12"}))})`,
+    true
+  );
+  if (actualWarnings.some((warning) => /Manage your downloads/i.test(warning))) {
+    throw new Error(`actual candidate still warns about downloads: ${JSON.stringify(actualWarnings)}`);
+  }
+
   const formats = [
     ['png', 'image/png'],
     ['jpg', 'image/jpeg'],
@@ -256,6 +266,7 @@ try {
     chromeForTesting: chromeInfo.version,
     permissions: manifest.permissions,
     warnings: warnings.warnings,
+    actualCandidateWarnings: actualWarnings,
     formats: formatResults,
     legacy: { mode: legacyResponse.mode, ...legacy },
     repeated: repeated.map((item) => item.mode),
