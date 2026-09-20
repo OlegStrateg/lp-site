@@ -59,4 +59,31 @@ assert(resizePage.includes('<ImageWorkspaceNav active="resize"') && cropPage.inc
 assert(resizeSource.includes("tool: 'resize_image'"), 'Resize analytics missing');
 assert(cropSource.includes("tool: 'crop_image'"), 'Crop analytics missing');
 
+const [memeHtml, memeSource, memePage] = await Promise.all([
+  fs.readFile('dist/tools/meme-generator/index.html', 'utf8'),
+  fs.readFile('src/scripts/memeImageTool.ts', 'utf8'),
+  fs.readFile('src/pages/tools/meme-generator.astro', 'utf8'),
+]);
+
+assert(memeHtml.includes('https://layerporter.com/tools/meme-generator/'), 'Meme canonical missing');
+assert(memeHtml.includes('Meme generator with draggable text'), 'Meme H1/copy missing');
+for (const id of [
+  'meme-preview', 'meme-layer-list', 'meme-add-layer', 'meme-text', 'meme-font', 'meme-size',
+  'meme-fill', 'meme-stroke', 'meme-stroke-width', 'meme-shadow', 'meme-background-enabled',
+  'meme-background-color', 'meme-align', 'meme-rotation', 'meme-action', 'meme-download',
+]) {
+  assert(memeHtml.includes(`id="${id}"`), `Meme control missing: ${id}`);
+}
+assert(memeHtml.includes('/tools/crop-image/') && memeHtml.includes('/tools/resize-image/'), 'Meme workspace navigation missing');
+assert(resizeHtml.includes('/tools/meme-generator/') && cropHtml.includes('/tools/meme-generator/'), 'Existing image tools must link to Meme');
+assert(sitemap.includes('<loc>https://layerporter.com/tools/meme-generator/</loc>'), 'Meme sitemap URL missing');
+assert(!/https?:\/\//i.test(memeSource), 'Meme runtime must not depend on remote URLs');
+assert(!/\bXMLHttpRequest\b|\bFormData\b/i.test(memeSource), 'Meme image payload must stay in browser runtime');
+assert(memeSource.includes("getWorkspaceToolState<MemeState>('meme')"), 'Meme per-tool workspace state missing');
+assert(memeSource.includes('setWorkspaceFile(outputFile, workspaceBefore.source)'), 'Meme output must return to shared Workspace');
+assert(memeSource.includes("tool: 'meme_generator'"), 'Meme analytics missing');
+assert(memePage.includes('clientRouter={true}') && memePage.includes('<ImageWorkspaceNav active="meme"'), 'Meme must use shared client Workspace');
+assert(bootstrapSource.includes("path.endsWith('/tools/meme-generator/')"), 'Meme bootstrap route missing');
+
+// Meme Generator static verification: full local browser runtime integrated with shared Image Workspace.
 console.log('IMAGE TOOLS STATIC VERIFY PASS — separate SEO URLs + shared client workspace + extension bridge + local runtime');
