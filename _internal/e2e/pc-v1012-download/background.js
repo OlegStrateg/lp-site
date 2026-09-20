@@ -51,19 +51,47 @@ async function sendOffscreenDownload(message) {
   return response || null;
 }
 
-async function saveConvertedBlob(blob, filename) {
-  let response = null;
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function closeDownloadOffscreen() {
   try {
-    response = await sendOffscreenDownload({ type: "download-blob", blob, filename });
-  } catch {
-    response = null;
+    await chrome.offscreen.closeDocument();
+  } catch {}
+}
+
+async function saveConvertedBlobOnce(blob, filename) {
+  try {
+    let response = null;
+    try {
+      response = await sendOffscreenDownload({ type: "download-blob", blob, filename });
+    } catch {
+      response = null;
+    }
+    if (response?.ok) return response;
+
+    const b64 = await blobToBase64(blob);
+    const dataUrl = `data:${blob.type || "application/octet-stream"};base64,${b64}`;
+    response = await sendOffscreenDownload({ type: "download-data-url", dataUrl, filename });
+    if (!response?.ok) throw new Error(response?.error || "Browser download failed");
+    return response;
+  } finally {
+    // Give Chrome time to take ownership of the navigation/download before
+    // destroying the document that owns the Blob URL.
+    await delay(300);
+    await closeDownloadOffscreen();
   }
-  if (response?.ok) return response;
-  const b64 = await blobToBase64(blob);
-  const dataUrl = `data:${blob.type || "application/octet-stream"};base64,${b64}`;
-  response = await sendOffscreenDownload({ type: "download-data-url", dataUrl, filename });
-  if (!response?.ok) throw new Error(response?.error || "Browser download failed");
-  return response;
+}
+
+let saveQueue = Promise.resolve();
+
+function saveConvertedBlob(blob, filename) {
+  const task = saveQueue
+    .catch(() => {})
+    .then(() => saveConvertedBlobOnce(blob, filename));
+  saveQueue = task.catch(() => {});
+  return task;
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
