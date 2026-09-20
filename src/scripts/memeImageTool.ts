@@ -479,6 +479,7 @@ export function initMemeImageTool(): void {
       image = await setWorkspaceFile(outputFile, workspaceBefore.source);
       layers = [];
       selectedId = null;
+      saveState();
       root.dataset.state = 'success';
       fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
       syncControls();
