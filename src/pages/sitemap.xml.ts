@@ -84,7 +84,7 @@ const STATIC_PATHS = [
   '/', '/ru/', '/de/', '/es/', '/fr/', '/pt-br/', '/ja/', '/zh-cn/',
   '/about/', '/extensions/', '/ru/extensions/', '/de/extensions/', '/es/extensions/', '/fr/extensions/', '/pt-br/extensions/', '/ja/extensions/', '/zh-cn/extensions/',
   '/privacy/', '/terms/', '/formats/', '/guides/', '/audio-extractor/',
-  '/tools/extract-audio-from-video/', '/tools/resize-image/', '/tools/crop-image/',
+  '/tools/extract-audio-from-video/', '/tools/resize-image/', '/tools/crop-image/', '/tools/meme-generator/',
   '/ru/tools/extract-audio-from-video/', '/ru/tools/resize-image/', '/ru/tools/crop-image/',
 ];
 
