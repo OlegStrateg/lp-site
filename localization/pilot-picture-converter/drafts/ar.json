@@ -1,7 +1,7 @@
 {
   "locale": "ar",
   "chrome_locale": "ar",
-  "status": "pilot_draft_blind_to_existing_locale",
+  "status": "pilot_reviewed_draft_v2",
   "source": "02-translation-safe-source.json",
   "strings": {
     "extName": "Picture Converter",
@@ -10,12 +10,12 @@
     "pickFromSiteSub": "حدّد صورة مباشرة من الصفحة",
     "badgeLocal": "✓ على جهازك",
     "localNote": "تتم المعالجة على جهازك. لا يتم رفع أي شيء.",
-    "gotIt": "المتابعة بدون تثبيت",
+    "gotIt": "المتابعة بدون تثبيت في شريط الأدوات",
     "fbCardText": "عمليات التحويل المكتملة: $N$ — يساعد التقييم السريع الآخرين في العثور على Picture Converter.",
     "batchTitle": "الصور المحددة: $N$ — ملف PDF واحد",
     "batchSkippedBad": "الملفات غير القابلة للقراءة التي تم تخطيها: $N$",
     "batchTooMany": "الملفات المستبعدة: $N$ · حد PDF: $MAX$",
-    "batchReady": "الصفحات الجاهزة: $N$ — أعد ترتيبها عند الحاجة ثم نزّلها.",
+    "batchReady": "الصفحات الجاهزة: $N$ — أعد ترتيبها عند الحاجة ثم نزّل ملف PDF.",
     "downloadPdfPages": "تنزيل PDF · الصفحات: $N$",
     "popupBlocked": "لا يمكن تحديد الصور في هذه الصفحة. افتح موقعًا وحاول مرة أخرى.",
     "pickerSelectingHint": "انقر على صورة أو اضغط Esc للإلغاء",
