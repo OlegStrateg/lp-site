@@ -811,7 +811,7 @@ export function initMemeImageTool(): void {
     } else if (interaction.type === 'scale') {
       const distance = distanceFromLayer(layer, point);
       layer.fontSize = clamp(interaction.startFontSize * distance / interaction.startDistance, 8, Math.max(4096, image.width));
-    } else {
+    } else if (interaction.type === 'rotate') {
       const angle = angleFromLayer(layer, point);
       layer.rotation = interaction.startRotation + angle - interaction.startAngle;
     }
