@@ -140,19 +140,31 @@ try {
     eventsEnabled: true,
   });
 
-  const worker = await waitFor(async () => {
+  const workerMatch = await waitFor(async () => {
     const targets = await cdp.send('Target.getTargets');
-    return targets.targetInfos?.find((target) =>
+    const candidates = (targets.targetInfos || []).filter((target) =>
       target.type === 'service_worker'
       && String(target.url).startsWith('chrome-extension://')
-    ) || null;
-  }, 30000, 'extension service worker');
+    );
+    for (const candidate of candidates) {
+      try {
+        const attached = await cdp.send('Target.attachToTarget', { targetId: candidate.targetId, flatten: true });
+        await cdp.send('Runtime.enable', {}, attached.sessionId);
+        const candidateManifest = await evaluate(cdp, attached.sessionId, 'chrome.runtime.getManifest()');
+        if (candidateManifest?.name === 'PC v1.0.12 download E2E') {
+          return { worker: candidate, workerSession: attached.sessionId, manifest: candidateManifest };
+        }
+        await cdp.send('Target.detachFromTarget', { sessionId: attached.sessionId }).catch(() => {});
+      } catch {}
+    }
+    return null;
+  }, 30000, 'PC v1.0.12 service worker');
 
-  const attached = await cdp.send('Target.attachToTarget', { targetId: worker.targetId, flatten: true });
-  const workerSession = attached.sessionId;
-  await cdp.send('Runtime.enable', {}, workerSession);
-  const manifest = await evaluate(cdp, workerSession, 'chrome.runtime.getManifest()');
+  const worker = workerMatch.worker;
+  const workerSession = workerMatch.workerSession;
+  const manifest = workerMatch.manifest;
   const extensionId = new URL(worker.url).host;
+  console.log('PC_V1012_MANIFEST', JSON.stringify(manifest));
 
   if (manifest.permissions.includes('downloads')) throw new Error('downloads permission still present');
   if (!manifest.permissions.includes('offscreen')) throw new Error('offscreen permission missing');
