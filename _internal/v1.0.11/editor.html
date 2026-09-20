@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Picture Converter</title>
+<style>
+  :root {
+    --primary: #4a32cb;
+    --primary-2: #634fe4;
+    --primary-hover: #3c27a8;
+    --primary-soft: #e4dfff;
+    --text-main: #1b1b1d;
+    --text-secondary: #5d5d68;
+    --border: #d9d5e5;
+    --bg: #f6f3f5;
+    --surface: #FFFFFF;
+    --success: #2ead68;
+    --error: #DC2626;
+    --gold: #f1b64a;
+    --side: clamp(14px, 4vw, 22px);
+    --gap: clamp(10px, 1.8dvh, 18px);
+    --outer-gap: 12px; /* фиксированный отступ между закреплёнными блоками — не зависит от высоты экрана,
+      меняется только #stage (grid-row minmax(0,1fr)) */
+
+    /* --- density variables (Шаг 2): значения ниже = плотность "comfortable" —
+       совпадают с прежними литералами 1:1, визуальных изменений на этом шаге нет.
+       Контроллер плотности (Шаг 4) переключает .page[data-density] на compact/dense. */
+    --stage-padding-y: 30px;
+    --stage-padding-x: 24px;
+    --illustration-width: 122px;
+    --illustration-height: 104px;
+    --illustration-gap: 22px;
+    --title-size: 18px;
+    --subtitle-size: 13px;
+    --primary-height: 52px;
+    --formats-title-gap: 22px;
+    --formats-row-gap: 8px;
+    --formats-top-gap: 13px;
+    --format-height: 30px;
+    --site-card-padding-y: 13px;
+    --site-icon-size: 44px;
+    --footer-height: 26px;
+    --footer-padding-y: 6px;
+  }
+  .page[data-density="compact"] {
+    --stage-padding-y: 20px;
+    --stage-padding-x: 20px;
+    --illustration-width: 96px;
+    --illustration-height: 82px;
+    --illustration-gap: 14px;
+    --title-size: 16px;
+    --subtitle-size: 12px;
+    --primary-height: 46px;
+    --formats-title-gap: 14px;
+    --formats-row-gap: 6px;
+    --formats-top-gap: 9px;
+    --format-height: 26px;
+    --site-card-padding-y: 10px;
+    --site-icon-size: 38px;
+    --footer-height: 24px;
+    --footer-padding-y: 4px;
+  }
+  .page[data-density="dense"] .icon { display: none; }
+  .page[data-density="dense"] {
+    --stage-padding-y: 12px;
+    --stage-padding-x: 14px;
+    --illustration-width: 0px;
+    --illustration-height: 0px;
+    --illustration-gap: 0px;
+    --title-size: 14.5px;
+    --subtitle-size: 0px;
+    --primary-height: 40px;
+    --formats-title-gap: 8px;
+    --formats-row-gap: 5px;
+    --formats-top-gap: 6px;
+    --format-height: 24px;
+    --site-card-padding-y: 8px;
+    --site-icon-size: 32px;
+    --footer-height: 22px;
+    --footer-padding-y: 3px;
+  }
+  /* Шаг 4: во время подбора плотности (schedulePanelLayout) #stage не должен
+     доигрывать свой обычный transition на padding — иначе измерение геометрии
+     попадает на анимируемое промежуточное значение, а не целевое. */
+  .page.layout-probe #stage { transition: none !important; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font: 14px/1.5 Inter, Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text-main);
+    background: var(--bg);
+  }
+  button { font: inherit; }
+  /* один grid на всю панель (как .panel в референсе): верх/низ — фиксированные ряды с
+     постоянным зазором, #stage — единственный ряд minmax(0,1fr), который растягивается
+     при изменении размера окна; остальные зазоры при этом не меняются */
+  .page {
+    max-width: 960px; margin: 0 auto; height: 100dvh;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: var(--outer-gap);
+    /* Освобождаем 5px для внешней hover-рамки .web-card, не меняя фактическое положение контента. */
+    padding: calc(var(--outer-gap) - 5px) var(--side) 0;
+  }
+  /* без картинки широкая страница не нужна — меньше пустоты по бокам */
+  body:not(.has-img) .page { max-width: 700px; }
+  /* Компенсация добавленных 5px у .content: визуальная позиция блоков остаётся прежней. */
+  body.has-img .page { gap: 8px; padding-top: 3px; padding-bottom: 0; }
+  body.has-img #stage { padding: 12px; }
+
+  /* .content — единственный ряд грида minmax(0,1fr): внутри него именно #stage растёт
+     (flex:1), остальные блоки (topSticky/workControls) — auto-высота.
+     .privacy/#fullEditorBtn/footer вынесены отдельными grid-строками .page, поэтому
+     их отступы друг от друга не зависят от размера экрана — меняется только #stage. */
+  .content { min-height: 0; overflow-y: auto; margin-inline: -12px; padding-inline: 12px; padding-top: 5px; /* 4px внешней рамки .web-card + 1px подъёма кнопки */ display: flex; flex-direction: column; gap: var(--gap); }
+  body:not(.has-img) #status:empty,
+  body:not(.has-img) #tipLine:empty,
+  body:not(.has-img) #lp-feedback-mount:empty { display: none; }
+
+  /* верхний блок (hero + переключатель источника + кнопка пикера) — не уезжает при
+     скролле внутри .content, единственный способ запустить пикер */
+  #topSticky {
+    position: sticky;
+    /* Не даём hover-рамке .web-card упереться в верхнюю границу прокручиваемого контейнера. */
+    top: 5px;
+    z-index: 5;
+    background: var(--bg);
+    min-width: 0;
+  }
+
+  /* --- Web Grabber: отдельная карточка над dropzone --- */
+  /* переключатель источника над карточкой сайта: «From computer» возвращает
+     на первый экран (resetToEmpty) — оформление 1 в 1 с mode-switch панели */
+  #modeSwitch {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    border: 0;
+    border-radius: 12px;
+    padding: 3px;
+    margin-bottom: 12px;
+    overflow: visible;
+  }
+  /* рамка отдельным верхним слоем на всех 4 сторонах — раньше border на самом
+     #modeSwitch резался верхней гранью при переключении вкладки (From computer) */
+  #modeSwitch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  #modeSwitch[hidden] { display: none; }
+  .mode-btn {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font: 600 12.5px/1.2 inherit;
+    font-family: inherit;
+    padding: 8px 6px;
+    border-radius: 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .mode-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .mode-btn.active { background: var(--primary-soft); color: var(--primary); }
+  .mode-btn:not(.active):hover { background: var(--bg); }
+
+  #pickRow { position: relative; display: block; }
+  .web-card {
+    position: relative; /* якорь для рамки ::after в состоянии is-selecting */
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: var(--site-card-padding-y) 10px; /* меньше отступ по бокам — кружки ближе к краю, тексту больше места */
+    border: 1px solid rgba(255,255,255,.66);
+    border-radius: 16px;
+    background: #fdfcff; /* непрозрачный — раньше был rgba(.5), из-за чего просвечивало то, что под карточкой */
+    /* было outline: 4px solid — он не обрезается по border-radius и вылезал прямыми
+       углами из-под скруглённых, видно как фиолетовые "ушки" в нижних углах.
+       box-shadow со spread даёт тот же мягкий ободок, но чисто по контуру скругления */
+    box-shadow: 0 10px 22px -11px rgba(74,50,203,.32), 0 0 15px -7px rgba(99,79,228,.30);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: var(--text-main);
+    text-align: left;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .web-card:hover { transform: translateY(-1px); box-shadow: 0 12px 25px rgba(74,50,203,.18), 0 0 0 4px rgba(74,50,203,.09); }
+  .web-card:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(74,50,203,.15), 0 0 0 4px rgba(74,50,203,.075); transition-duration: .1s; }
+  .web-text { flex: 1 1 0; min-width: 0; }
+  .web-icon {
+    width: var(--site-icon-size);
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    color: var(--primary);
+  }
+  .web-icon { overflow: hidden; }
+  .web-icon svg { width: 52%; height: 52%; }
+  /* фавиконка заполняет весь квадрат, глобус/запасная — никогда рядом */
+  .web-favicon { width: 100%; height: 100%; object-fit: cover; border-radius: 13px; display: block; }
+  /* домен активной вкладки: конкретика вместо «какого-то сайта». Отдельной строкой,
+     чтобы не жать заголовок — у .web-title nowrap с обрезкой. */
+  .web-host {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .web-text { min-width: 0; }
+  .web-title { font-size: 14px; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .web-subtitle { margin-top: 3px; font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .web-arrow {
+    width: 34px;
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--primary);
+    background: rgba(234,231,234,.7);
+    transition: background .16s ease;
+  }
+  .web-card:hover .web-arrow { background: rgba(74,50,203,.12); }
+  .web-arrow svg { width: 16px; height: 16px; }
+
+  /* Кнопка-тумблер режима выбора (перенос из _tmp/proto-adaptive.html).
+     ВАЖНО: состояния меняют только цвета/тени и текст внутри .web-title/.web-subtitle —
+     DOM иконки (#webFavicon/#webGlobe/#webHost) не пересобирается, иначе фавиконка сайта
+     пропадает (так ломалось при textContent на всей кнопке). */
+  .web-card.is-selecting {
+    color: #fff;
+    border-color: #4f2ed7;
+    background: linear-gradient(112deg, #6542ec, #4625c5);
+    box-shadow:
+      inset 0 4px 11px rgba(20,10,73,.28),
+      inset 0 0 0 1px rgba(255,255,255,.16),
+      0 11px 24px rgba(79,46,215,.22);
+    transform: translateY(1px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  /* вдавленная кнопка не должна подниматься под курсором — иначе «отжимается» на вид */
+  .web-card.is-selecting:hover { transform: translateY(1px); box-shadow:
+      inset 0 4px 11px rgba(20,10,73,.28),
+      inset 0 0 0 1px rgba(255,255,255,.16),
+      0 11px 24px rgba(79,46,215,.22); }
+  .web-card.is-selecting .web-title,
+  .web-card.is-selecting .web-subtitle,
+  .web-card.is-selecting .web-arrow { color: #fff; }
+  .web-card.is-selecting .web-subtitle { opacity: .84; }
+  .web-card.is-selecting .web-host { color: rgba(255,255,255,.9); }
+  .web-card.is-selecting .web-arrow,
+  .web-card.is-selecting .web-icon {
+    background: rgba(255,255,255,.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+  }
+  .web-card.is-selecting .web-icon { color: #fff; animation: pickerIconPulse 1.25s ease-in-out infinite; }
+  .web-card.is-selecting::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  .web-card.is-selected {
+    border-color: rgba(25,164,91,.48);
+    background: linear-gradient(180deg, #f5fff9, #e9f9f1);
+    box-shadow: inset 0 0 0 1px rgba(25,164,91,.14), 0 8px 18px rgba(25,164,91,.10);
+    outline-color: rgba(25,164,91,.10);
+  }
+  .web-card.is-selected .web-title,
+  .web-card.is-selected .web-subtitle,
+  .web-card.is-selected .web-host,
+  .web-card.is-selected .web-arrow { color: #167d49; }
+  @keyframes pickerIconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.09); }
+  }
+
+  /* --- степпер Init / Select / Process --- */
+
+  /* --- сцена: dropzone и превью живут в ОДНОЙ зоне (непрерывность, не смена экрана) --- */
+  #stage {
+    position: relative;
+    overflow: hidden;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1.5px dashed var(--primary-soft);
+    border-radius: 26px;
+    padding: var(--stage-padding-y) var(--stage-padding-x);
+    color: var(--text-secondary);
+    text-align: center;
+    cursor: pointer;
+    background: radial-gradient(circle at 50% 43%, rgba(99,79,228,.07), transparent 31%), rgba(255,255,255,.74);
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, padding .2s ease;
+  }
+  #stage:hover:not(.has-image):not(.drag):not(.error) {
+    border-color: var(--primary-2);
+    background: radial-gradient(circle at 50% 43%, rgba(99,79,228,.085), transparent 31%), rgba(255,255,255,.86);
+    box-shadow: 0 8px 20px rgba(63,42,153,.07);
+  }
+  #stage.has-image {
+    border-style: solid;
+    padding: 24px;
+    cursor: default;
+    background: var(--bg);
+    box-shadow: none;
+  }
+  #stage.has-image canvas { border-radius: 8px; box-shadow: 0 6px 20px rgba(17, 24, 39, .12); }
+  #stage.drag {
+    border-style: solid;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99,79,228,.09), 0 12px 26px rgba(63,42,153,.11);
+    background: #f5f1ff;
+    color: var(--primary);
+  }
+  #stage.error {
+    border-style: solid;
+    border-color: rgba(220,38,38,.58);
+    background: #fff4f6;
+    color: var(--error);
+  }
+  #stage.accepting {
+    border-style: solid;
+    border-color: var(--primary-2);
+    background: #f7f4ff;
+    pointer-events: none;
+  }
+  #stage strong { display: block; font-size: var(--title-size); font-weight: 800; letter-spacing: -.02em; color: var(--text-main); margin-bottom: 6px; }
+  #stage.drag strong { color: var(--primary); }
+  #stage.error strong { color: var(--error); }
+  #stage.accepting strong { color: var(--success); }
+  /* курсор-указатель радиального свечения — якорь на #stage (как .zone в референсе),
+     а не на #dropContent: тот не покрывает всю dropzone, иначе свечение обрезано
+     по своему меньшему боксу и видно как "светящийся блок" внутри рамки */
+  #stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 42%), rgba(99,79,228,.12), transparent 64%);
+    opacity: 0;
+    transition: opacity .22s ease;
+  }
+  #stage:hover:not(.has-image)::before,
+  #stage.drag::before { opacity: 1; }
+  .drop-subtitle { font-size: var(--subtitle-size); color: var(--text-secondary); margin: 0 0 16px; }
+  .page[data-density="dense"] .drop-subtitle { display: none; }
+  #tipLine {
+    text-align: center;
+    font-size: 13px;
+    color: var(--primary);
+    margin-top: 6px;
+    animation: fadeIn .4s ease;
+  }
+  .file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    height: 44px;
+    padding: 0 22px;
+    background: var(--surface);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    font: 600 14px/1 inherit;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .file-btn:hover { background: var(--primary-soft); border-color: var(--primary); }
+  /* #chooseBtn — единственный CTA дропзоны, стиль select-btn референса (filled pill) */
+  #chooseBtn {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: min(100%, 280px);
+    height: var(--primary-height);
+    margin: 0 auto;
+    padding: 0 24px;
+    border: none;
+    border-radius: 16px;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 14px 25px -8px rgba(99,79,228,.38);
+    font: 700 15px/1 inherit;
+    letter-spacing: 0;
+    transition: transform .17s ease, box-shadow .17s ease, filter .17s ease;
+  }
+  #chooseBtn::before {
+    content: ""; position: absolute; top: -60%; left: -42%; width: 34%; height: 220%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.33), transparent);
+    transform: rotate(18deg) translateX(-170%);
+    transition: transform .55s ease;
+  }
+  #chooseBtn:hover { background: var(--primary); transform: translateY(-2px); box-shadow: 0 18px 30px -8px rgba(99,79,228,.44); filter: brightness(1.04); border-color: transparent; }
+  #chooseBtn:hover::before { transform: rotate(18deg) translateX(520%); }
+  #chooseBtn:active { transform: translateY(0) scale(.98); box-shadow: 0 8px 16px -6px rgba(99,79,228,.4); transition-duration: .1s; }
+  .formats-title {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 650;
+    margin: var(--formats-title-gap) 0 0;
+  }
+  .formats-title::before, .formats-title::after { content: ""; height: 1px; background: linear-gradient(90deg, transparent, var(--border)); }
+  .formats-title::after { background: linear-gradient(90deg, var(--border), transparent); }
+  .formats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--formats-row-gap); margin: var(--formats-top-gap) 0 0; }
+  .format {
+    min-width: 0;
+    height: var(--format-height);
+    padding: 0 5px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #4d4b59;
+    background: rgba(234,231,234,.62);
+    border: 1px solid rgba(200,196,215,.48);
+    font-size: 10.5px;
+    font-weight: 700;
+    cursor: default;
+  }
+
+  /* --- Processed locally · Files stay on your device: чистый текст, НЕ кнопка,
+     чтобы не путать с #fullEditorBtn ниже --- */
+  .privacy {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .privacy svg { flex: 0 0 auto; color: var(--success); }
+  .privacy-dot { opacity: .55; }
+
+  /* --- footer: рейтинг + иконки ---
+     Grid вместо position:absolute (Шаг 3): три колонки auto/1fr/auto, средняя
+     (rating) центрируется в свободном месте, крайние (help/share) никогда не
+     перекрывают друг друга или средний блок — раньше .footer-actions с
+     position:absolute могла наезжать на .rating на узких экранах. */
+  .app-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: var(--footer-padding-y) var(--side);
+    margin: 0 calc(-1 * var(--side)); /* растягивает border-top на всю ширину .page, включая её боковой padding */
+    min-height: var(--footer-height);
+    border-top: 1px solid var(--border);
+    background: rgba(255,255,255,.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .rating { min-width: 0; display: flex; align-items: center; gap: 10px; }
+  .rating-label { color: var(--text-secondary); font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+  .stars { display: flex; gap: 1px; color: var(--gold); }
+  .stars button {
+    border: 0;
+    background: transparent;
+    padding: 3px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--border);
+    transition: color .15s ease, transform .15s ease;
+  }
+  .stars svg { width: 13px; height: 13px; }
+  .stars button.lit { color: var(--gold); animation: starPop .28s ease; }
+  @keyframes starPop { 0% { transform: scale(1); } 45% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  .footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-start;
+  }
+  .footer-actions.right { position: relative; justify-content: flex-end; }
+  .rating { justify-content: center; }
+  .footer-btn {
+    width: var(--footer-height);
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    color: #53515d;
+    background: transparent;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .footer-btn:hover { background: var(--primary-soft); color: var(--primary); }
+  .footer-btn svg { width: 15px; height: 15px; }
+  .footer-btn.share-btn {
+    width: auto;
+    aspect-ratio: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px 0 8px;
+    height: var(--footer-height);
+    border-radius: 13px;
+  }
+  .share-label { font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+  .share-pop {
+    position: absolute;
+    right: 0;
+    left: auto;
+    bottom: calc(100% + 8px);
+    width: 220px;
+    max-width: calc(100vw - 2 * var(--side));
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    padding: 12px;
+    display: none;
+    z-index: 5;
+    animation: slideUp .18s ease both;
+  }
+  .share-pop.open { display: block; }
+  .share-pop-title { font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+  .share-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .share-icon-btn {
+    flex: 1 1 auto;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: #53515d;
+  }
+  .share-icon-btn:hover { background: var(--primary-soft); color: var(--primary); border-color: transparent; }
+  .share-icon-btn svg { width: 15px; height: 15px; }
+  .share-textarea {
+    width: 100%;
+    min-height: 54px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .share-send-btn {
+    width: 100%;
+    height: 30px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .share-send-btn:hover { background: var(--primary-hover); }
+
+  /* --- состояние с изображением --- */
+  #workControls { display: none; }
+  /* каскадное появление: карточки → форматы → кнопка, суммарно ~300ms */
+  #workControls.enter > * { animation: slideUp .28s ease both; }
+  #workControls.enter > *:nth-child(1) { animation-delay: .04s; }
+  #workControls.enter > *:nth-child(2) { animation-delay: .1s; }
+  #workControls.enter > *:nth-child(3) { animation-delay: .14s; }
+  #workControls.enter > *:nth-child(4) { animation-delay: .14s; }
+  #workControls.enter > *:nth-child(5) { animation-delay: .2s; }
+  #workControls.enter > *:nth-child(6) { animation-delay: .24s; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  #previewWrap {
+    position: relative;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  /* авторский display:flex перебивает атрибут hidden — возвращаем ему силу,
+     иначе пустой канвас (дефолт 300×150) занимает место в dropzone */
+  #previewWrap[hidden] { display: none; }
+  #previewWrap.alpha {
+    background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+  }
+
+  /* --- батч: полоса страниц будущего PDF --- */
+  #batchWrap[hidden] { display: none; }
+  .batch-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: var(--text-main);
+    font-size: 15px;
+  }
+  #batchHint { color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+  .batch-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .batch-item {
+    position: relative;
+    width: 108px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: 6px;
+    animation: fadeIn .25s ease;
+  }
+  .batch-item canvas { max-height: 74px; margin: 0 auto; }
+  .batch-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .batch-num {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font: 600 11px/20px inherit;
+    text-align: center;
+  }
+  .batch-ctrl { display: flex; gap: 4px; margin-top: 4px; }
+  .batch-ctrl button {
+    flex: 1;
+    height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font: 600 12px/1 inherit;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform .1s ease;
+  }
+  .batch-ctrl button:hover:not(:disabled) { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+  .batch-ctrl button:active:not(:disabled) { transform: scale(.94); transition-duration: .1s; }
+  .batch-ctrl button:disabled { opacity: .4; cursor: default; }
+  .batch-ctrl .batch-del:hover { background: #FEF2F2; border-color: var(--error); color: var(--error); }
+  /* оба max-ограничения сразу: браузер сам сохраняет пропорции replaced-элемента,
+     никакого stretch от флекса (align-items: center выше) */
+  canvas {
+    display: block;
+    max-width: 100%;
+    max-height: min(68vh, 720px); /* превью доминирует, а не тонет в воздухе */
+    width: auto;
+    height: auto;
+    animation: fadeIn .25s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .meta-row {
+    min-height: 38px;
+    border-radius: 11px;
+    padding: 8px 11px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    gap: 7px;
+    min-width: 0;
+    font-size: 11px;
+    color: #625f70;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin: 14px 0 0;
+  }
+  .meta-row b { color: #3d394a; }
+  .meta-row b.yes, .meta-row #metaAlpha { color: var(--success); }
+  #replaceBtn {
+    position: absolute; top: 8px; right: 8px;
+    height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(255,255,255,.92); color: var(--text-secondary);
+    display: flex; align-items: center; gap: 4px;
+    font: 700 11px/1 inherit; font-family: inherit;
+    cursor: pointer;
+    transition: .15s ease;
+  }
+  #replaceBtn:hover { color: var(--primary); border-color: var(--primary); background: #fff; }
+  #replaceBtn:active { transform: scale(.96); transition-duration: .1s; }
+  #replaceBtn[hidden] { display: none; }
+
+  #formatInfo {
+    height: 38px;
+    margin-top: 12px;
+    border-radius: 11px;
+    padding: 0 11px;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #5b4f7f;
+    background: linear-gradient(90deg, #f0ecff, #f7f5ff);
+    border: 1px solid #ded8ff;
+    transition: opacity .2s ease;
+  }
+  #formatInfo.fade { opacity: 0; }
+  #dlSize { transition: opacity .2s ease; }
+  #dlSize.fade { opacity: 0; }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 20px 0 10px;
+  }
+  .format-chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-top: 12px; }
+  .format-chip {
+    min-width: 0;
+    padding: 9px 0 7px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--surface);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    text-align: center;
+    color: #302d3d;
+    cursor: pointer;
+    position: relative;
+    font: 700 12px/1.2 inherit;
+    font-family: inherit;
+    transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+  .format-chip svg { opacity: .86; }
+  .format-chip:hover {
+    transform: translateY(-2px);
+    border-color: #cfc9ef;
+    box-shadow: 0 8px 18px rgba(54,39,126,.09);
+  }
+  .format-chip:active { transform: translateY(0) scale(.97); transition-duration: .1s; }
+  .format-chip.active {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: linear-gradient(180deg, #fbfaff, #eee9ff);
+    box-shadow: 0 8px 18px rgba(79,46,215,.10);
+  }
+  .format-chip .check {
+    position: absolute; right: -4px; top: -6px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(145deg, var(--primary-2), var(--primary));
+    color: #fff; display: grid; place-items: center;
+    box-shadow: 0 5px 12px rgba(74,50,203,.19);
+    transform: scale(0);
+    transition: .2s cubic-bezier(.2,.9,.2,1.2);
+  }
+  .format-chip.active .check { transform: scale(1); }
+  .format-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .format-chip > svg { width: 18px; height: 18px; }
+
+  #formatOptionsSlot { min-height: 96px; margin-top: 18px; }
+  #qualityBlock { margin-top: 0; }
+  .quality-head { display: flex; align-items: center; justify-content: space-between; }
+  .quality-head span:first-child { font-weight: 700; font-size: 13px; }
+  #qualityVal { color: var(--primary); font-weight: 800; font-size: 14px; background: none; padding: 0; }
+  input[type=range] {
+    width: 100%; height: 6px; margin-top: 10px;
+    -webkit-appearance: none;
+    background: linear-gradient(to right, var(--primary) 0 var(--value, 92%), var(--border) var(--value, 92%) 100%);
+    border-radius: 999px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(145deg, var(--primary-2), var(--primary));
+    border: 3px solid #fff; box-shadow: 0 3px 11px rgba(79,46,215,.3);
+    cursor: grab;
+  }
+  input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.08); }
+
+  #icoSizeBlock { margin-top: 0; }
+  #icoSizeBlock .quality-head span:first-child { font-weight: 700; font-size: 13px; }
+
+  .ico-sizes { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .ico-size {
+    flex: 1 1 0;
+    padding: 6px 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font: 600 11.5px/1 inherit;
+    font-family: inherit;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: .15s ease;
+  }
+  .ico-size:hover { border-color: var(--primary-2); }
+  .ico-size:active { transform: scale(.94); transition-duration: .1s; }
+  .ico-size.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .ico-size:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  #downloadBtn {
+    display: grid;
+    grid-template-columns: 21px 1fr auto;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    height: 56px;
+    margin-top: 28px;
+    padding: 0 17px;
+    border: none;
+    border-radius: 13px;
+    background: linear-gradient(100deg, var(--primary-2), var(--primary-hover));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 750;
+    line-height: 1;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 12px 24px rgba(74,42,205,.24);
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  #downloadBtn::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.22) 48%, transparent 75%);
+    transform: translateX(-120%);
+  }
+  #downloadBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 28px rgba(74,42,205,.30); }
+  #downloadBtn:hover:not(:disabled)::before { animation: dlShine .8s ease; }
+  #downloadBtn:active:not(:disabled) { transform: translateY(0) scale(.985); }
+  #downloadBtn:disabled { opacity: .7; cursor: not-allowed; box-shadow: none; }
+  #downloadBtn.success { background: var(--success); }
+  #downloadBtn.error { background: var(--error); }
+  #downloadBtn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  @keyframes dlShine { to { transform: translateX(120%); } }
+
+  #dlSize { font-weight: 550; font-size: 13px; opacity: .86; }
+  #afterSuccess { text-align: center; margin-top: 10px; animation: fadeIn .3s ease; }
+  .local-note {
+    display: none; /* дублирует .privacy, которая теперь видна и в состоянии has-img */
+    align-items: center; justify-content: center; gap: 7px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin: 12px 0 0;
+  }
+  .local-note svg { flex: 0 0 auto; color: #16A34A; }
+
+  #status { margin-top: 12px; font-size: 13px; color: var(--text-secondary); min-height: 18px; text-align: center; }
+  #status.error { color: var(--error); }
+
+  /* --- составная контурная иконка: 3 состояния (default/error/accepting) --- */
+  .icon {
+    position: relative;
+    width: var(--illustration-width);
+    height: var(--illustration-height);
+    margin: 0 auto var(--illustration-gap);
+    display: grid;
+    place-items: center;
+    color: var(--primary);
+    isolation: isolate;
+  }
+  .icon::before {
+    content: "";
+    position: absolute;
+    inset: 1px 8px 0;
+    border-radius: 34px;
+    background: radial-gradient(circle, rgba(99,79,228,.19) 0, rgba(99,79,228,.075) 50%, transparent 74%);
+    filter: blur(.4px);
+    transform: scale(.96);
+    transition: transform .22s ease, opacity .22s ease;
+  }
+  .icon svg {
+    position: relative;
+    width: 116px;
+    height: 100px;
+    display: block;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .icon svg.icon-error, .icon svg.icon-check { display: none; width: 62px; height: 62px; }
+  .icon .drop-target { opacity: .48; stroke-dasharray: 6 7; transition: opacity .2s ease, stroke-dashoffset .35s ease, transform .22s ease; transform-origin: 56px 49px; }
+  .icon .gallery-stack { transform-origin: 57px 43px; animation: gallery-float 3.2s ease-in-out infinite; transition: transform .22s cubic-bezier(.2,.8,.25,1), filter .22s ease; }
+  .icon .gallery-back { opacity: .76; transform: translate(-4px, 5px); transition: transform .22s ease, opacity .22s ease; }
+  .icon .gallery-front { filter: drop-shadow(0 7px 9px rgba(69,40,179,.16)); }
+  .icon .drag-cursor { filter: drop-shadow(0 3px 4px rgba(69,40,179,.14)); animation: cursor-nudge 3.2s ease-in-out infinite; transform-origin: 87px 72px; transition: transform .2s ease, opacity .16s ease; }
+  #stage.intro .icon .gallery-stack { animation: icon-enter .72s cubic-bezier(.18,.86,.22,1) both, gallery-float 3.2s .8s ease-in-out infinite; }
+  #stage.intro .icon .drop-target { animation: target-draw .72s ease-out both; }
+  #stage.intro #chooseBtn { animation: control-enter .5s .16s ease-out both; }
+  #stage.intro .formats { animation: control-enter .5s .26s ease-out both; }
+  #stage:hover:not(.has-image):not(.error):not(.drag) .icon::before { transform: scale(1.055); }
+  #stage:hover:not(.has-image):not(.error):not(.drag) .icon .gallery-stack { animation-play-state: paused; transform: translateY(-4px) rotate(-1deg); }
+  #stage:hover:not(.has-image):not(.error):not(.drag) .icon .gallery-back { transform: translate(-7px, 8px); }
+  #stage:hover:not(.has-image):not(.error):not(.drag) .icon .drag-cursor { animation-play-state: paused; transform: translate(4px, -3px) rotate(-2deg); }
+  #stage:hover:not(.has-image):not(.error):not(.drag) .icon .drop-target { opacity: .72; stroke-dashoffset: -7; }
+  #stage.drag .icon::before { transform: scale(1.11); opacity: 1; }
+  #stage.drag .icon .gallery-stack { animation: none; transform: translateY(11px) scale(1.035); filter: drop-shadow(0 6px 10px rgba(99,79,228,.13)); }
+  #stage.drag .icon .gallery-back { transform: translate(-2px, 2px); opacity: .45; }
+  #stage.drag .icon .drag-cursor { opacity: 0; animation: none; transform: translate(8px, 8px) scale(.9); }
+  #stage.drag .icon .drop-target { opacity: 1; stroke-dasharray: 0; transform: scale(1.035); filter: drop-shadow(0 5px 9px rgba(99,79,228,.12)); }
+  #stage.error .icon { color: var(--error); }
+  #stage.error .icon::before { background: radial-gradient(circle, rgba(220,38,38,.14) 0, rgba(220,38,38,.06) 50%, transparent 72%); }
+  #stage.error .icon svg.icon-default { display: none; }
+  #stage.error .icon svg.icon-error { display: block; }
+  #stage.accepting .icon { color: var(--success); }
+  #stage.accepting .icon::before { background: radial-gradient(circle, rgba(46,173,104,.14) 0, rgba(46,173,104,.06) 50%, transparent 72%); }
+  #stage.accepting .icon svg.icon-default { display: none; }
+  #stage.accepting .icon svg.icon-check { display: block; }
+  @keyframes gallery-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes cursor-nudge { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(2px,-1px); } }
+  @keyframes icon-enter { 0% { opacity: 0; transform: translateY(-15px) scale(.94); } 62% { opacity: 1; transform: translateY(3px) scale(1.015); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes target-draw { 0% { opacity: 0; stroke-dashoffset: 42; transform: scale(.92); } 100% { opacity: .48; stroke-dashoffset: 0; transform: scale(1); } }
+  @keyframes control-enter { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+  /* --- одноразовая подсветка закрепа: затемнение + стрелка к пазлу (правый верх) --- */
+  #pinOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, .55);
+    z-index: 100;
+    animation: fadeIn .3s ease;
+    cursor: pointer;
+  }
+  .pin-arrow { position: absolute; top: 8px; right: 16%; }
+  .pin-card {
+    position: absolute;
+    top: 140px;
+    right: 40px;
+    width: 300px;
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, .35);
+    cursor: default;
+    animation: slideUp .35s ease;
+  }
+  .pin-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; letter-spacing: -.005em; }
+  .pin-text { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; }
+  #pinGotIt {
+    margin-top: 14px;
+    width: 100%;
+    height: 42px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font: 600 14px/1 inherit;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  #pinGotIt:hover { background: var(--primary-hover); }
+  #pinGotIt:active { transform: scale(.98); transition-duration: .1s; }
+
+  @media (max-width: 360px) {
+    .web-subtitle, .privacy-subtitle { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+    .stars button.lit,
+    .icon .gallery-stack, .icon .drag-cursor, #stage.intro .icon .gallery-stack, #stage.intro .icon .drop-target,
+    #stage.intro #chooseBtn, #stage.intro .formats { animation: none !important; }
+    #chooseBtn:hover, .web-card:hover { transform: none; }
+    #chooseBtn:hover::before, #downloadBtn:hover:not(:disabled)::before { animation: none !important; }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .web-card, #stage { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--surface); }
+  }
+
+  /* === FINAL RESULT WORKSPACE V3 === */
+  /*
+   * Базовый .content, его margin-inline/padding-inline,
+   * .web-card и существующие тени не изменяются.
+   */
+
+  body.has-img .content {
+    min-height: 0;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  body.has-img #status:empty,
+  body.has-img #tipLine:empty,
+  body.has-img #lp-feedback-mount:empty {
+    display: none;
+  }
+
+  /*
+   * Единственный гибкий блок — резерв фотографии.
+   * Изображение прижимается к форматам.
+   */
+  body.has-img #stage.has-image {
+    /*
+     * #stage больше не растягивается на всю свободную высоту.
+     * Его высота определяется фактической высотой #previewWrap.
+     * Свободное место делится auto-отступами над и под
+     * всей группой результата.
+     */
+    flex: 0 0 auto;
+    min-height: 0;
+    width: 100%;
+
+    margin-top: auto;
+
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+
+    /*
+     * Тень и кнопка Replace не должны резаться границей stage.
+     * Внешние границы панели всё равно контролирует .content.
+     */
+    overflow: visible;
+
+    cursor: default;
+    transition: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /*
+   * Одна рамка точно по фактическому отображаемому
+   * размеру изображения.
+   */
+  body.has-img #previewWrap {
+    position: relative;
+    flex: 0 0 auto;
+
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+
+    padding: 6px;
+    border: 1px solid #ddd7f4;
+    border-radius: 16px;
+    background: var(--surface);
+
+    overflow: visible;
+  }
+
+  body.has-img #previewWrap canvas {
+    display: block;
+
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  /*
+   * Заметная вторичная кнопка замены.
+   * Не участвует в расчёте размеров превью.
+   */
+  body.has-img #replaceBtn {
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+
+    width: auto;
+    min-width: 0;
+    height: 30px;
+    padding: 0 6px;
+
+    gap: 3px;
+
+    border: 1px solid rgba(207, 200, 230, .96);
+    border-radius: 10px;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, .98),
+        rgba(248, 247, 253, .95)
+      );
+
+    color: #292536;
+
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+
+    box-shadow:
+      0 4px 12px rgba(32, 22, 75, .14),
+      inset 0 1px 0 rgba(255, 255, 255, .9);
+
+    transition:
+      transform .14s ease,
+      background .14s ease,
+      border-color .14s ease,
+      color .14s ease,
+      box-shadow .14s ease;
+  }
+
+  body.has-img #replaceBtn svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+
+    transition: transform .18s ease;
+  }
+
+  body.has-img #replaceBtn:hover {
+    transform: translateY(-1px);
+
+    color: var(--primary);
+    border-color: rgba(99, 79, 228, .70);
+
+    background:
+      linear-gradient(
+        180deg,
+        #fff,
+        #f3f0ff
+      );
+
+    box-shadow:
+      0 7px 16px rgba(58, 39, 145, .18),
+      inset 0 1px 0 #fff;
+  }
+
+  body.has-img #replaceBtn:hover svg {
+    transform: rotate(24deg);
+  }
+
+  body.has-img #replaceBtn:active {
+    transform: translateY(0) scale(.97);
+
+    box-shadow:
+      0 2px 6px rgba(43, 30, 101, .14),
+      inset 0 1px 3px rgba(69, 48, 151, .10);
+  }
+
+  /*
+   * Форматы располагаются непосредственно под фото.
+   */
+  body.has-img #workControls {
+    flex: 0 0 auto;
+
+    width: 100%;
+
+    /*
+     * Верхний margin — фиксированный зазор между фото
+     * и форматами.
+     * Нижний auto вместе с margin-top:auto у #stage
+     * центрирует всю группу результата.
+     */
+    margin: 8px 0 auto;
+  }
+
+  body.has-img .format-chips {
+    height: 56px;
+    margin: 0;
+    gap: 7px;
+  }
+
+  body.has-img .format-chip {
+    height: 56px;
+    min-height: 56px;
+
+    padding: 6px 0 5px;
+    gap: 2px;
+
+    border-radius: 12px;
+
+    font-size: 11.5px;
+  }
+
+  body.has-img .format-chip > svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  body.has-img .format-chip .check {
+    width: 19px;
+    height: 19px;
+
+    top: -5px;
+    right: -4px;
+  }
+
+  /*
+   * Один слот одинаковой высоты:
+   * PNG / JPG / WEBP / PDF / ICO.
+   */
+  #formatOptionsSlot {
+    position: relative;
+
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+
+    margin-top: 8px;
+  }
+
+  .format-option-panel {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+
+    margin: 0;
+    padding: 0 11px;
+
+    border: 1px solid var(--border);
+    border-radius: 11px;
+
+    background: var(--surface);
+
+    align-items: center;
+    gap: 10px;
+
+    overflow: hidden;
+  }
+
+  .format-option-panel .option-label {
+    flex: 0 0 auto;
+
+    font-size: 12px;
+    font-weight: 750;
+
+    color: var(--text-main);
+
+    white-space: nowrap;
+  }
+
+  /*
+   * JPG / WEBP: всё в одну строку.
+   */
+  #qualityBlock {
+    display: none;
+
+    grid-template-columns:
+      auto
+      minmax(0, 1fr)
+      auto;
+  }
+
+  #qualityBlock input[type="range"] {
+    width: 100%;
+    min-width: 0;
+    height: 6px;
+
+    margin: 0;
+  }
+
+  #qualityVal {
+    min-width: 38px;
+
+    text-align: right;
+    font-size: 13px;
+  }
+
+  /*
+   * PNG / PDF: одна компактная строка.
+   */
+  #pngNoteBlock,
+  #pdfNoteBlock {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    margin: 0;
+    padding: 7px 11px;
+
+    border: 1px solid var(--border);
+    border-radius: 11px;
+
+    background: var(--surface);
+
+    color: var(--text-secondary);
+
+    font-size: 11.5px;
+    line-height: 1.25;
+
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  #pngNoteBlock svg,
+  #pdfNoteBlock svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+
+    margin: 0;
+
+    color: var(--primary);
+  }
+
+  #pngNoteBlock span,
+  #pdfNoteBlock span {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
+
+  /*
+   * ICO: подпись и пять размеров в одну строку.
+   */
+  #icoSizeBlock {
+    display: none;
+
+    grid-template-columns:
+      auto
+      minmax(0, 1fr);
+  }
+
+  #icoSizeBlock .ico-sizes {
+    min-width: 0;
+
+    margin: 0;
+
+    display: grid;
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+    gap: 5px;
+
+    flex-wrap: nowrap;
+  }
+
+  #icoSizeBlock .ico-size {
+    min-width: 0;
+    height: 32px;
+
+    padding: 0 4px;
+    border-width: 1px;
+
+    font-size: 11px;
+  }
+
+  /*
+   * Download сохраняет постоянную геометрию.
+   */
+  #downloadBtn {
+    height: 56px;
+    margin-top: 8px;
+
+    grid-template-columns:
+      24px
+      minmax(0, 1fr)
+      auto;
+  }
+
+  /*
+   * Одна карточка:
+   * Input / Output / рекомендация.
+   */
+  #resultSummary {
+    width: 100%;
+    height: 72px;
+    min-height: 72px;
+
+    margin-top: 8px;
+    padding: 6px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 11px;
+
+    background: var(--surface);
+
+    overflow: hidden;
+  }
+
+  #resultSummary[hidden] {
+    display: none;
+  }
+
+  .result-line {
+    height: 18px;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    overflow: hidden;
+    white-space: nowrap;
+
+    color: #625f70;
+
+    font-size: 10.5px;
+    line-height: 18px;
+  }
+
+  .result-line b {
+    color: #3d394a;
+  }
+
+  .result-line .result-label {
+    width: 42px;
+    flex: 0 0 42px;
+
+    color: #706a7e;
+
+    font-weight: 750;
+  }
+
+  #metaOutputAlpha.yes {
+    color: var(--success);
+  }
+
+  #resultSummary #formatInfo {
+    height: 20px;
+
+    margin: 3px 0 0;
+    padding: 0;
+
+    border: 0;
+    border-radius: 0;
+
+    background: transparent;
+
+    color: #5b4f7f;
+
+    font-size: 10.5px;
+    line-height: 20px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /*
+   * Старые Download again / Convert another
+   * больше не используются.
+   */
+  #afterSuccess {
+    display: none !important;
+  }
+
+  /*
+   * На низком экране сжимается фото,
+   * затем слегка уплотняются контролы.
+   */
+  @media (max-height: 700px) {
+    body.has-img #stage.has-image {
+      min-height: 0;
+    }
+
+    body.has-img #workControls {
+      margin-top: 7px;
+    }
+
+    body.has-img .format-chips,
+    body.has-img .format-chip {
+      height: 52px;
+      min-height: 52px;
+    }
+
+    #formatOptionsSlot,
+    .format-option-panel {
+      height: 44px;
+      min-height: 44px;
+    }
+
+    #downloadBtn {
+      height: 52px;
+      margin-top: 7px;
+    }
+
+    #resultSummary {
+      height: 66px;
+      min-height: 66px;
+
+      margin-top: 7px;
+      padding-block: 4px;
+    }
+  }
+
+  @media (max-width: 340px) {
+    body.has-img #replaceBtn {
+      min-width: 0;
+      height: 30px;
+
+      padding-inline: 6px;
+
+      font-size: 11px;
+    }
+
+    body.has-img .format-chips {
+      gap: 5px;
+    }
+
+    #icoSizeBlock {
+      padding-inline: 8px;
+    }
+
+    #icoSizeBlock .ico-sizes {
+      gap: 3px;
+    }
+
+    #icoSizeBlock .ico-size {
+      padding-inline: 2px;
+
+      font-size: 10.5px;
+    }
+  }
+
+  /* === ADAPTIVE RESULT DISTRIBUTION V4 ===
+   * Заменяет центрирование margin-top:auto у #stage.has-image (V3) на три
+   * резиновых зазора (#resultGapTop/#resultGapMiddle/#resultGapBottom), высоту
+   * которых считает layoutResultWorkspace() в editor.js и пишет через
+   * --result-gap-top/middle/bottom на .page. Кнопка «Заменить» переехала из
+   * previewWrap в #stage (единый якорь позиционирования) — её ставит
+   * positionReplaceButton(). Только боковая панель (html.in-panel), не батч,
+   * не главный пустой экран.
+   */
+
+  .result-fluid-gap {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  body:not(.has-img) .result-fluid-gap,
+  body.batch-mode .result-fluid-gap {
+    display: none;
+  }
+
+  html.in-panel body.has-img:not(.batch-mode) #resultGapTop {
+    height: var(--result-gap-top, 8px);
+  }
+
+  html.in-panel body.has-img:not(.batch-mode) #resultGapMiddle {
+    height: var(--result-gap-middle, 4px);
+  }
+
+  html.in-panel body.has-img:not(.batch-mode) #resultGapBottom {
+    height: var(--result-gap-bottom, 8px);
+  }
+
+  /*
+   * Высоту #stage теперь считает layoutResultWorkspace() (--result-stage-height) —
+   * старая модель с margin-top:auto (V3) больше не центрирует группу, за это
+   * отвечают три зазора выше. padding-top резервирует место под кнопку
+   * «Заменить», если positionReplaceButton() поставил её сверху.
+   */
+  html.in-panel body.has-img:not(.batch-mode) #stage.has-image {
+    flex: 0 0 auto;
+    width: 100%;
+    height: var(--result-stage-height, auto);
+    min-height: 0;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+
+    position: relative;
+    overflow: visible;
+
+    cursor: default;
+    transition: none;
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /*
+   * Рамка (previewWrap) растягивается на всю ширину #stage — её левая/правая
+   * грань совпадает с левой/правой границей .content (тот же боковой отступ
+   * --side, что у Pick-карточки/формат-кнопок). Фото внутри остаётся center
+   * через собственный display:flex рамки, никогда не крупнее реального размера.
+   */
+  html.in-panel body.has-img #previewWrap {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /*
+   * #replaceBtn — прямой ребёнок #stage, всегда в верхнем правом углу;
+   * точный отступ (REPLACE_BTN_MARGIN) назначает positionReplaceButton()
+   * через инлайновые top/right.
+   */
+  html.in-panel body.has-img #replaceBtn {
+    position: absolute;
+    top: 0;
+    left: auto;
+    right: 0;
+    z-index: 2;
+  }
+
+  html.in-panel body.has-img:not(.batch-mode) #workControls {
+    margin: 8px 0 0;
+  }
+
+  html.in-panel body.has-img:not(.batch-mode) #resultSummary {
+    margin-top: 0;
+  }
+
+  @media (max-height: 700px) {
+    html.in-panel body.has-img:not(.batch-mode) {
+      --result-gap-top: 4px;
+      --result-gap-middle: 2px;
+      --result-gap-bottom: 4px;
+    }
+  }
+
+  #fullWorkspace { display: contents; }
+
+  /* #previewColumn — без своего display:flex #stage (flex:1 1 auto) не растягивался
+     на всю высоту в боковой панели: секция оставалась block, сжатым по контенту */
+  #previewColumn {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /*
+   * Только пустой главный экран боковой панели.
+   * Не влияет на экран результата.
+   */
+  html.in-panel body:not(.has-img) #previewColumn {
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  html.in-panel body:not(.has-img) #stage {
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /*
+   * Контейнер .icon уже меняется через существующие переменные плотности,
+   * но SVG раньше оставался жёстко 116×100 px.
+   */
+  html.in-panel body:not(.has-img) .icon svg.icon-default {
+    width: min(100%, 116px);
+    height: min(100%, 100px);
+  }
+
+</style>
+</head>
+<body>
+  <div class="page">
+    <main class="content">
+      <!-- закреплённый верх: переключатель источника + кнопка пикера видны всегда при скроле -->
+      <div id="topSticky">
+      <!-- источник картинки: «From computer» уводит на первый экран, сам экран не меняем -->
+      <div id="modeSwitch" role="tablist" aria-label="Image source" hidden>
+        <button class="mode-btn active" id="modePageBtn" role="tab" aria-selected="true" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9s-1.3 6.5-3.7 9c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z"/></svg>
+          <span data-i18n="modeFromPage">From page</span>
+        </button>
+        <button class="mode-btn" id="modeComputerBtn" role="tab" aria-selected="false" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3.5 7.5h6l2 2H20.5v9H3.5v-11Z"/></svg>
+          <span data-i18n="modeFromComputer">From computer</span>
+        </button>
+      </div>
+
+      <!-- Web Grabber Pro: выбор картинки с сайта, отдельным блоком над dropzone -->
+      <div id="pickRow">
+        <button class="web-card" id="pickFromSiteBtn" type="button">
+          <span class="web-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>
+          </span>
+          <span class="web-text">
+            <span class="web-title" data-i18n="pickFromSite">Pick an image from a website</span>
+            <span class="web-host" id="webHost" hidden></span>
+            <span class="web-subtitle" data-i18n="pickFromSiteSub">Import assets from any URL</span>
+          </span>
+          <span class="web-icon" aria-hidden="true">
+            <img class="web-favicon" id="webFavicon" alt="" hidden>
+            <svg id="webGlobe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="9" y1="13" x2="15" y2="13"/>
+              <line x1="9" y1="17" x2="13" y2="17"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+      </div>
+
+      <!-- единый grid-контейнер для #stage/#workControls; в боковой
+           панели display:contents делает его прозрачным для раскладки -->
+      <div id="fullWorkspace">
+      <section id="previewColumn">
+      <div id="resultGapTop" class="result-fluid-gap" aria-hidden="true"></div>
+      <!-- единая сцена: пустое состояние и превью в одной зоне -->
+      <div id="stage">
+        <div id="dropContent">
+          <div class="icon" id="uploadIcon" aria-hidden="true">
+            <svg class="icon-default" viewBox="0 0 112 96"><rect class="drop-target" x="8" y="8" width="96" height="78" rx="22"/><g class="gallery-stack"><g class="gallery-back"><rect x="20" y="27" width="60" height="47" rx="11" fill="rgba(255,255,255,.72)"/><circle cx="37" cy="42" r="4.5" fill="rgba(99,79,228,.11)"/><path d="m27 66 14-14 10 10 8-8 14 12"/></g><g class="gallery-front"><rect x="31" y="15" width="64" height="51" rx="12" fill="rgba(255,255,255,.96)"/><circle cx="49" cy="32" r="5" fill="rgba(99,79,228,.14)"/><path d="m38 58 15-15 10 10 8-8 17 13"/></g></g><g class="drag-cursor"><path d="M75 55 99 77 88 79 94 91 85 95 79 82 70 90Z" fill="rgba(255,255,255,.98)"/></g></svg>
+            <svg class="icon-error" viewBox="0 0 96 96"><path d="M48 13 84 78H12L48 13Z"/><path d="M48 36v20"/><path d="M48 67h.01"/></svg>
+            <svg class="icon-check" viewBox="0 0 96 96"><circle cx="48" cy="48" r="34"/><path d="m32 49 11 11 22-24"/></svg>
+          </div>
+          <strong data-i18n="dropHere">Drag &amp; drop an image here</strong>
+          <p class="drop-subtitle" data-i18n="dropSubtitle">or choose one from your computer</p>
+          <button id="chooseBtn" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>
+            </svg>
+            <span data-i18n="chooseFile">Choose an image</span>
+          </button>
+          <div class="formats-title" data-i18n="formatsTitle">Supported input formats</div>
+          <div class="formats" aria-label="Supported formats">
+            <span class="format">PNG</span><span class="format">JPG</span><span class="format">JPEG</span><span class="format">WebP</span><span class="format">HEIC</span><span class="format">AVIF</span><span class="format">GIF</span><span class="format">BMP</span><span class="format">JFIF</span><span class="format">SVG</span>
+          </div>
+        </div>
+        <div id="previewWrap" hidden>
+          <canvas id="canvas"></canvas>
+          <button id="replaceBtn" type="button" data-i18n-title="replaceImage" title="Replace image" aria-label="Replace image">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            </svg>
+            <span>REPLACE</span>
+          </button>
+        </div>
+        <!-- батч: несколько картинок → один PDF (страницы можно переставить и удалить) -->
+        <div id="batchWrap" hidden>
+          <div class="batch-head">
+            <strong id="batchTitle"></strong>
+            <span id="batchHint" data-i18n="batchHint">Arrows reorder pages, ✕ removes one</span>
+          </div>
+          <div id="batchStrip" class="batch-strip"></div>
+        </div>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*,.heic,.heif,.jfif,.svg" multiple style="display:none">
+      </section>
+
+      <aside id="settingsColumn">
+      <!-- контролы конвертации -->
+      <div id="workControls">
+        <div class="format-chips" role="radiogroup" aria-label="Output format">
+          <button class="format-chip active" data-format="png" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3c2 3 5 6.3 5 10a5 5 0 1 1-10 0c0-3.7 3-7 5-10Z"/></svg>
+            PNG
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4 10-11"/></svg></span>
+          </button>
+          <button class="format-chip" data-format="jpg" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m5 16 4-4 3 3 3-4 4 5"/></svg>
+            JPG
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4 10-11"/></svg></span>
+          </button>
+          <button class="format-chip" data-format="webp" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 5c-8 .4-12 4.6-12 12 7.4 0 11.6-4 12-12Z"/><path d="M6 18c2.7-4.6 6.2-7.8 11-10"/></svg>
+            WEBP
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4 10-11"/></svg></span>
+          </button>
+          <button class="format-chip" data-format="pdf" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h5"/></svg>
+            PDF
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4 10-11"/></svg></span>
+          </button>
+          <button class="format-chip" data-format="ico" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
+            ICO
+            <span class="check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4 10-11"/></svg></span>
+          </button>
+        </div>
+
+        <div id="formatOptionsSlot" aria-live="polite">
+          <div id="qualityBlock" class="format-option-panel">
+            <span class="option-label" data-i18n="qualityLabel">Quality</span>
+            <input type="range" id="quality" min="50" max="100" value="92">
+            <span id="qualityVal">92%</span>
+          </div>
+
+          <div id="pngNoteBlock" class="format-option-panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+            <span data-i18n="pngNoteLossless">Lossless · Usually larger than JPG/WebP</span>
+          </div>
+
+          <div id="pdfNoteBlock" class="format-option-panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+            <span>PDF · No settings required</span>
+          </div>
+
+          <div id="icoSizeBlock" class="format-option-panel">
+            <span class="option-label" data-i18n="icoSizeLabel">Icon size</span>
+
+            <div class="ico-sizes" role="radiogroup" aria-label="Icon size">
+              <button class="ico-size" data-size="16" type="button">16</button>
+              <button class="ico-size" data-size="32" type="button">32</button>
+              <button class="ico-size" data-size="48" type="button">48</button>
+              <button class="ico-size" data-size="128" type="button">128</button>
+              <button class="ico-size active" data-size="256" type="button">256</button>
+            </div>
+          </div>
+        </div>
+
+        <button id="downloadBtn" type="button">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>
+          <span id="dlLabel">Download PNG</span>
+          <span id="dlSize"></span>
+        </button>
+
+        <div id="resultGapMiddle" class="result-fluid-gap" aria-hidden="true"></div>
+
+        <div id="resultSummary">
+          <div class="result-line result-input">
+            <span class="result-label">Input</span>
+            <b id="metaInputFormat"></b><span>·</span>
+            <b id="metaInputDims"></b><span>·</span>
+            <b id="metaInputSize"></b>
+          </div>
+
+          <div class="result-line result-output">
+            <span class="result-label">Output</span>
+            <b id="metaOutputFormat"></b><span>·</span>
+            <b id="metaOutputDims"></b><span>·</span>
+            <b id="metaOutputSize"></b><span>·</span>
+            <span data-i18n="metaAlphaLabel">Transparency</span>:
+            <b id="metaOutputAlpha"></b>
+          </div>
+
+          <div id="formatInfo"></div>
+        </div>
+
+        <p class="local-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span data-i18n="localNote">Processed locally. Nothing is uploaded.</span>
+        </p>
+
+      </div>
+      </aside>
+      </div>
+
+      <div id="resultGapBottom" class="result-fluid-gap" aria-hidden="true"></div>
+
+      <div id="status" role="status"></div>
+      <div id="tipLine"></div>
+      <div id="lp-feedback-mount"></div>
+    </main>
+
+    <!-- Processed locally · Files stay on your device — только текст, не кнопка -->
+    <p class="privacy" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2.5 19.5 5.3V11c0 5.4-3.4 9.1-7.5 10.7C7.9 20.1 4.5 16.4 4.5 11V5.3L12 2.5Z" stroke-width="1.7"/>
+        <path d="m8.6 12.1 2.5 2.5 4.6-5.3" stroke-width="2.1"/>
+      </svg>
+      <span data-i18n="privacyTitle">Processed locally</span>
+      <span class="privacy-dot" aria-hidden="true">•</span>
+      <span data-i18n="privacySubtitle">Files stay on your device</span>
+    </p>
+
+    <footer class="app-footer">
+      <div class="footer-actions">
+        <button type="button" class="footer-btn" id="helpBtn" aria-label="Help / feedback">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.4 1-1.4 2.1M12 17h.01"/></svg>
+        </button>
+      </div>
+
+      <div class="rating">
+        <span class="rating-label" data-i18n="rateUs">Rate us</span>
+        <span class="stars" id="ratingStars">
+          <button type="button" class="star" data-idx="1" aria-label="1 star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.7 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 2.7Z"/></svg></button>
+          <button type="button" class="star" data-idx="2" aria-label="2 stars"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.7 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 2.7Z"/></svg></button>
+          <button type="button" class="star" data-idx="3" aria-label="3 stars"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.7 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 2.7Z"/></svg></button>
+          <button type="button" class="star" data-idx="4" aria-label="4 stars"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.7 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 2.7Z"/></svg></button>
+          <button type="button" class="star" data-idx="5" aria-label="5 stars"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.7 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 2.7Z"/></svg></button>
+        </span>
+      </div>
+
+      <div class="footer-actions right">
+        <button type="button" class="footer-btn share-btn" id="shareBtn" aria-haspopup="true" aria-expanded="false" aria-controls="sharePop">
+          <span class="share-label" data-i18n="shareBtn">Share</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>
+        </button>
+        <div class="share-pop" id="sharePop" role="dialog" aria-label="Share">
+          <div class="share-pop-title" data-i18n="shareCopyLink">Copy link</div>
+          <div class="share-row">
+            <button type="button" class="share-icon-btn" id="shareCopyBtn" title="Copy link" aria-label="Copy link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button type="button" class="share-icon-btn" id="shareFbBtn" title="Facebook" aria-label="Share on Facebook">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7h2.4l.4-2.8h-2.8V9.4c0-.8.2-1.3 1.4-1.3h1.5V5.6c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8v2H8v2.8h2.5v7h3Z"/></svg>
+            </button>
+            <button type="button" class="share-icon-btn" id="shareXBtn" title="X" aria-label="Share on X">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4l7.3 9.3L4.4 20h2.1l5.9-5.8L17 20h3l-7.6-9.7L19.6 4h-2.1l-5.4 5.4L7 4H4Z"/></svg>
+            </button>
+            <button type="button" class="share-icon-btn" id="shareTgBtn" title="Telegram" aria-label="Share on Telegram">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m3 12 17-8-3 17-6-4-3 3-1-6 12-9-13 8Z"/></svg>
+            </button>
+          </div>
+          <div class="share-pop-title" data-i18n="shareSuggest">Suggest a feature</div>
+          <textarea class="share-textarea" id="shareSuggestText" data-i18n-placeholder="shareSuggestPlaceholder" placeholder="What should we add?"></textarea>
+          <button type="button" class="share-send-btn" id="shareSuggestSend" data-i18n="shareSend">Send</button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- одноразовая подсветка закрепа после первого успеха: затемнение + стрелка к пазлу -->
+  <div id="pinOverlay" hidden>
+    <svg class="pin-arrow" width="120" height="130" viewBox="0 0 120 130" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14 122 C 40 80, 62 44, 96 14"/>
+      <path d="M96 40 L 98 12 L 70 12"/>
+    </svg>
+    <div class="pin-card">
+      <div class="pin-title" data-i18n="pinTitle">Add Picture Converter to the Chrome toolbar</div>
+      <div class="pin-text" data-i18n="pinText">Click the pin icon at the top of the side panel. Picture Converter will always be easy to find and open.</div>
+      <button id="pinGotIt" type="button" data-i18n="gotIt">Continue without adding</button>
+    </div>
+  </div>
+
+  <script type="module" src="editor.js"></script>
+</body>
+</html>
