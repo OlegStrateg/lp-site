@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "source_locale": "en",
+    "status": "pilot_translation_safe_source",
+    "production_mutated": false,
+    "key_count": 32
+  },
+  "strings": {
+    "extName": {
+      "message": "Picture Converter",
+      "surface": "product_name",
+      "behavior": "preserve",
+      "context": "Extension/product name."
+    },
+    "popupUpload": {
+      "message": "Open converter",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Button in the compact popup. It opens editor.html; it does not upload a file."
+    },
+    "dropSubtitle": {
+      "message": "or select a file",
+      "surface": "helper_text",
+      "behavior": "translate",
+      "context": "Subtitle in empty editor drop zone, above the Choose an image button."
+    },
+    "pickFromSiteSub": {
+      "message": "Select an image directly on the page",
+      "surface": "helper_text",
+      "behavior": "translate",
+      "context": "Subtitle of the website-image picker card."
+    },
+    "badgeLocal": {
+      "message": "✓ On device",
+      "surface": "badge",
+      "behavior": "translate",
+      "context": "Trust badge meaning processing/storage happens on the user's device, not geographic local."
+    },
+    "localNote": {
+      "message": "Processed on your device. Nothing is uploaded.",
+      "surface": "privacy_helper",
+      "behavior": "translate",
+      "context": "Privacy note under conversion controls."
+    },
+    "gotIt": {
+      "message": "Continue without pinning",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Dismiss action in the prompt that asks user to pin Picture Converter to Chrome toolbar."
+    },
+    "fbCardText": {
+      "message": "Conversions completed: $N$ — a quick rating helps others find Picture Converter.",
+      "surface": "feedback_card",
+      "behavior": "translate",
+      "context": "Rating prompt after multiple completed conversions.",
+      "placeholders": [
+        "$N$"
+      ]
+    },
+    "batchTitle": {
+      "message": "Images selected: $N$ → one PDF",
+      "surface": "batch_title",
+      "behavior": "translate",
+      "context": "Title when multiple selected images will be combined into one PDF.",
+      "placeholders": [
+        "$N$"
+      ],
+      "preserve": [
+        "PDF"
+      ]
+    },
+    "batchSkippedBad": {
+      "message": "Unreadable files skipped: $N$",
+      "surface": "status",
+      "behavior": "translate",
+      "context": "Status appended after batch load when some selected files could not be read.",
+      "placeholders": [
+        "$N$"
+      ]
+    },
+    "batchTooMany": {
+      "message": "Files left out: $N$ · PDF limit: $MAX$",
+      "surface": "status",
+      "behavior": "translate",
+      "context": "Status appended when selected files exceed the PDF batch limit.",
+      "placeholders": [
+        "$N$",
+        "$MAX$"
+      ],
+      "preserve": [
+        "PDF"
+      ]
+    },
+    "batchReady": {
+      "message": "Pages ready: $N$ — reorder if needed, then download.",
+      "surface": "status",
+      "behavior": "translate",
+      "context": "Batch status after pages are loaded.",
+      "placeholders": [
+        "$N$"
+      ]
+    },
+    "downloadPdfPages": {
+      "message": "Download PDF · Pages: $N$",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Download button for a multi-page PDF.",
+      "placeholders": [
+        "$N$"
+      ],
+      "preserve": [
+        "PDF"
+      ]
+    },
+    "popupBlocked": {
+      "message": "Image selection isn't available on this page. Open a website and try again.",
+      "surface": "error_helper",
+      "behavior": "translate",
+      "context": "Popup helper shown when current Chrome page cannot be scripted."
+    },
+    "pickerSelectingHint": {
+      "message": "Click an image, or press Esc to cancel",
+      "surface": "helper_text",
+      "behavior": "translate",
+      "context": "Shown while image picker mode is active.",
+      "preserve": [
+        "Esc"
+      ]
+    },
+    "privacySubtitle": {
+      "message": "Files stay on your device",
+      "surface": "privacy_helper",
+      "behavior": "translate",
+      "context": "Privacy Shield subtitle."
+    },
+    "downloadFmt": {
+      "message": "Download $FMT$",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Primary download button; placeholder is output format label.",
+      "placeholders": [
+        "$FMT$"
+      ]
+    },
+    "replaceImage": {
+      "message": "Replace image",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Replace current image in editor."
+    },
+    "qualityLabel": {
+      "message": "Quality",
+      "surface": "label",
+      "behavior": "translate",
+      "context": "Label for JPG/WebP export quality control."
+    },
+    "downloadAgainBtn": {
+      "message": "Download again",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Post-download action to download same result again."
+    },
+    "convertAnotherBtn": {
+      "message": "Convert another image",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Post-download action to start another conversion."
+    },
+    "menuQuick": {
+      "message": "Quick Convert ($FMT$)",
+      "surface": "context_menu",
+      "behavior": "translate",
+      "context": "Chrome image context-menu action using remembered output format.",
+      "placeholders": [
+        "$FMT$"
+      ]
+    },
+    "menuTo": {
+      "message": "Convert to $FMT$",
+      "surface": "context_menu",
+      "behavior": "translate",
+      "context": "Chrome image context-menu action for a specific output format.",
+      "placeholders": [
+        "$FMT$"
+      ]
+    },
+    "openFullEditor": {
+      "message": "Open full-page editor",
+      "surface": "button",
+      "behavior": "translate",
+      "context": "Open the same editor as a full browser tab/page instead of side panel."
+    },
+    "fullEditorSub": {
+      "message": "Same tools, more space",
+      "surface": "helper_text",
+      "behavior": "translate",
+      "context": "Subtitle under full-page editor action."
+    },
+    "alphaWarnFlatten": {
+      "message": "⚠ Transparency will be replaced with white.",
+      "surface": "warning",
+      "behavior": "translate",
+      "context": "Warning when output format cannot preserve alpha/transparency."
+    },
+    "decodingHeic": {
+      "message": "Decoding HEIC (loading decoder for the first time)…",
+      "surface": "status",
+      "behavior": "translate",
+      "context": "Status while HEIC decoder is loaded on first use.",
+      "preserve": [
+        "HEIC"
+      ]
+    },
+    "openSiteFail": {
+      "message": "Couldn't open a website: $ERR$. Open a page with images, then press Alt+Shift+C.",
+      "surface": "error",
+      "behavior": "translate",
+      "context": "Error when site picker cannot open/start; includes technical error placeholder and recovery shortcut.",
+      "placeholders": [
+        "$ERR$"
+      ],
+      "preserve": [
+        "Alt+Shift+C"
+      ]
+    },
+    "fromPageFail": {
+      "message": "Couldn't load the selected image: $ERR$",
+      "surface": "error",
+      "behavior": "translate",
+      "context": "Error when chosen page image cannot be transferred into editor.",
+      "placeholders": [
+        "$ERR$"
+      ]
+    },
+    "inputFormats": {
+      "message": "Supports: PNG · JPG · WEBP · GIF · BMP · JFIF · SVG · AVIF · HEIC",
+      "surface": "helper_text",
+      "behavior": "translate",
+      "context": "List of supported input formats.",
+      "preserve": [
+        "PNG",
+        "JPG",
+        "WEBP",
+        "GIF",
+        "BMP",
+        "JFIF",
+        "SVG",
+        "AVIF",
+        "HEIC"
+      ]
+    },
+    "tipShortcut": {
+      "message": "⌨ Press Alt+Shift+C to select an image on any website",
+      "surface": "tip",
+      "behavior": "translate",
+      "context": "Tip for keyboard shortcut.",
+      "preserve": [
+        "Alt+Shift+C"
+      ]
+    },
+    "tipRightClick": {
+      "message": "⚡ Faster: use the right-click menu to convert an image",
+      "surface": "tip",
+      "behavior": "translate",
+      "context": "Tip explaining context-menu workflow without embedding a second localized command label."
+    }
+  }
+}
