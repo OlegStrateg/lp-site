@@ -66,13 +66,15 @@ const [memeHtml, memeSource, memePage] = await Promise.all([
 ]);
 
 assert(memeHtml.includes('https://layerporter.com/tools/meme-generator/'), 'Meme canonical missing');
-assert(memeHtml.includes('Meme generator with draggable text'), 'Meme H1/copy missing');
+assert(memeHtml.includes('<h1 id="meme-title">Meme generator</h1>'), 'Meme H1/copy missing');
 for (const id of [
-  'meme-preview', 'meme-layer-list', 'meme-add-layer', 'meme-text', 'meme-font', 'meme-size',
-  'meme-fill', 'meme-stroke', 'meme-stroke-width', 'meme-shadow', 'meme-background-enabled',
-  'meme-background-color', 'meme-align', 'meme-rotation', 'meme-action', 'meme-download',
+  'meme-stage', 'meme-stage-image', 'meme-object-layer', 'meme-floating-toolbar',
+  'meme-toolbar-font', 'meme-toolbar-size', 'meme-toolbar-bold', 'meme-toolbar-italic',
+  'meme-toolbar-underline', 'meme-toolbar-fill', 'meme-toolbar-stroke',
+  'meme-toolbar-stroke-width', 'meme-mode-inside', 'meme-mode-outside',
+  'meme-add-text', 'meme-add-image', 'meme-action', 'meme-download',
 ]) {
-  assert(memeHtml.includes(`id="${id}"`), `Meme control missing: ${id}`);
+  assert(memeHtml.includes(`id="${id}"`), `Meme WYSIWYG control missing: ${id}`);
 }
 assert(memeHtml.includes('/tools/crop-image/') && memeHtml.includes('/tools/resize-image/'), 'Meme workspace navigation missing');
 assert(resizeHtml.includes('/tools/meme-generator/') && cropHtml.includes('/tools/meme-generator/'), 'Existing image tools must link to Meme');
@@ -82,6 +84,10 @@ assert(!/\bXMLHttpRequest\b|\bFormData\b/i.test(memeSource), 'Meme image payload
 assert(memeSource.includes("getWorkspaceToolState<MemeState>('meme')"), 'Meme per-tool workspace state missing');
 assert(memeSource.includes('setWorkspaceFile(outputFile, workspaceBefore.source)'), 'Meme output must return to shared Workspace');
 assert(memeSource.includes("tool: 'meme_generator'"), 'Meme analytics missing');
+assert(memeSource.includes("type MemeMode = 'inside' | 'outside'"), 'Meme inside/outside mode contract missing');
+assert(memeSource.includes("objectLayer.addEventListener('dblclick'"), 'Direct WYSIWYG text editing contract missing');
+assert(memeSource.includes("interaction.type === 'scale'"), 'Direct object resize contract missing');
+assert(memeSource.includes("interaction.type === 'rotate'"), 'Direct object rotation contract missing');
 assert(memePage.includes('clientRouter={true}') && memePage.includes('<ImageWorkspaceNav active="meme"'), 'Meme must use shared client Workspace');
 assert(bootstrapSource.includes("path.endsWith('/tools/meme-generator/')"), 'Meme bootstrap route missing');
 
