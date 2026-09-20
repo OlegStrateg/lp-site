@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "PC v1.0.12 download E2E",
+  "version": "0.0.0",
+  "message_serialization": "structured_clone",
+  "permissions": [
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
