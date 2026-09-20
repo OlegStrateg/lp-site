@@ -1,7 +1,7 @@
 {
   "locale": "de-DE",
   "chrome_locale": "de",
-  "status": "pilot_draft_blind_to_existing_locale",
+  "status": "pilot_reviewed_draft_v2",
   "source": "02-translation-safe-source.json",
   "strings": {
     "extName": "Picture Converter",
@@ -10,7 +10,7 @@
     "pickFromSiteSub": "Bild direkt auf der Seite auswählen",
     "badgeLocal": "✓ Auf dem Gerät",
     "localNote": "Die Verarbeitung erfolgt auf Ihrem Gerät. Es wird nichts hochgeladen.",
-    "gotIt": "Ohne Anheften fortfahren",
+    "gotIt": "Ohne Anpinnen fortfahren",
     "fbCardText": "Abgeschlossene Konvertierungen: $N$ — mit einer kurzen Bewertung helfen Sie anderen, Picture Converter zu finden.",
     "batchTitle": "Ausgewählte Bilder: $N$ → eine PDF-Datei",
     "batchSkippedBad": "Nicht lesbare Dateien übersprungen: $N$",
