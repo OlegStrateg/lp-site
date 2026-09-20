@@ -1,6 +1,6 @@
 ---
 interface Props {
-  active: 'resize' | 'crop';
+  active: 'resize' | 'crop' | 'meme';
   locale?: 'en' | 'ru';
 }
 
@@ -12,6 +12,7 @@ const copy = locale === 'ru'
       label: 'Редактировать изображение',
       crop: 'Обрезка',
       resize: 'Размер',
+      meme: 'Meme',
       state: 'Одно изображение · переключайте инструменты',
       stateAria: 'Текущее изображение сохраняется при переключении инструментов',
     }
@@ -20,13 +21,20 @@ const copy = locale === 'ru'
       label: 'Edit image',
       crop: 'Crop',
       resize: 'Resize',
+      meme: 'Meme',
       state: 'One image · switch tools',
       stateAria: 'Current image stays loaded while switching tools',
     };
-const tools = [
-  { id: 'crop', label: copy.crop, href: `${prefix}/tools/crop-image/` },
-  { id: 'resize', label: copy.resize, href: `${prefix}/tools/resize-image/` },
-] as const;
+const tools = locale === 'ru'
+  ? [
+      { id: 'crop', label: copy.crop, href: `${prefix}/tools/crop-image/` },
+      { id: 'resize', label: copy.resize, href: `${prefix}/tools/resize-image/` },
+    ] as const
+  : [
+      { id: 'crop', label: copy.crop, href: '/tools/crop-image/' },
+      { id: 'resize', label: copy.resize, href: '/tools/resize-image/' },
+      { id: 'meme', label: copy.meme, href: '/tools/meme-generator/' },
+    ] as const;
 ---
 
 <nav class="image-workspace-nav" aria-label={copy.aria}>
