@@ -1,0 +1,184 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ImageWorkspaceNav from '../../components/ImageWorkspaceNav.astro';
+import '../../styles/image-tools.css';
+
+const title = 'Meme Generator Online — Add Text to Images | LayerPorter';
+const description = 'Create memes in your browser with multiple text layers, drag positioning, outlines, colors, backgrounds, rotation and instant download.';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/tools/meme-generator/"
+  clientRouter={true}
+  headerLabels={{ converters: 'Converters', extensions: 'Extensions', learn: 'Learn', mainAria: 'Main', localEngine: 'Browser processing', localTitle: 'Image processing runs in your browser' }}
+  footerLabels={{ tagline: 'LayerPorter — focused browser tools for files and media.', about: 'About', extensions: 'Extensions', privacy: 'Privacy', terms: 'Terms', footerAria: 'Footer' }}
+>
+  <script is:inline slot="head">
+    (() => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('lp_edit_token') || '';
+        const extensionId = params.get('lp_extension_id') || '';
+        if (/^[A-Za-z0-9_-]{20,160}$/.test(token) && /^[a-p]{32}$/.test(extensionId)) {
+          document.documentElement.dataset.lpWorkspaceState = 'loading';
+          document.documentElement.dataset.lpExtensionImport = 'pending';
+        }
+      } catch {}
+    })();
+  </script>
+
+  <section class="image-tool-hero" aria-labelledby="meme-title">
+    <div class="image-tool-copy">
+      <p class="image-tool-kicker">Meme maker</p>
+      <h1 id="meme-title">Meme generator with draggable text</h1>
+      <p class="image-tool-lede">Add multiple text layers, style them, move them directly on the image and download the finished meme.</p>
+    </div>
+
+    <div class="image-workspace-frame" transition:name="image-workspace-frame">
+      <ImageWorkspaceNav active="meme" />
+
+      <div class="image-tool-shell" id="meme-image-tool" data-state="empty">
+        <input id="meme-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+        <label class="image-tool-drop" id="meme-drop" for="meme-file" tabindex="0">
+          <span class="image-tool-drop-icon" aria-hidden="true">＋</span>
+          <strong>Choose an image</strong>
+          <small>or drop JPG, PNG or WebP here</small>
+        </label>
+
+        <div class="image-tool-workspace meme-workspace" id="meme-workspace" hidden>
+          <div class="image-tool-preview-panel">
+            <div class="image-tool-preview-wrap meme-preview-wrap">
+              <canvas id="meme-preview" aria-label="Meme preview. Drag text directly on the image."></canvas>
+            </div>
+            <p class="image-tool-file-meta" id="meme-file-meta"></p>
+            <p class="meme-preview-help">Drag any text layer directly on the image to position it.</p>
+          </div>
+
+          <div class="image-tool-controls meme-controls">
+            <div class="image-tool-control-heading">
+              <span class="image-tool-mode-label">Meme</span>
+              <h2>Text layers</h2>
+            </div>
+
+            <div class="meme-layer-toolbar">
+              <div class="meme-layer-list" id="meme-layer-list" aria-label="Text layers"></div>
+              <div class="meme-layer-actions">
+                <button class="image-tool-secondary meme-small-button" id="meme-add-layer" type="button">+ Add text</button>
+                <button class="image-tool-secondary meme-small-button" id="meme-remove-layer" type="button">Remove</button>
+              </div>
+            </div>
+
+            <label class="image-tool-field">
+              <span>Text</span>
+              <textarea class="image-tool-textarea" id="meme-text" rows="3" placeholder="Type meme text"></textarea>
+            </label>
+
+            <div class="image-tool-grid meme-control-grid">
+              <label class="image-tool-field">
+                <span>Font</span>
+                <select class="image-tool-select" id="meme-font">
+                  <option value="Impact">Impact</option>
+                  <option value="Arial Black">Arial Black</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                </select>
+              </label>
+              <label class="image-tool-field">
+                <span>Size (px)</span>
+                <input class="image-tool-input" id="meme-size" type="number" min="8" max="4096" inputmode="numeric" />
+              </label>
+            </div>
+
+            <div class="meme-toggle-row">
+              <label><input id="meme-bold" type="checkbox" checked /> <span>Bold</span></label>
+              <label><input id="meme-uppercase" type="checkbox" checked /> <span>Uppercase</span></label>
+              <label><input id="meme-background-enabled" type="checkbox" /> <span>Text background</span></label>
+            </div>
+
+            <div class="image-tool-grid meme-control-grid">
+              <label class="image-tool-field">
+                <span>Text color</span>
+                <input class="meme-color-input" id="meme-fill" type="color" value="#ffffff" />
+              </label>
+              <label class="image-tool-field">
+                <span>Outline color</span>
+                <input class="meme-color-input" id="meme-stroke" type="color" value="#000000" />
+              </label>
+              <label class="image-tool-field">
+                <span>Outline (px)</span>
+                <input class="image-tool-input" id="meme-stroke-width" type="number" min="0" max="200" inputmode="numeric" />
+              </label>
+              <label class="image-tool-field">
+                <span>Shadow blur</span>
+                <input class="image-tool-input" id="meme-shadow" type="number" min="0" max="200" inputmode="numeric" />
+              </label>
+              <label class="image-tool-field">
+                <span>Background color</span>
+                <input class="meme-color-input" id="meme-background-color" type="color" value="#000000" />
+              </label>
+              <label class="image-tool-field">
+                <span>Align</span>
+                <select class="image-tool-select" id="meme-align">
+                  <option value="left">Left</option>
+                  <option value="center" selected>Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+              <label class="image-tool-field">
+                <span>Rotation (°)</span>
+                <input class="image-tool-input" id="meme-rotation" type="number" min="-180" max="180" inputmode="numeric" value="0" />
+              </label>
+            </div>
+
+            <div class="image-tool-status" id="meme-status" role="status" aria-live="polite"></div>
+            <button class="image-tool-primary" id="meme-action" type="button" disabled>Apply meme to image</button>
+            <div class="image-tool-workspace-actions">
+              <button class="image-tool-download" id="meme-download" type="button" disabled>Download meme</button>
+              <button class="image-tool-secondary" id="meme-another" type="button">Replace image</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="image-tool-supporting-copy">
+      <p>Create classic or custom memes with independent text layers. Everything renders locally in your browser.</p>
+      <div class="image-tool-badges" aria-label="Meme generator features">
+        <span>Multiple text layers</span>
+        <span>Drag to position</span>
+        <span>Outline, shadow, rotation</span>
+        <span>JPG, PNG, WebP</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="image-tool-info" aria-labelledby="meme-how-title">
+    <div>
+      <p class="image-tool-section-label">How it works</p>
+      <h2 id="meme-how-title">Build the meme directly on the image.</h2>
+    </div>
+    <ol class="image-tool-steps">
+      <li><span>01</span><div><strong>Choose an image</strong><p>Open a JPG, PNG or WebP file. Two classic meme text layers are created automatically.</p></div></li>
+      <li><span>02</span><div><strong>Edit and move text</strong><p>Add as many text layers as you need, change styling and drag each layer directly on the preview.</p></div></li>
+      <li><span>03</span><div><strong>Download or keep editing</strong><p>Download the finished meme immediately, or apply it to the current Workspace image and continue with Crop or Resize.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="image-tool-faq" aria-labelledby="meme-faq-title">
+    <p class="image-tool-section-label">FAQ</p>
+    <h2 id="meme-faq-title">Meme generator questions</h2>
+    <details><summary>Can I add more than two text blocks?</summary><p>Yes. Add independent text layers and position each one directly on the image.</p></details>
+    <details><summary>Can I use outlines and backgrounds?</summary><p>Yes. Each text layer has its own text color, outline color and width, shadow, optional background, alignment and rotation.</p></details>
+    <details><summary>Does LayerPorter upload my image?</summary><p>The meme is rendered in your browser. The image processing runtime does not need a remote image-processing service.</p></details>
+    <details><summary>Can I continue editing after making a meme?</summary><p>Yes. Apply the meme to the Workspace and switch to Crop or Resize without choosing the image again.</p></details>
+  </section>
+
+  <script>
+    import { installImageWorkspaceBootstrap } from '../../scripts/imageWorkspaceBootstrap';
+    installImageWorkspaceBootstrap();
+  </script>
+</BaseLayout>

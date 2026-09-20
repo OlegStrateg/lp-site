@@ -1,5 +1,6 @@
 import { initCropImageTool } from './cropImageTool';
 import { importExtensionImageFromUrl } from './extensionImageBridge';
+import { initMemeImageTool } from './memeImageTool';
 import { initResizeImageTool } from './resizeImageTool';
 import { getWorkspaceSnapshot } from './imageWorkspaceStore';
 
@@ -24,6 +25,7 @@ function initCurrentTool(): void {
   const path = window.location.pathname;
   if (path.endsWith('/tools/resize-image/') || path === '/tools/resize-image') initResizeImageTool();
   if (path.endsWith('/tools/crop-image/') || path === '/tools/crop-image') initCropImageTool();
+  if (path.endsWith('/tools/meme-generator/') || path === '/tools/meme-generator') initMemeImageTool();
 }
 
 async function onPageLoad(): Promise<void> {
