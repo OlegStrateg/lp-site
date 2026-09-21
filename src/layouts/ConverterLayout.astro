@@ -98,6 +98,8 @@ const related =
 // not a file conversion at all) — none of those are adjacent enough.
 const EXTENSION_FOOTER_CONVERTERS = new Set(['png-to-psd', 'jpg-to-psd', 'psd-to-png', 'psd-to-jpg']);
 const showExtensionFooterLine = EXTENSION_FOOTER_CONVERTERS.has(d.key);
+const PSD_LEARNING_KEYS = new Set(['png-to-psd', 'jpg-to-psd', 'psd-to-png', 'psd-to-jpg']);
+const showPsdLearning = PSD_LEARNING_KEYS.has(d.key);
 
 // BreadcrumbList — scoped to v2 pages only (ТЗ 19.07 rebuilt png-to-psd,
 // generalized to the other 8 pages the same day); v1 pages keep the graph
@@ -465,6 +467,17 @@ const jsonLd = {
             ))}
           </div>
         </section>
+
+        {showPsdLearning && (
+          <section aria-labelledby="psd-learning-heading" class="tool-section">
+            <h2 id="psd-learning-heading">Understand the PSD workflow</h2>
+            <p>
+              <a href="/formats/psd/">What is a PSD file?</a>
+              {' · '}
+              <a href="/guides/flat-image-vs-editable-layers/">Flat image vs editable layers</a>
+            </p>
+          </section>
+        )}
 
         <section aria-labelledby="more-conversions-heading" class="tool-section">
           <h2 id="more-conversions-heading">{d.moreConversionsHeading}</h2>
