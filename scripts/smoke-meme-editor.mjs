@@ -9,6 +9,9 @@ import jpeg from 'jpeg-js';
 const DIST = path.resolve('dist');
 const WORK = await fs.mkdtemp(path.join(os.tmpdir(), 'lp-meme-editor-'));
 const IMAGE = path.join(WORK, 'meme-source-640x480.jpg');
+const OVERLAY = path.join(WORK, 'meme-overlay-220x140.jpg');
+const EVIDENCE = path.resolve('artifacts/meme-editor');
+await fs.mkdir(EVIDENCE, { recursive: true });
 
 function makeJpeg(width, height) {
   const data = Buffer.alloc(width * height * 4);
@@ -24,6 +27,7 @@ function makeJpeg(width, height) {
   return Buffer.from(jpeg.encode({ data, width, height }, 88).data);
 }
 await fs.writeFile(IMAGE, makeJpeg(640, 480));
+await fs.writeFile(OVERLAY, makeJpeg(220, 140));
 
 function findExecutable(names) {
   for (const name of names) {
@@ -136,6 +140,10 @@ async function waitPath(cdp, pathname) {
     return value?.path === pathname && value.ready === 'complete' ? value : null;
   }, 30000, `path ${pathname}`);
 }
+async function screenshot(cdp, name) {
+  const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 82, captureBeyondViewport: true });
+  await fs.writeFile(path.join(EVIDENCE, name), Buffer.from(shot.data, 'base64'));
+}
 
 const chrome = findExecutable(['google-chrome-stable', 'google-chrome', 'chromium', 'chromium-browser']);
 const debugPort = await freePort();
@@ -155,6 +163,7 @@ await cdp.open();
 await cdp.send('Runtime.enable');
 await cdp.send('Page.enable');
 await cdp.send('DOM.enable');
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 
 try {
   await waitPath(cdp, '/tools/meme-generator/');
@@ -186,6 +195,21 @@ try {
   })()`);
   const edited = await evalValue(cdp, `(() => { const text=document.querySelector('.meme-object.is-selected [data-role="text"]'); return {editable:text?.contentEditable,text:text?.innerText}; })()`);
   if (edited.editable !== 'true' || edited.text !== 'DIRECT EDIT') throw new Error(`Direct editing failed: ${JSON.stringify(edited)}`);
+  await screenshot(cdp, 'wysiwyg-text-toolbar.jpg');
+
+  await upload(cdp, '#meme-overlay-file', OVERLAY);
+  const overlayState = await waitFor(async () => {
+    const value = await evalValue(cdp, `(() => ({
+      objects: document.querySelectorAll('[data-meme-layer]').length,
+      images: document.querySelectorAll('[data-meme-kind="image"]').length,
+      selectedImage: !!document.querySelector('.meme-object.is-selected[data-meme-kind="image"]'),
+      imageToolbar: document.querySelector('#meme-floating-toolbar')?.classList.contains('is-image-selection') || false
+    }))()`);
+    return value?.images === 1 ? value : null;
+  }, 10000, 'overlay image object');
+  if (overlayState.objects !== 4 || !overlayState.selectedImage || !overlayState.imageToolbar) {
+    throw new Error(`Overlay image object failed: ${JSON.stringify(overlayState)}`);
+  }
 
   await evalValue(cdp, `document.querySelector('#meme-mode-outside').click(); true`);
   const outside = await evalValue(cdp, `(() => {
@@ -210,6 +234,8 @@ try {
     throw new Error(`Drag failed: ${JSON.stringify(moved)}`);
   }
 
+  await screenshot(cdp, 'wysiwyg-desktop.jpg');
+
   await evalValue(cdp, `document.querySelector('#meme-action').click(); true`);
   await waitState(cdp, '#meme-image-tool', 'success');
   const applied = await evalValue(cdp, `document.querySelector('#meme-file-meta')?.textContent || ''`);
@@ -231,7 +257,7 @@ try {
   const suspicious = requests.filter((request) => request.method !== 'GET' && request.path !== '/api/collect');
   if (suspicious.length) throw new Error(`Unexpected image network upload: ${JSON.stringify(suspicious)}`);
 
-  console.log(`MEME EDITOR SMOKE PASS — direct edit, add text, outside mode, drag, Apply→Crop, mobile and local-only processing PASS`);
+  console.log(`MEME EDITOR SMOKE PASS — direct edit, add text, add image object, outside mode, drag, Apply→Crop, mobile and local-only processing PASS`);
 } finally {
   cdp.close();
   chromeProc.kill('SIGTERM');

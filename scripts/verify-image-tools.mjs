@@ -68,7 +68,7 @@ const [memeHtml, memeSource, memePage] = await Promise.all([
 assert(memeHtml.includes('https://layerporter.com/tools/meme-generator/'), 'Meme canonical missing');
 assert(memeHtml.includes('<h1 id="meme-title">Meme generator</h1>'), 'Meme H1/copy missing');
 for (const id of [
-  'meme-stage', 'meme-stage-image', 'meme-object-layer', 'meme-floating-toolbar',
+  'meme-stage', 'meme-stage-image', 'meme-object-layer', 'meme-floating-toolbar', 'meme-overlay-file',
   'meme-toolbar-font', 'meme-toolbar-size', 'meme-toolbar-bold', 'meme-toolbar-italic',
   'meme-toolbar-underline', 'meme-toolbar-fill', 'meme-toolbar-stroke',
   'meme-toolbar-stroke-width', 'meme-mode-inside', 'meme-mode-outside',
@@ -88,6 +88,11 @@ assert(memeSource.includes("type MemeMode = 'inside' | 'outside'"), 'Meme inside
 assert(memeSource.includes("objectLayer.addEventListener('dblclick'"), 'Direct WYSIWYG text editing contract missing');
 assert(memeSource.includes("interaction.type === 'scale'"), 'Direct object resize contract missing');
 assert(memeSource.includes("interaction.type === 'rotate'"), 'Direct object rotation contract missing');
+assert(memeSource.includes("kind: 'image'"), 'Meme image-object layer contract missing');
+assert(memeSource.includes('loadLocalImage(file)'), 'Overlay image validation/decoding missing');
+assert(memeSource.includes('await drawImageLayer(context, layer)'), 'Overlay image export rendering missing');
+assert(memeSource.includes("addImageButton.addEventListener('click', () => overlayInput.click())"), 'Add image must create overlay object, not replace base image');
+assert(memeSource.includes("replaceImageButton.addEventListener('click', () => input.click())"), 'Base image replacement control missing');
 assert(memePage.includes('clientRouter={true}') && memePage.includes('<ImageWorkspaceNav active="meme"'), 'Meme must use shared client Workspace');
 assert(bootstrapSource.includes("path.endsWith('/tools/meme-generator/')"), 'Meme bootstrap route missing');
 
