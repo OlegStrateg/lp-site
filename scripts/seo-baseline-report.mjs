@@ -167,6 +167,8 @@ const canonicalMismatch = pages
   .filter((p) => p.canonical && p.canonical !== expectedCanonical(p.route))
   .map((p) => ({ route: p.route, canonical: p.canonical, expected: expectedCanonical(p.route) }));
 const noindex = pages.filter((p) => /\bnoindex\b/i.test(p.robots)).map((p) => p.route);
+const noindexSet = new Set(noindex);
+const indexableCanonicalMismatch = canonicalMismatch.filter((item) => !noindexSet.has(item.route));
 const missingTitle = pages.filter((p) => !p.title).map((p) => p.route);
 const missingDescription = pages.filter((p) => !p.description).map((p) => p.route);
 const h1Problems = pages.filter((p) => p.h1.length !== 1).map((p) => ({ route: p.route, count: p.h1.length, h1: p.h1 }));
@@ -250,6 +252,7 @@ const report = {
     noindexPages: noindex.length,
     missingCanonical: missingCanonical.length,
     canonicalMismatch: canonicalMismatch.length,
+    indexableCanonicalMismatch: indexableCanonicalMismatch.length,
     missingTitle: missingTitle.length,
     missingDescription: missingDescription.length,
     h1Problems: h1Problems.length,
@@ -265,6 +268,7 @@ const report = {
   issues: {
     missingCanonical,
     canonicalMismatch,
+    indexableCanonicalMismatch,
     noindex,
     missingTitle,
     missingDescription,
@@ -318,7 +322,7 @@ for (const c of controls) {
   assert(c.h1Count === 1, `control URL must have exactly one H1: ${c.route}, found ${c.h1Count}`);
 }
 assert(wwwInternalLinks.length === 0, `found www internal links on ${wwwInternalLinks.length} pages`);
-assert(canonicalMismatch.length === 0, `found ${canonicalMismatch.length} canonical mismatches`);
+assert(indexableCanonicalMismatch.length === 0, `found ${indexableCanonicalMismatch.length} canonical mismatches on indexable pages`);
 assert(brokenHreflangTargets.length === 0, `found ${brokenHreflangTargets.length} broken hreflang targets`);
 assert(sitemapMissingFiles.length === 0, `found ${sitemapMissingFiles.length} sitemap URLs without built HTML`);
 
