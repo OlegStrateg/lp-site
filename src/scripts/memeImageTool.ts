@@ -545,6 +545,7 @@ export function initMemeImageTool(): void {
 
   async function addOverlayImage(file: File): Promise<void> {
     if (!image) return;
+    finishEditing();
     setStatus('Adding image…');
     try {
       const loaded = await loadLocalImage(file);
