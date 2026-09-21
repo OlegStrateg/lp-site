@@ -168,6 +168,13 @@ const schema = {
         <a class="hub-design-card" href={converterPath('jpg-to-psd')}><div><div class="hub-pair"><span>JPG</span><i>→</i><span>PSD</span></div><h3>JPG → PSD</h3><p>{c.jpgPsdDesc}</p><b>{c.openConverter} ↗</b></div><div class="hub-design-art"><div class="hub-art-flow"><span class="hub-output jpg">JPG</span><em>→</em><span class="hub-output psd">PSD</span></div></div></a>
       </div>
 
+      {locale.code === 'en' && (
+        <div class="hub-route-foot">
+          <strong>PSD knowledge</strong>
+          <span><a href="/formats/">Format guides</a> · <a href="/formats/psd/">What is a PSD file?</a> · <a href="/guides/flat-image-vs-editable-layers/">Flat image vs editable layers</a></span>
+        </div>
+      )}
+
       <a class="hub-checker" id="checker" href={converterPath('canva-to-google-slides')}>
         <div class="hub-checker-copy"><span>{c.compatibilityChecker}</span><h3>Canva → Google Slides</h3><p>{c.checkerDesc}</p><b>{c.openChecker} <i>↗</i></b></div>
         <div class="hub-checker-visual" aria-hidden="true"><div class="hub-checker-window"><div class="hub-checker-top"><b>presentation.pptx</b><span>{c.analysis}</span></div><div class="hub-checker-content"><div class="hub-slide-list"><i></i><i></i><i></i></div><div class="hub-results"><div><span>Aa</span><p><b>{c.fontCompatibility}</b><small>{c.fontResult}</small></p><em class="warn">{c.check}</em></div><div><span>▣</span><p><b>{c.groupedObjects}</b><small>{c.groupedResult}</small></p><em>{c.ok}</em></div><div><span>✦</span><p><b>{c.effects}</b><small>{c.effectsResult}</small></p><em class="warn">{c.check}</em></div></div></div></div></div>

@@ -56,6 +56,22 @@ const railTools = RELATED_TOOLS[d.slug] ?? [
   { href: '/convert/png-to-psd/', name: 'PNG to PSD', badge: 'PNG' },
 ];
 
+const RELATED_READING: Record<string, { href: string; name: string }[]> = {
+  psd: [
+    { href: '/guides/flat-image-vs-editable-layers/', name: 'Flat image vs editable layers' },
+    { href: '/guides/export-from-ai-builders/', name: 'Export designs from AI builders' },
+  ],
+  'flat-image-vs-editable-layers': [
+    { href: '/formats/psd/', name: 'What is a PSD file?' },
+    { href: '/guides/export-from-ai-builders/', name: 'Export designs from AI builders' },
+  ],
+  'export-from-ai-builders': [
+    { href: '/formats/psd/', name: 'What is a PSD file?' },
+    { href: '/guides/flat-image-vs-editable-layers/', name: 'Flat image vs editable layers' },
+  ],
+};
+const relatedReading = RELATED_READING[d.slug] ?? [];
+
 const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://layerporter.com';
 const pagePath = `/${d.section}/${d.slug}/`;
 const pageUrl = `${site}${pagePath}`;
@@ -112,7 +128,7 @@ const jsonLd = {
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/">Home</a>
     <span aria-hidden="true">/</span>
-    <span>{sectionLabel}</span>
+    <a href={`/${d.section}/`}>{sectionLabel}</a>
   </nav>
 
   <div class="article-grid">
@@ -153,6 +169,14 @@ const jsonLd = {
           </a>
         ))}
       </div>
+      {relatedReading.length > 0 && (
+        <div class="rail-card">
+          <p class="rail-head">Related reading</p>
+          {relatedReading.map((item) => (
+            <a class="text-link" href={item.href}>{item.name} →</a>
+          ))}
+        </div>
+      )}
       <div class="rail-card rail-ext">
         <p class="rail-head">Browser extensions</p>
         <p class="rail-sub">Capture a live page as editable layers — coming to the Chrome Web Store.</p>
