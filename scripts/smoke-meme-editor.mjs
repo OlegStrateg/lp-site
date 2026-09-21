@@ -195,6 +195,7 @@ try {
   })()`);
   const edited = await evalValue(cdp, `(() => { const text=document.querySelector('.meme-object.is-selected [data-role="text"]'); return {editable:text?.contentEditable,text:text?.innerText}; })()`);
   if (edited.editable !== 'true' || edited.text !== 'DIRECT EDIT') throw new Error(`Direct editing failed: ${JSON.stringify(edited)}`);
+  await screenshot(cdp, 'wysiwyg-text-toolbar.jpg');
 
   await upload(cdp, '#meme-overlay-file', OVERLAY);
   const overlayState = await waitFor(async () => {
