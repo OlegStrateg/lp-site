@@ -41,6 +41,7 @@ const description = 'Create memes directly on the image with draggable, resizabl
 
       <div class="image-tool-shell meme-editor-shell" id="meme-image-tool" data-state="empty">
         <input id="meme-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+        <input id="meme-overlay-file" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
 
         <label class="image-tool-drop" id="meme-drop" for="meme-file" tabindex="0">
           <span class="image-tool-drop-icon" aria-hidden="true">＋</span>
@@ -56,7 +57,7 @@ const description = 'Create memes directly on the image with draggable, resizabl
             </div>
 
             <div class="meme-floating-toolbar" id="meme-floating-toolbar" hidden>
-              <select id="meme-toolbar-font" class="meme-toolbar-select" aria-label="Font">
+              <select id="meme-toolbar-font" class="meme-text-control meme-toolbar-select" aria-label="Font">
                 <option value="Impact">Impact</option>
                 <option value="Arial Black">Arial Black</option>
                 <option value="Arial">Arial</option>
@@ -64,20 +65,20 @@ const description = 'Create memes directly on the image with draggable, resizabl
                 <option value="Georgia">Georgia</option>
                 <option value="Times New Roman">Times New Roman</option>
               </select>
-              <input id="meme-toolbar-size" class="meme-toolbar-number" type="number" min="8" max="4096" aria-label="Font size" />
-              <button id="meme-toolbar-bold" class="meme-toolbar-button" type="button" title="Bold" aria-label="Bold"><strong>B</strong></button>
-              <button id="meme-toolbar-italic" class="meme-toolbar-button" type="button" title="Italic" aria-label="Italic"><em>I</em></button>
-              <button id="meme-toolbar-underline" class="meme-toolbar-button" type="button" title="Underline" aria-label="Underline"><u>U</u></button>
-              <button id="meme-toolbar-uppercase" class="meme-toolbar-button" type="button" title="Uppercase" aria-label="Uppercase">Tt</button>
+              <input id="meme-toolbar-size" class="meme-text-control meme-toolbar-number" type="number" min="8" max="4096" aria-label="Font size" />
+              <button id="meme-toolbar-bold" class="meme-text-control meme-toolbar-button" type="button" title="Bold" aria-label="Bold"><strong>B</strong></button>
+              <button id="meme-toolbar-italic" class="meme-text-control meme-toolbar-button" type="button" title="Italic" aria-label="Italic"><em>I</em></button>
+              <button id="meme-toolbar-underline" class="meme-text-control meme-toolbar-button" type="button" title="Underline" aria-label="Underline"><u>U</u></button>
+              <button id="meme-toolbar-uppercase" class="meme-text-control meme-toolbar-button" type="button" title="Uppercase" aria-label="Uppercase">Tt</button>
               <label class="meme-toolbar-color" title="Text color" aria-label="Text color">
                 <span>A</span><input id="meme-toolbar-fill" type="color" value="#ffffff" />
               </label>
               <label class="meme-toolbar-color" title="Outline color" aria-label="Outline color">
                 <span>◫</span><input id="meme-toolbar-stroke" type="color" value="#000000" />
               </label>
-              <input id="meme-toolbar-stroke-width" class="meme-toolbar-number meme-toolbar-stroke-width" type="number" min="0" max="200" title="Outline width" aria-label="Outline width" />
-              <button id="meme-toolbar-align" class="meme-toolbar-button" type="button" title="Text alignment" aria-label="Text alignment">≡</button>
-              <button id="meme-toolbar-background" class="meme-toolbar-button" type="button" title="Text background" aria-label="Text background">▦</button>
+              <input id="meme-toolbar-stroke-width" class="meme-text-control meme-toolbar-number meme-toolbar-stroke-width" type="number" min="0" max="200" title="Outline width" aria-label="Outline width" />
+              <button id="meme-toolbar-align" class="meme-text-control meme-toolbar-button" type="button" title="Text alignment" aria-label="Text alignment">≡</button>
+              <button id="meme-toolbar-background" class="meme-text-control meme-toolbar-button" type="button" title="Text background" aria-label="Text background">▦</button>
               <span class="meme-toolbar-divider" aria-hidden="true"></span>
               <button id="meme-toolbar-duplicate" class="meme-toolbar-button" type="button" title="Duplicate text" aria-label="Duplicate text">⧉</button>
               <button id="meme-toolbar-delete" class="meme-toolbar-button is-danger" type="button" title="Delete text" aria-label="Delete text">✕</button>
@@ -111,13 +112,14 @@ const description = 'Create memes directly on the image with draggable, resizabl
             <div class="meme-side-actions">
               <button class="meme-side-action" id="meme-add-image" type="button">
                 <span aria-hidden="true">▧</span>
-                <strong>Change image</strong>
+                <strong>Add image</strong>
               </button>
               <button class="meme-side-action" id="meme-add-text" type="button">
                 <span aria-hidden="true">A</span>
                 <strong>Add text</strong>
               </button>
             </div>
+            <button class="meme-replace-link" id="meme-replace-image" type="button">Replace base image</button>
 
             <div class="image-tool-status meme-editor-status" id="meme-status" role="status" aria-live="polite"></div>
 
@@ -131,9 +133,9 @@ const description = 'Create memes directly on the image with draggable, resizabl
     </div>
 
     <div class="image-tool-supporting-copy">
-      <p>Direct editing, multiple text objects and local browser rendering. Apply the result to the same LayerPorter Workspace and continue with Crop or Resize.</p>
+      <p>Direct editing, multiple text and image objects, and local browser rendering. Apply the result to the same LayerPorter Workspace and continue with Crop or Resize.</p>
       <div class="image-tool-badges" aria-label="Meme generator features">
-        <span>Direct text editing</span>
+        <span>Text + image objects</span>
         <span>Drag · resize · rotate</span>
         <span>Text inside / outside</span>
         <span>JPG, PNG, WebP</span>
