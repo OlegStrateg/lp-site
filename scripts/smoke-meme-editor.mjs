@@ -163,6 +163,7 @@ await cdp.open();
 await cdp.send('Runtime.enable');
 await cdp.send('Page.enable');
 await cdp.send('DOM.enable');
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 
 try {
   await waitPath(cdp, '/tools/meme-generator/');
