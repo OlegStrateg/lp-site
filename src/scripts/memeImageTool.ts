@@ -1,7 +1,9 @@
 import { track } from '../lib/analytics';
 import {
+  disposeLoadedImage,
   downloadName,
   formatImageBytes,
+  loadLocalImage,
   type LoadedImage,
   validateOutputSize,
 } from './imageToolCore';
@@ -15,7 +17,8 @@ import {
 type MemeMode = 'inside' | 'outside';
 type TextAlign = 'left' | 'center' | 'right';
 
-type MemeLayer = {
+type MemeTextLayer = {
+  kind: 'text';
   id: string;
   text: string;
   x: number;
@@ -35,6 +38,19 @@ type MemeLayer = {
   rotation: number;
 };
 
+type MemeImageLayer = {
+  kind: 'image';
+  id: string;
+  file: File;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+};
+
+type MemeLayer = MemeTextLayer | MemeImageLayer;
+
 type MemeState = {
   imageVersion: number;
   mode: MemeMode;
@@ -51,7 +67,15 @@ type CompositionMetrics = {
 
 type Interaction =
   | { type: 'drag'; pointerId: number; layerId: string; offsetX: number; offsetY: number }
-  | { type: 'scale'; pointerId: number; layerId: string; startFontSize: number; startDistance: number }
+  | {
+      type: 'scale';
+      pointerId: number;
+      layerId: string;
+      startDistance: number;
+      startFontSize?: number;
+      startWidth?: number;
+      startHeight?: number;
+    }
   | { type: 'rotate'; pointerId: number; layerId: string; startRotation: number; startAngle: number };
 
 const FONT_OPTIONS = new Set(['Impact', 'Arial Black', 'Arial', 'Verdana', 'Georgia', 'Times New Roman']);
@@ -71,9 +95,9 @@ function numberValue(input: HTMLInputElement, fallback = 0): number {
   return Number.isFinite(value) ? value : fallback;
 }
 
-function makeLayerId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-  return `text-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+function makeLayerId(prefix = 'object'): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function fontFamilyCss(fontFamily: string): string {
@@ -82,11 +106,11 @@ function fontFamilyCss(fontFamily: string): string {
     : `"${fontFamily}", Arial, sans-serif`;
 }
 
-function fontString(layer: MemeLayer): string {
+function fontString(layer: MemeTextLayer): string {
   return `${layer.italic ? 'italic ' : ''}${layer.bold ? '900' : '400'} ${Math.max(8, layer.fontSize)}px ${fontFamilyCss(layer.fontFamily)}`;
 }
 
-function layerLines(layer: MemeLayer): string[] {
+function layerLines(layer: MemeTextLayer): string[] {
   const value = layer.uppercase ? layer.text.toUpperCase() : layer.text;
   return value.split('\n');
 }
@@ -106,6 +130,7 @@ export function initMemeImageTool(): void {
   root.dataset.bound = '1';
 
   const input = byId<HTMLInputElement>('meme-file');
+  const overlayInput = byId<HTMLInputElement>('meme-overlay-file');
   const drop = byId<HTMLLabelElement>('meme-drop');
   const workspace = byId<HTMLElement>('meme-workspace');
   const canvasArea = byId<HTMLElement>('meme-canvas-area');
@@ -133,9 +158,12 @@ export function initMemeImageTool(): void {
   const outsideButton = byId<HTMLButtonElement>('meme-mode-outside');
   const addTextButton = byId<HTMLButtonElement>('meme-add-text');
   const addImageButton = byId<HTMLButtonElement>('meme-add-image');
+  const replaceImageButton = byId<HTMLButtonElement>('meme-replace-image');
   const applyButton = byId<HTMLButtonElement>('meme-action');
   const downloadButton = byId<HTMLButtonElement>('meme-download');
   const status = byId<HTMLElement>('meme-status');
+
+  const imageObjectUrls = new Map<string, string>();
 
   let image: LoadedImage | null = null;
   let mode: MemeMode = 'inside';
@@ -159,10 +187,11 @@ export function initMemeImageTool(): void {
     };
   }
 
-  function defaultLayer(text: string, x: number, y: number): MemeLayer {
+  function defaultTextLayer(text: string, x: number, y: number): MemeTextLayer {
     if (!image) throw new Error('Image is not ready.');
     return {
-      id: makeLayerId(),
+      kind: 'text',
+      id: makeLayerId('text'),
       text,
       x,
       y,
@@ -184,16 +213,17 @@ export function initMemeImageTool(): void {
 
   function resetLayersForMode(nextMode: MemeMode): void {
     if (!image) return;
+    cleanupObjectUrls();
     const m = metrics(nextMode);
     if (nextMode === 'outside') {
       layers = [
-        defaultLayer('YOUR TEXT HERE', image.width / 2, m.band / 2),
-        defaultLayer('YOUR TEXT HERE', image.width / 2, m.imageY + image.height + m.band / 2),
+        defaultTextLayer('YOUR TEXT HERE', image.width / 2, m.band / 2),
+        defaultTextLayer('YOUR TEXT HERE', image.width / 2, m.imageY + image.height + m.band / 2),
       ];
     } else {
       layers = [
-        defaultLayer('YOUR TEXT HERE', image.width / 2, image.height * 0.12),
-        defaultLayer('YOUR TEXT HERE', image.width / 2, image.height * 0.88),
+        defaultTextLayer('YOUR TEXT HERE', image.width / 2, image.height * 0.12),
+        defaultTextLayer('YOUR TEXT HERE', image.width / 2, image.height * 0.88),
       ];
     }
     selectedId = layers[0]?.id ?? null;
@@ -201,6 +231,11 @@ export function initMemeImageTool(): void {
 
   function selectedLayer(): MemeLayer | null {
     return layers.find((layer) => layer.id === selectedId) ?? null;
+  }
+
+  function selectedTextLayer(): MemeTextLayer | null {
+    const layer = selectedLayer();
+    return layer?.kind === 'text' ? layer : null;
   }
 
   function setStatus(message: string, kind: 'normal' | 'error' | 'success' = 'normal'): void {
@@ -220,9 +255,28 @@ export function initMemeImageTool(): void {
     });
   }
 
-  function textStrokeCss(layer: MemeLayer): string {
+  function textStrokeCss(layer: MemeTextLayer): string {
     if (layer.strokeWidth <= 0) return '0 transparent';
     return `${Math.max(0.5, layer.strokeWidth * scale)}px ${layer.strokeColor}`;
+  }
+
+  function cleanupObjectUrl(id: string): void {
+    const url = imageObjectUrls.get(id);
+    if (url) URL.revokeObjectURL(url);
+    imageObjectUrls.delete(id);
+  }
+
+  function cleanupObjectUrls(): void {
+    for (const url of imageObjectUrls.values()) URL.revokeObjectURL(url);
+    imageObjectUrls.clear();
+  }
+
+  function previewUrl(layer: MemeImageLayer): string {
+    const existing = imageObjectUrls.get(layer.id);
+    if (existing) return existing;
+    const url = URL.createObjectURL(layer.file);
+    imageObjectUrls.set(layer.id, url);
+    return url;
   }
 
   function renderModeButtons(): void {
@@ -238,20 +292,34 @@ export function initMemeImageTool(): void {
       toolbar.hidden = true;
       return;
     }
+
     toolbar.hidden = false;
+    toolbar.classList.toggle('is-image-selection', layer.kind === 'image');
+    duplicateButton.title = layer.kind === 'image' ? 'Duplicate image' : 'Duplicate text';
+    deleteButton.title = layer.kind === 'image' ? 'Delete image' : 'Delete text';
+
+    const textLayer = layer.kind === 'text' ? layer : null;
+    const textControls = [
+      fontInput, sizeInput, boldButton, italicButton, underlineButton, uppercaseButton,
+      fillInput, strokeInput, strokeWidthInput, alignButton, backgroundButton,
+    ];
+
     syncingToolbar = true;
-    fontInput.value = FONT_OPTIONS.has(layer.fontFamily) ? layer.fontFamily : 'Arial';
-    sizeInput.value = String(Math.round(layer.fontSize));
-    fillInput.value = layer.fillColor;
-    strokeInput.value = layer.strokeColor;
-    strokeWidthInput.value = String(Math.round(layer.strokeWidth));
-    boldButton.classList.toggle('is-active', layer.bold);
-    italicButton.classList.toggle('is-active', layer.italic);
-    underlineButton.classList.toggle('is-active', layer.underline);
-    uppercaseButton.classList.toggle('is-active', layer.uppercase);
-    backgroundButton.classList.toggle('is-active', layer.backgroundEnabled);
-    alignButton.dataset.align = layer.align;
-    alignButton.textContent = layer.align === 'left' ? '≡←' : layer.align === 'right' ? '→≡' : '≡';
+    for (const control of textControls) control.toggleAttribute('disabled', !textLayer);
+    if (textLayer) {
+      fontInput.value = FONT_OPTIONS.has(textLayer.fontFamily) ? textLayer.fontFamily : 'Arial';
+      sizeInput.value = String(Math.round(textLayer.fontSize));
+      fillInput.value = textLayer.fillColor;
+      strokeInput.value = textLayer.strokeColor;
+      strokeWidthInput.value = String(Math.round(textLayer.strokeWidth));
+      boldButton.classList.toggle('is-active', textLayer.bold);
+      italicButton.classList.toggle('is-active', textLayer.italic);
+      underlineButton.classList.toggle('is-active', textLayer.underline);
+      uppercaseButton.classList.toggle('is-active', textLayer.uppercase);
+      backgroundButton.classList.toggle('is-active', textLayer.backgroundEnabled);
+      alignButton.dataset.align = textLayer.align;
+      alignButton.textContent = textLayer.align === 'left' ? '≡←' : textLayer.align === 'right' ? '→≡' : '≡';
+    }
     syncingToolbar = false;
 
     requestAnimationFrame(() => {
@@ -271,19 +339,7 @@ export function initMemeImageTool(): void {
     });
   }
 
-  function createObjectNode(layer: MemeLayer): HTMLElement {
-    const node = document.createElement('div');
-    node.className = 'meme-object';
-    node.dataset.memeLayer = layer.id;
-
-    const text = document.createElement('div');
-    text.className = 'meme-object-text';
-    text.dataset.role = 'text';
-    text.spellcheck = false;
-    text.setAttribute('role', 'textbox');
-    text.setAttribute('aria-label', 'Meme text. Double click to edit.');
-    node.appendChild(text);
-
+  function addHandles(node: HTMLElement): void {
     for (const position of ['nw', 'ne', 'sw', 'se']) {
       const handle = document.createElement('span');
       handle.className = `meme-object-handle meme-object-handle-${position}`;
@@ -291,12 +347,38 @@ export function initMemeImageTool(): void {
       handle.setAttribute('aria-hidden', 'true');
       node.appendChild(handle);
     }
-
     const rotate = document.createElement('span');
     rotate.className = 'meme-object-rotate';
     rotate.dataset.handle = 'rotate';
     rotate.setAttribute('aria-hidden', 'true');
     node.appendChild(rotate);
+  }
+
+  function createObjectNode(layer: MemeLayer): HTMLElement {
+    const node = document.createElement('div');
+    node.className = 'meme-object';
+    node.dataset.memeLayer = layer.id;
+    node.dataset.memeKind = layer.kind;
+
+    if (layer.kind === 'text') {
+      const text = document.createElement('div');
+      text.className = 'meme-object-text';
+      text.dataset.role = 'text';
+      text.spellcheck = false;
+      text.setAttribute('role', 'textbox');
+      text.setAttribute('aria-label', 'Meme text. Double click to edit.');
+      node.appendChild(text);
+    } else {
+      const imageNode = document.createElement('img');
+      imageNode.className = 'meme-object-image';
+      imageNode.dataset.role = 'image';
+      imageNode.alt = '';
+      imageNode.draggable = false;
+      imageNode.src = previewUrl(layer);
+      node.appendChild(imageNode);
+    }
+
+    addHandles(node);
     return node;
   }
 
@@ -304,21 +386,43 @@ export function initMemeImageTool(): void {
     if (!image) return;
     const liveIds = new Set(layers.map((layer) => layer.id));
     for (const node of Array.from(objectLayer.querySelectorAll<HTMLElement>('[data-meme-layer]'))) {
-      if (!liveIds.has(node.dataset.memeLayer || '')) node.remove();
+      const id = node.dataset.memeLayer || '';
+      if (!liveIds.has(id)) {
+        cleanupObjectUrl(id);
+        node.remove();
+      }
     }
 
     for (const layer of layers) {
       let node = objectLayer.querySelector<HTMLElement>(`[data-meme-layer="${layer.id}"]`);
+      if (node && node.dataset.memeKind !== layer.kind) {
+        cleanupObjectUrl(layer.id);
+        node.remove();
+        node = null;
+      }
       if (!node) {
         node = createObjectNode(layer);
         objectLayer.appendChild(node);
       }
+
+      node.classList.toggle('is-text-object', layer.kind === 'text');
+      node.classList.toggle('is-image-object', layer.kind === 'image');
       node.classList.toggle('is-selected', layer.id === selectedId);
       node.classList.toggle('is-editing', layer.id === editingId);
       node.style.left = `${layer.x * scale}px`;
       node.style.top = `${layer.y * scale}px`;
       node.style.transform = `translate(-50%, -50%) rotate(${layer.rotation}deg)`;
 
+      if (layer.kind === 'image') {
+        node.style.width = `${Math.max(24, layer.width * scale)}px`;
+        node.style.height = `${Math.max(24, layer.height * scale)}px`;
+        const imageNode = node.querySelector<HTMLImageElement>('[data-role="image"]');
+        if (imageNode && !imageNode.src) imageNode.src = previewUrl(layer);
+        continue;
+      }
+
+      node.style.width = '';
+      node.style.height = '';
       const text = node.querySelector<HTMLElement>('[data-role="text"]');
       if (!text) continue;
       if (layer.id !== editingId && text.innerText !== layer.text) text.innerText = layer.text;
@@ -343,9 +447,9 @@ export function initMemeImageTool(): void {
   function renderStage(): void {
     if (!image) return;
     const m = metrics();
-    const availableWidth = Math.max(280, canvasArea.clientWidth - 72);
-    const availableHeight = Math.max(340, Math.min(760, window.innerHeight - 210));
-    scale = clamp(Math.min(availableWidth / m.width, availableHeight / m.height), 0.08, 1.5);
+    const availableWidth = Math.max(280, canvasArea.clientWidth - 56);
+    const availableHeight = Math.max(360, Math.min(820, window.innerHeight - 170));
+    scale = clamp(Math.min(availableWidth / m.width, availableHeight / m.height), 0.08, 1.65);
 
     stage.style.width = `${Math.round(m.width * scale)}px`;
     stage.style.height = `${Math.round(m.height * scale)}px`;
@@ -371,6 +475,8 @@ export function initMemeImageTool(): void {
   }
 
   function beginEditing(layerId: string): void {
+    const layer = layers.find((candidate) => candidate.id === layerId);
+    if (!layer || layer.kind !== 'text') return;
     selectedId = layerId;
     editingId = layerId;
     renderObjects();
@@ -391,7 +497,7 @@ export function initMemeImageTool(): void {
     if (!editingId) return;
     const layer = layers.find((candidate) => candidate.id === editingId);
     const text = objectLayer.querySelector<HTMLElement>(`[data-meme-layer="${editingId}"] [data-role="text"]`);
-    if (layer && text) layer.text = text.innerText.replace(/\r/g, '');
+    if (layer?.kind === 'text' && text) layer.text = text.innerText.replace(/\r/g, '');
     editingId = null;
     saveState();
     renderObjects();
@@ -405,13 +511,16 @@ export function initMemeImageTool(): void {
     mode = nextMode;
     const nextMetrics = metrics(nextMode);
 
-    if (layers.length === 2) {
+    const onlyDefaultTexts = layers.length === 2 && layers.every((layer) => layer.kind === 'text');
+    if (onlyDefaultTexts) {
+      const first = layers[0] as MemeTextLayer;
+      const second = layers[1] as MemeTextLayer;
       if (nextMode === 'outside') {
-        layers[0].y = nextMetrics.band / 2;
-        layers[1].y = nextMetrics.imageY + image.height + nextMetrics.band / 2;
+        first.y = nextMetrics.band / 2;
+        second.y = nextMetrics.imageY + image.height + nextMetrics.band / 2;
       } else {
-        layers[0].y = image.height * 0.12;
-        layers[1].y = image.height * 0.88;
+        first.y = image.height * 0.12;
+        second.y = image.height * 0.88;
       }
     } else {
       const delta = nextMetrics.imageY - oldMetrics.imageY;
@@ -425,7 +534,7 @@ export function initMemeImageTool(): void {
   function addText(): void {
     if (!image) return;
     const m = metrics();
-    const layer = defaultLayer('NEW TEXT', image.width / 2, m.imageY + image.height / 2);
+    const layer = defaultTextLayer('NEW TEXT', image.width / 2, m.imageY + image.height / 2);
     layer.fontSize = Math.max(24, Math.round(image.width * 0.058));
     layers.push(layer);
     selectedId = layer.id;
@@ -434,13 +543,47 @@ export function initMemeImageTool(): void {
     beginEditing(layer.id);
   }
 
+  async function addOverlayImage(file: File): Promise<void> {
+    if (!image) return;
+    setStatus('Adding image…');
+    try {
+      const loaded = await loadLocalImage(file);
+      const m = metrics();
+      const maxWidth = Math.max(80, image.width * 0.4);
+      const maxHeight = Math.max(80, image.height * 0.4);
+      const fit = Math.min(1, maxWidth / loaded.width, maxHeight / loaded.height);
+      const width = Math.max(32, loaded.width * fit);
+      const height = Math.max(32, loaded.height * fit);
+      const layer: MemeImageLayer = {
+        kind: 'image',
+        id: makeLayerId('image'),
+        file,
+        x: m.width / 2,
+        y: m.imageY + image.height / 2,
+        width,
+        height,
+        rotation: 0,
+      };
+      disposeLoadedImage(loaded);
+      layers.push(layer);
+      selectedId = layer.id;
+      saveState();
+      renderObjects();
+      setStatus('Image added. Drag it, resize from a corner or rotate from the top handle.', 'success');
+      track('meme_overlay_add', { tool: 'meme_generator', input_format: file.type || 'unknown' });
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'This image could not be added.', 'error');
+      track('convert_error', { tool: 'meme_generator', error_type: 'overlay_input_error' });
+    }
+  }
+
   function duplicateSelected(): void {
     const layer = selectedLayer();
     if (!layer || !image) return;
     const m = metrics();
     const copy: MemeLayer = {
       ...layer,
-      id: makeLayerId(),
+      id: makeLayerId(layer.kind),
       x: clamp(layer.x + image.width * 0.03, 0, m.width),
       y: clamp(layer.y + image.height * 0.04, 0, m.height),
     };
@@ -453,6 +596,8 @@ export function initMemeImageTool(): void {
   function deleteSelected(): void {
     const index = layers.findIndex((layer) => layer.id === selectedId);
     if (index < 0) return;
+    const removed = layers[index];
+    if (removed.kind === 'image') cleanupObjectUrl(removed.id);
     layers.splice(index, 1);
     editingId = null;
     selectedId = layers[Math.min(index, layers.length - 1)]?.id ?? null;
@@ -478,7 +623,7 @@ export function initMemeImageTool(): void {
 
   function updateSelectedFromToolbar(): void {
     if (syncingToolbar) return;
-    const layer = selectedLayer();
+    const layer = selectedTextLayer();
     if (!layer) return;
     layer.fontFamily = FONT_OPTIONS.has(fontInput.value) ? fontInput.value : 'Arial';
     layer.fontSize = clamp(numberValue(sizeInput, layer.fontSize), 8, 4096);
@@ -490,7 +635,7 @@ export function initMemeImageTool(): void {
   }
 
   function toggleSelected(property: 'bold' | 'italic' | 'underline' | 'uppercase' | 'backgroundEnabled'): void {
-    const layer = selectedLayer();
+    const layer = selectedTextLayer();
     if (!layer) return;
     layer[property] = !layer[property];
     saveState();
@@ -498,14 +643,14 @@ export function initMemeImageTool(): void {
   }
 
   function cycleAlignment(): void {
-    const layer = selectedLayer();
+    const layer = selectedTextLayer();
     if (!layer) return;
     layer.align = layer.align === 'left' ? 'center' : layer.align === 'center' ? 'right' : 'left';
     saveState();
     renderObjects();
   }
 
-  function drawTextLayer(context: CanvasRenderingContext2D, layer: MemeLayer): void {
+  function drawTextLayer(context: CanvasRenderingContext2D, layer: MemeTextLayer): void {
     const lines = layerLines(layer);
     const lineHeight = layer.fontSize * 1.08;
     const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
@@ -536,16 +681,30 @@ export function initMemeImageTool(): void {
     context.shadowColor = 'transparent';
 
     lines.forEach((line, index) => {
+      const visibleLine = layer.uppercase ? line.toUpperCase() : line;
       const y = startY + index * lineHeight;
-      if (layer.strokeWidth > 0) context.strokeText(layer.uppercase ? line.toUpperCase() : line, 0, y);
-      context.fillText(layer.uppercase ? line.toUpperCase() : line, 0, y);
-      if (layer.underline && line) {
-        const width = context.measureText(layer.uppercase ? line.toUpperCase() : line).width;
+      if (layer.strokeWidth > 0) context.strokeText(visibleLine, 0, y);
+      context.fillText(visibleLine, 0, y);
+      if (layer.underline && visibleLine) {
+        const width = context.measureText(visibleLine).width;
         const left = layer.align === 'left' ? 0 : layer.align === 'right' ? -width : -width / 2;
         context.fillRect(left, y + layer.fontSize * 0.52, width, Math.max(1, layer.fontSize * 0.045));
       }
     });
     context.restore();
+  }
+
+  async function drawImageLayer(context: CanvasRenderingContext2D, layer: MemeImageLayer): Promise<void> {
+    const bitmap = await createImageBitmap(layer.file);
+    try {
+      context.save();
+      context.translate(layer.x, layer.y);
+      context.rotate(layer.rotation * Math.PI / 180);
+      context.drawImage(bitmap, -layer.width / 2, -layer.height / 2, layer.width, layer.height);
+      context.restore();
+    } finally {
+      bitmap.close();
+    }
   }
 
   async function renderComposition(): Promise<Blob> {
@@ -566,7 +725,11 @@ export function initMemeImageTool(): void {
       context.fillRect(0, 0, m.width, m.height);
     }
     context.drawImage(image.bitmap, 0, m.imageY, image.width, image.height);
-    for (const layer of layers) drawTextLayer(context, layer);
+
+    for (const layer of layers) {
+      if (layer.kind === 'text') drawTextLayer(context, layer);
+      else await drawImageLayer(context, layer);
+    }
     return htmlCanvasBlob(output, image.mime, 0.92);
   }
 
@@ -579,6 +742,7 @@ export function initMemeImageTool(): void {
     setStatus('Reading image…');
     track('upload_start', { tool: 'meme_generator', input_format: file.type || 'unknown' });
     try {
+      cleanupObjectUrls();
       image = await setWorkspaceFile(file, 'local');
       mode = 'inside';
       resetLayersForMode(mode);
@@ -603,11 +767,16 @@ export function initMemeImageTool(): void {
     const saved = getWorkspaceToolState<MemeState>('meme');
     if (saved && saved.imageVersion === snapshot.version) {
       mode = saved.mode || 'inside';
-      layers = saved.layers.map((layer) => ({
-        italic: false,
-        underline: false,
-        ...layer,
-      }));
+      layers = saved.layers.map((rawLayer) => {
+        if ((rawLayer as MemeLayer).kind === 'image') return { ...(rawLayer as MemeImageLayer) };
+        const textLayer = rawLayer as MemeTextLayer & { kind?: 'text' };
+        return {
+          kind: 'text',
+          italic: false,
+          underline: false,
+          ...textLayer,
+        } as MemeTextLayer;
+      });
       selectedId = saved.selectedId && layers.some((layer) => layer.id === saved.selectedId)
         ? saved.selectedId
         : layers[0]?.id ?? null;
@@ -620,7 +789,7 @@ export function initMemeImageTool(): void {
     root.dataset.state = 'ready';
     applyButton.disabled = false;
     downloadButton.disabled = false;
-    setStatus('Select text to move it. Double click text to edit it.');
+    setStatus('Select an object to move, resize or rotate it. Double click text to edit.');
     renderStage();
     return true;
   }
@@ -632,12 +801,14 @@ export function initMemeImageTool(): void {
     root.dataset.state = 'processing';
     setStatus('Applying meme to image…');
     try {
-      const layerCount = layers.length;
+      const textLayerCount = layers.filter((layer) => layer.kind === 'text').length;
+      const imageLayerCount = layers.filter((layer) => layer.kind === 'image').length;
       const blob = await renderComposition();
       const workspaceBefore = getWorkspaceSnapshot();
       const m = metrics();
       const outputFile = new File([blob], downloadName(image, 'meme'), { type: image.mime, lastModified: Date.now() });
       image = await setWorkspaceFile(outputFile, workspaceBefore.source);
+      cleanupObjectUrls();
       mode = 'inside';
       layers = [];
       selectedId = null;
@@ -645,14 +816,15 @@ export function initMemeImageTool(): void {
       saveState();
       root.dataset.state = 'success';
       fileMeta.textContent = `${image.width} × ${image.height} px · ${formatImageBytes(image.file.size)}`;
-      setStatus('Meme applied. Continue with Crop, Resize or add new text.', 'success');
+      setStatus('Meme applied. Continue with Crop, Resize or add new objects.', 'success');
       renderStage();
       track('convert_success', {
         tool: 'meme_generator',
         output_width: m.width,
         output_height: m.height,
         output_format: image.mime,
-        text_layers: layerCount,
+        text_layers: textLayerCount,
+        image_layers: imageLayerCount,
       });
     } catch (error) {
       root.dataset.state = 'error';
@@ -679,7 +851,12 @@ export function initMemeImageTool(): void {
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 0);
       setStatus('Meme ready.', 'success');
-      track('download_click', { tool: 'meme_generator', output_format: image.mime, text_layers: layers.length });
+      track('download_click', {
+        tool: 'meme_generator',
+        output_format: image.mime,
+        text_layers: layers.filter((layer) => layer.kind === 'text').length,
+        image_layers: layers.filter((layer) => layer.kind === 'image').length,
+      });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'The meme could not be downloaded.', 'error');
       track('convert_error', { tool: 'meme_generator', error_type: 'download_failed' });
@@ -690,7 +867,14 @@ export function initMemeImageTool(): void {
 
   input.addEventListener('change', () => {
     const file = input.files?.[0];
+    input.value = '';
     if (file) void chooseFile(file);
+  });
+
+  overlayInput.addEventListener('change', () => {
+    const file = overlayInput.files?.[0];
+    overlayInput.value = '';
+    if (file) void addOverlayImage(file);
   });
 
   for (const name of ['dragenter', 'dragover'] as const) {
@@ -713,7 +897,8 @@ export function initMemeImageTool(): void {
   insideButton.addEventListener('click', () => switchMode('inside'));
   outsideButton.addEventListener('click', () => switchMode('outside'));
   addTextButton.addEventListener('click', addText);
-  addImageButton.addEventListener('click', () => input.click());
+  addImageButton.addEventListener('click', () => overlayInput.click());
+  replaceImageButton.addEventListener('click', () => input.click());
   applyButton.addEventListener('click', () => void applyToWorkspace());
   downloadButton.addEventListener('click', () => void downloadMeme());
 
@@ -740,7 +925,7 @@ export function initMemeImageTool(): void {
   objectLayer.addEventListener('input', (event) => {
     if (!editingId || !(event.target instanceof HTMLElement)) return;
     const layer = layers.find((candidate) => candidate.id === editingId);
-    if (!layer) return;
+    if (layer?.kind !== 'text') return;
     layer.text = event.target.innerText.replace(/\r/g, '');
     saveState();
     renderToolbarState();
@@ -772,8 +957,10 @@ export function initMemeImageTool(): void {
         type: 'scale',
         pointerId: event.pointerId,
         layerId: id,
-        startFontSize: layer.fontSize,
         startDistance: distanceFromLayer(layer, point),
+        startFontSize: layer.kind === 'text' ? layer.fontSize : undefined,
+        startWidth: layer.kind === 'image' ? layer.width : undefined,
+        startHeight: layer.kind === 'image' ? layer.height : undefined,
       };
     } else if (handle === 'rotate') {
       interaction = {
@@ -793,7 +980,7 @@ export function initMemeImageTool(): void {
       };
     }
 
-    (node || rawTarget).setPointerCapture?.(event.pointerId);
+    node.setPointerCapture?.(event.pointerId);
     renderObjects();
     event.preventDefault();
   });
@@ -809,8 +996,14 @@ export function initMemeImageTool(): void {
       layer.x = clamp(point.x - interaction.offsetX, 0, m.width);
       layer.y = clamp(point.y - interaction.offsetY, 0, m.height);
     } else if (interaction.type === 'scale') {
-      const distance = distanceFromLayer(layer, point);
-      layer.fontSize = clamp(interaction.startFontSize * distance / interaction.startDistance, 8, Math.max(4096, image.width));
+      const factor = distanceFromLayer(layer, point) / interaction.startDistance;
+      if (layer.kind === 'text' && interaction.startFontSize) {
+        layer.fontSize = clamp(interaction.startFontSize * factor, 8, Math.max(4096, image.width));
+      }
+      if (layer.kind === 'image' && interaction.startWidth && interaction.startHeight) {
+        layer.width = clamp(interaction.startWidth * factor, 24, m.width * 1.5);
+        layer.height = clamp(interaction.startHeight * factor, 24, m.height * 1.5);
+      }
     } else if (interaction.type === 'rotate') {
       const angle = angleFromLayer(layer, point);
       layer.rotation = interaction.startRotation + angle - interaction.startAngle;
@@ -838,18 +1031,34 @@ export function initMemeImageTool(): void {
   });
 
   document.addEventListener('keydown', (event) => {
-    if (!root.isConnected || !selectedId || editingId) return;
+    if (!root.isConnected) return;
+
+    if (event.key === 'Escape') {
+      if (editingId) finishEditing();
+      else selectLayer(null);
+      return;
+    }
+
+    if (!selectedId || editingId) return;
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       deleteSelected();
+      return;
     }
-    if (event.key === 'Enter') {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'd') {
+      event.preventDefault();
+      duplicateSelected();
+      return;
+    }
+    if (event.key === 'Enter' && selectedLayer()?.kind === 'text') {
       event.preventDefault();
       beginEditing(selectedId);
     }
   });
 
   window.addEventListener('resize', renderStage);
+  window.addEventListener('pagehide', cleanupObjectUrls, { once: true });
+  document.addEventListener('astro:before-preparation', cleanupObjectUrls, { once: true });
   document.addEventListener('lp:image-workspace-imported', hydrateFromWorkspace, { once: true });
   hydrateFromWorkspace();
 }
