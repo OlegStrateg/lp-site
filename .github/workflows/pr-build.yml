@@ -27,3 +27,12 @@ jobs:
 
       - name: Build and static gates
         run: npm run build
+
+      - name: Upload meme editor evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meme-editor-evidence
+          path: artifacts/meme-editor/
+          if-no-files-found: ignore
+          retention-days: 7
