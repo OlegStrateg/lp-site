@@ -167,8 +167,35 @@ await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900,
 
 try {
   await waitPath(cdp, '/tools/meme-generator/');
+
+  const emptyState = await evalValue(cdp, `(() => {
+    const frame = document.querySelector('.meme-editor-frame');
+    const editor = document.querySelector('#meme-workspace');
+    const side = document.querySelector('.meme-side-panel');
+    const drop = document.querySelector('#meme-drop');
+    return {
+      frameWidth: Math.round(frame?.getBoundingClientRect().width || 0),
+      editorDisplay: editor ? getComputedStyle(editor).display : '',
+      editorHidden: !!editor?.hidden,
+      sideWidth: Math.round(side?.getBoundingClientRect().width || 0),
+      dropWidth: Math.round(drop?.getBoundingClientRect().width || 0)
+    };
+  })()`);
+  if (!emptyState.editorHidden || emptyState.editorDisplay !== 'none' || emptyState.sideWidth !== 0 || emptyState.frameWidth > 950 || emptyState.dropWidth < 850) {
+    throw new Error(`Meme empty state parity failed: ${JSON.stringify(emptyState)}`);
+  }
+
   await upload(cdp, '#meme-file', IMAGE);
   await waitState(cdp, '#meme-image-tool', 'ready');
+
+  const activeLayout = await evalValue(cdp, `(() => ({
+    frameWidth: Math.round(document.querySelector('.meme-editor-frame')?.getBoundingClientRect().width || 0),
+    editorDisplay: getComputedStyle(document.querySelector('#meme-workspace')).display,
+    sideWidth: Math.round(document.querySelector('.meme-side-panel')?.getBoundingClientRect().width || 0)
+  }))()`);
+  if (activeLayout.frameWidth < 1100 || activeLayout.editorDisplay === 'none' || activeLayout.sideWidth < 250) {
+    throw new Error(`Meme active editor did not expand: ${JSON.stringify(activeLayout)}`);
+  }
 
   const initial = await evalValue(cdp, `(() => ({
     objects: document.querySelectorAll('[data-meme-layer]').length,
@@ -257,7 +284,7 @@ try {
   const suspicious = requests.filter((request) => request.method !== 'GET' && request.path !== '/api/collect');
   if (suspicious.length) throw new Error(`Unexpected image network upload: ${JSON.stringify(suspicious)}`);
 
-  console.log(`MEME EDITOR SMOKE PASS — direct edit, add text, add image object, outside mode, drag, Apply→Crop, mobile and local-only processing PASS`);
+  console.log(`MEME EDITOR SMOKE PASS — empty parity, active expansion, direct edit, add text, add image object, outside mode, drag, Apply→Crop, mobile and local-only processing PASS`);
 } finally {
   cdp.close();
   chromeProc.kill('SIGTERM');
