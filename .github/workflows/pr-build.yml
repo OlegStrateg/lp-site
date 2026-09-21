@@ -27,3 +27,12 @@ jobs:
 
       - name: Build and static gates
         run: npm run build
+
+      - name: Upload SEO baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-baseline-${{ github.event.pull_request.number }}
+          path: artifacts/seo-baseline/
+          if-no-files-found: error
+          retention-days: 30
