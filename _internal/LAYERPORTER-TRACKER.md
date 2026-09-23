@@ -44,7 +44,7 @@ Master tracker: GitHub Issue #153.
 | Трек | Спринт | Issue | Статус | Результат |
 |---|---|---:|---|---|
 | Управление | Каноническая roadmap + tracker | #153 | ACTIVE | master tracker и execution-roadmap |
-| Управление | LP-117 — Growth OS 11/10 | #290 | REVIEW | каноническая стратегия SEO/Web → Extensions → MCP → AI/Paid |
+| Управление | LP-117 — Growth OS 11/10 | #290 | PRODUCTION | каноническая стратегия SEO/Web → Extensions → MCP → AI/Paid |
 | Управление | Документы roadmap/tracker | #155 | REVIEW | новая каноническая roadmap и tracker в отдельной ветке |
 | C | LP-097 — Agent Reputation pilot | #229 | ACTIVE | 14-шаговый PostingBoard эксперимент: репутация → цитирование → внешний след |
 | A | Sprint A0 — полный аудит сайта | #154 | ACTIVE | реестр URL + READY/IMPROVE/HOLD + Pareto |
@@ -184,7 +184,7 @@ Issue: #154.
 
 ### 2026-09-23
 
-- Зафиксирован LP-117 / #290 — LayerPorter Growth OS 11/10.
+- LP-117 / #290 смержен; LayerPorter Growth OS 11/10 зафиксирован как канонический стратегический authority.
 - Новый стратегический authority: `_internal/LAYERPORTER-GROWTH-OS-2026-09-23.md`.
 - Разделены search architecture и navigation architecture.
 - Закреплены 4 продуктовых контура: SEO/Web Tools, Extensions, MCP/Agents, AI/Paid.
