@@ -1,10 +1,36 @@
-# LayerPorter — каноническая дорожная карта
+# LayerPorter — каноническая дорожная карта исполнения
 
-Статус: **каноническая стратегия проекта**.
-Дата фиксации: 2026-09-08.
-Master tracker: GitHub Issue #153.
+Статус: **каноническая execution-roadmap проекта**.  
+Дата исходной фиксации: 2026-09-08.  
+Стратегический authority обновлён: 2026-09-23.  
+Master tracker: GitHub Issue #153.  
+Каноническая стратегия: `_internal/LAYERPORTER-GROWTH-OS-2026-09-23.md`.
 
-Эта дорожная карта определяет порядок работ по сайту, SEO, AI-поиску, CRO, локализациям, расширениям и общему функциональному ядру. Техническая дорожная карта редактора `_internal/EDITOR-PLATFORM-ROADMAP.md` остаётся подчинённой продуктовой дорожной картой и не должна противоречить этому документу.
+Эта дорожная карта определяет порядок исполнения работ по сайту, SEO, AI-поиску, CRO, локализациям, расширениям, MCP и общему функциональному ядру. Она подчиняется LayerPorter Growth OS. При конфликте между старой формулировкой roadmap и Growth OS действует Growth OS. Техническая дорожная карта редактора `_internal/EDITOR-PLATFORM-ROADMAP.md` остаётся подчинённой и также не должна противоречить Growth OS.
+
+## 0. Стратегический authority
+
+Зафиксированная модель развития:
+
+```
+SEO / Web Tools
+→ successful result
+→ Extension / next tool / MCP
+→ repeat usage
+→ future AI paid layer
+```
+
+Обязательные правила:
+- Search architecture != Navigation architecture;
+- один самостоятельный intent → один URL owner;
+- free tool сначала даёт результат, затем релевантный extension CTA;
+- shared core переиспользуется Web / Extension / MCP / future API;
+- новые функции проходят Opportunity Score;
+- каждый инструмент проходит Tool Quality Gate;
+- существенные решения проходят independent specialist review + red team;
+- обязательные артефакты: Master Product & SEO Map, Opportunity Matrix, 12-Month Growth Roadmap.
+
+Полная методология и роли: `_internal/LAYERPORTER-GROWTH-OS-2026-09-23.md`.
 
 ## 1. Каноническая продуктовая модель
 
