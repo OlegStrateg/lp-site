@@ -1,9 +1,10 @@
 # LayerPorter — постоянный трекер
 
-Статус: **ACTIVE**.
-Дата включения: 2026-09-08.
-Master tracker: GitHub Issue #153.
-Каноническая дорожная карта: `_internal/LAYERPORTER-ROADMAP.md`.
+Статус: **ACTIVE**.  
+Дата включения: 2026-09-08.  
+Master tracker: GitHub Issue #153.  
+Каноническая стратегия: `_internal/LAYERPORTER-GROWTH-OS-2026-09-23.md`.  
+Каноническая execution-roadmap: `_internal/LAYERPORTER-ROADMAP.md`.
 
 ## Правило трекера
 
@@ -42,7 +43,8 @@ Master tracker: GitHub Issue #153.
 
 | Трек | Спринт | Issue | Статус | Результат |
 |---|---|---:|---|---|
-| Управление | Каноническая roadmap + tracker | #153 | ACTIVE | единая стратегия и master tracker |
+| Управление | Каноническая roadmap + tracker | #153 | ACTIVE | master tracker и execution-roadmap |
+| Управление | LP-117 — Growth OS 11/10 | #290 | REVIEW | каноническая стратегия SEO/Web → Extensions → MCP → AI/Paid |
 | Управление | Документы roadmap/tracker | #155 | REVIEW | новая каноническая roadmap и tracker в отдельной ветке |
 | C | LP-097 — Agent Reputation pilot | #229 | ACTIVE | 14-шаговый PostingBoard эксперимент: репутация → цитирование → внешний след |
 | A | Sprint A0 — полный аудит сайта | #154 | ACTIVE | реестр URL + READY/IMPROVE/HOLD + Pareto |
@@ -179,6 +181,19 @@ Issue: #154.
 Текущий предварительный Pareto: `Crop → Resize → Compress/Convert → Text/Meme → Media Core → AI benchmark`.
 
 ## Журнал решений трекера
+
+### 2026-09-23
+
+- Зафиксирован LP-117 / #290 — LayerPorter Growth OS 11/10.
+- Новый стратегический authority: `_internal/LAYERPORTER-GROWTH-OS-2026-09-23.md`.
+- Разделены search architecture и navigation architecture.
+- Закреплены 4 продуктовых контура: SEO/Web Tools, Extensions, MCP/Agents, AI/Paid.
+- Закреплён принцип `one core capability → Web UI → SEO landing → Extension → MCP → future API`.
+- Введены Opportunity Score и Tool Quality Gate.
+- Существенные решения обязаны проходить независимый review SEO/CRO/UX/UI/Marketing/Analytics/Architecture/MCP/AI Monetization + Red Team.
+- Обязательные выходные артефакты стратегии: Master Product & SEO Map, Opportunity Matrix, 12-Month Growth Roadmap.
+- Текущий Sprint A0 не отменяется; его scope расширяется до полной карты capability + URL + extension/MCP/paid adjacency.
+
 
 ### 2026-09-11
 
