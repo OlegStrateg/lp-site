@@ -1,0 +1,8 @@
+name = "fashion-radar"
+main = "worker/fashion-radar/index.js"
+compatibility_date = "2026-09-25"
+workers_dev = true
+
+[[routes]]
+pattern = "radar.summarizers.app"
+custom_domain = true
