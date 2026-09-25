@@ -49,7 +49,7 @@ jobs:
       - name: Run all 7 MCP tools through real stdio client
         shell: bash
         env:
-          TEST_URL: https://www.python.org/community/logos/
+          TEST_URL: https://en.wikipedia.org/wiki/JPEG
         run: |
           set -euo pipefail
           CLEAN="$RUNNER_TEMP/lp103-all-tools/clean"
