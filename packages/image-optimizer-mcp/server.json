@@ -5,16 +5,16 @@
   "description": "Page-aware website image analysis and safe optimization MCP server.",
   "websiteUrl": "https://layerporter.com/mcp/website-image-optimizer/",
   "repository": {
-    "url": "https://github.com/OlegStrateg/layerporter-site",
+    "url": "https://github.com/OlegStrateg/lp-site",
     "source": "github",
     "subfolder": "packages/image-optimizer-mcp"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@layerporter/image-optimizer-mcp",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "transport": {
         "type": "stdio"
       }
