@@ -1,0 +1,85 @@
+name: External trend tools smoke lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: "${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { id: instagram-trend-post-builder, upstream: SkillMedev/instagram-trend-post-builder, sha: 26b869174e166e746ef06a1f088301c626822c49, mode: skill }
+          - { id: cross-platform-trend-scout, upstream: ziqi-lydia/cross-platform-trend-scout, sha: 472edc9beb7cceb986c54bc796af853cec7b3277, mode: skill }
+          - { id: fashion-trend, upstream: fivetaku/fashion-trend, sha: a7fea3927e8e72fa423a3212bb3c7d09e1511af9, mode: shell }
+          - { id: tiktok-shop-product-creator-tracker, upstream: MisterSeitz/TikTok-Shop-Product-and-Creator-Tracker, sha: b677da799fbaedd9004ceffe03afbdbe667255ed, mode: compile }
+          - { id: tiktok-shop-product-scraper-python, upstream: PRO100CHOK/tiktok-shop-product-scraper-python, sha: e7d631f6e555e2e09b25a852adadbe3f8a5eea1a, mode: compile }
+          - { id: tiktok-api-server, upstream: B0nam/tiktok-api-server, sha: 3c3e2546047af69d87e5a29a8f6e2c753dd358a9, mode: compile }
+          - { id: instagrapi, upstream: subzeroid/instagrapi, sha: 13ebe3b73f9a3fc2d495124c94d958d7b438e007, mode: compile }
+          - { id: instaloader, upstream: instaloader/instaloader, sha: 7efc78de12e02feb1794b71125a48e66250f0db0, mode: compile }
+          - { id: social-demand-signal-agent, upstream: jackterror/social-demand-signal-agent, sha: 08440799afbd2803ccc1e9f8d26cebf94e11837e, mode: tests }
+          - { id: future-fashion-trends-forecasting, upstream: macedoti13/Future-Fashion-Trends-Forecasting, sha: 373520f118a1211328d250a4c268dd73bde57ed8, mode: compile }
+          - { id: tiktok-trend-detection, upstream: kodi-leith/TikTok-Trend-Detection, sha: 40ee69aae244cb34790d01408abae9cdace1e174, mode: compile }
+          - { id: fashion-trend-analyzer, upstream: nelataeb03/fashion-trend-analyzer, sha: 25b0aadf52c185eff07e9488074e554c2116c13a, mode: compile }
+          - { id: fashiontrending, upstream: jcoreyes/fashiontrending, sha: d5408c2215fcf89c87f073b8608786699cfac479, mode: compile }
+          - { id: fashion-trend-intelligence-system, upstream: mananm98/Fashion-Trend-Intelligence-System, sha: 10cca90781c597764413ef216cdfd62c32d5f6ca, mode: compile }
+          - { id: kern, upstream: mysbupt/KERN, sha: d649840fb6be8bffd3fc4456af2de8fabd554c5e, mode: compile }
+          - { id: marqo-fashionclip, upstream: marqo-ai/marqo-FashionCLIP, sha: d0b3bdfb62fb4964537cb582e76d6ddab0be8450, mode: compile }
+          - { id: groundingdino, upstream: IDEA-Research/GroundingDINO, sha: 856dde20aee659246248e20734ef9ba5214f5e44, mode: compile }
+          - { id: sam2, upstream: facebookresearch/sam2, sha: 2b90b9f5ceec907a1c18123530e92e794ad901a4, mode: compile }
+
+    steps:
+      - name: Fetch exact upstream SHA
+        env:
+          UPSTREAM: "${{ matrix.upstream }}"
+          SHA: "${{ matrix.sha }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init tool
+          git -C tool remote add origin "https://github.com/$UPSTREAM.git"
+          git -C tool fetch --depth 1 origin "$SHA"
+          git -C tool checkout --detach FETCH_HEAD
+          test "$(git -C tool rev-parse HEAD)" = "$SHA"
+          test -z "$(git -C tool status --porcelain --untracked-files=no)"
+
+      - name: Test original without modifications
+        env:
+          MODE: "${{ matrix.mode }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            skill)
+              test -f tool/SKILL.md || find tool -maxdepth 4 -name SKILL.md -print -quit | grep -q .
+              ;;
+            shell)
+              bash tool/scripts/setup.sh check
+              ;;
+            tests)
+              (cd tool && python3 -m unittest discover -s tests -v)
+              ;;
+            compile)
+              python3 -m compileall -q tool
+              ;;
+            *)
+              exit 2
+              ;;
+          esac
+          git -C tool diff --exit-code
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### ${{ matrix.id }}"
+            echo "- upstream: \`${{ matrix.upstream }}\`"
+            echo "- SHA: \`${{ matrix.sha }}\`"
+            echo "- test mode: \`${{ matrix.mode }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
