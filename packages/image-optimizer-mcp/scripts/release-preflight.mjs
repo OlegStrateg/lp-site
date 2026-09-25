@@ -26,7 +26,7 @@ expect(registryPackage.identifier === pkg.name, 'server.json npm identifier must
 expect(registryPackage.version === pkg.version, 'server.json package version must match package.json version');
 expect(registryPackage.transport?.type === 'stdio', 'server.json transport must remain stdio');
 expect(pkg.publishConfig?.access === 'public', 'npm publishConfig.access must be public');
-expect(pkg.repository?.url === 'git+https://github.com/OlegStrateg/layerporter-site.git', 'repository.url must match the canonical GitHub repository');
+expect(pkg.repository?.url === 'git+https://github.com/OlegStrateg/lp-site.git', 'repository.url must match the canonical GitHub repository');
 expect(pkg.repository?.directory === 'packages/image-optimizer-mcp', 'repository.directory must point to the monorepo package');
 expect(pkg.bin?.['layerporter-image-optimizer-mcp'] === 'src/server.js', 'expected MCP executable is missing');
 expect(pkg.license === 'SEE LICENSE IN LICENSE', 'package must use the explicit proprietary LICENSE file');
