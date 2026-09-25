@@ -1,6 +1,6 @@
 {
   "name": "@layerporter/image-optimizer-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Page-aware MCP server for deterministic website image analysis and safe optimization.",
   "mcpName": "com.layerporter/website-image-optimizer",
   "type": "module",
@@ -30,12 +30,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OlegStrateg/layerporter-site.git",
+    "url": "git+https://github.com/OlegStrateg/lp-site.git",
     "directory": "packages/image-optimizer-mcp"
   },
   "homepage": "https://layerporter.com/mcp/website-image-optimizer/",
   "bugs": {
-    "url": "https://github.com/OlegStrateg/layerporter-site/issues"
+    "url": "https://github.com/OlegStrateg/lp-site/issues"
   },
   "keywords": [
     "mcp",
