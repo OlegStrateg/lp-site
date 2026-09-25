@@ -1,5 +1,5 @@
 import { collectAll, analyze } from './parser.js';
-import { HTML } from './ui.js';
+import { renderDashboard } from './ui.js';
 
 function json(data, status) {
   return new Response(JSON.stringify(data), {
@@ -70,8 +70,56 @@ export default {
       });
     }
 
+    if (request.method === 'GET' && url.pathname === '/run') {
+      const targetGeo = String(url.searchParams.get('target_geo') || 'RU').trim().toUpperCase();
+      if (!/^[A-Z][A-Z0-9_-]{1,7}$/.test(targetGeo)) {
+        return new Response(renderDashboard(null, 'RU'), {
+          status: 400,
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'cache-control': 'no-store',
+            'x-robots-tag': 'noindex, nofollow, noarchive'
+          }
+        });
+      }
+
+      const generatedAt = new Date().toISOString();
+      const result = await collectAll(targetGeo);
+      const candidates = analyze(result.rows, targetGeo);
+      const okSources = result.batches.filter(function (item) {
+        return item.status === 'ok';
+      }).length;
+      const data = {
+        ok: true,
+        status: okSources === result.batches.length ? 'complete' : 'partial',
+        version: 'fashion-radar-cloudflare-web-v0.2',
+        generated_at: generatedAt,
+        target_geo: targetGeo,
+        summary: {
+          configured_sources: result.batches.length,
+          ok_sources: okSources,
+          failed_sources: result.batches.length - okSources,
+          raw_records: result.rows.length
+        },
+        collectors: result.batches.map(function (item) {
+          const copy = Object.assign({}, item);
+          delete copy.rows;
+          return copy;
+        }),
+        candidates
+      };
+
+      return new Response(renderDashboard(data, targetGeo), {
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive'
+        }
+      });
+    }
+
     if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
-      return new Response(HTML, {
+      return new Response(renderDashboard(null, 'RU'), {
         headers: {
           'content-type': 'text/html; charset=utf-8',
           'cache-control': 'no-store',
