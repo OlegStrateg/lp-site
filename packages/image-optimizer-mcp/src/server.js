@@ -24,7 +24,7 @@ const OPEN_WORLD_READ_ANNOTATIONS = Object.freeze({
 export function createServer({ artifactStore = new ArtifactStore() } = {}) {
   const server = new McpServer({
     name: 'layerporter-image-optimizer',
-    version: '0.1.0',
+    version: '0.1.1',
     title: 'LayerPorter Website Image Optimizer',
     websiteUrl: 'https://layerporter.com/mcp/website-image-optimizer/',
   });
