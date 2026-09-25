@@ -1,0 +1,104 @@
+name: Core social tools runtime lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/core-social-tools-runtime.yml'
+  workflow_dispatch:
+
+jobs:
+  runtime:
+    name: "${{ matrix.id }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { id: tiktok-api-server, upstream: B0nam/tiktok-api-server, sha: 3c3e2546047af69d87e5a29a8f6e2c753dd358a9, mode: tiktok_api }
+          - { id: tiktok-shop-apify, upstream: PRO100CHOK/tiktok-shop-product-scraper-python, sha: e7d631f6e555e2e09b25a852adadbe3f8a5eea1a, mode: apify_gate }
+          - { id: tiktok-shop-playwright, upstream: MisterSeitz/TikTok-Shop-Product-and-Creator-Tracker, sha: b677da799fbaedd9004ceffe03afbdbe667255ed, mode: tracker_import }
+          - { id: instagrapi, upstream: subzeroid/instagrapi, sha: 13ebe3b73f9a3fc2d495124c94d958d7b438e007, mode: instagrapi }
+          - { id: instaloader, upstream: instaloader/instaloader, sha: 7efc78de12e02feb1794b71125a48e66250f0db0, mode: instaloader }
+          - { id: social-demand-signal-agent, upstream: jackterror/social-demand-signal-agent, sha: 08440799afbd2803ccc1e9f8d26cebf94e11837e, mode: demand_agent }
+
+    steps:
+      - name: Fetch exact upstream SHA
+        env:
+          UPSTREAM: "${{ matrix.upstream }}"
+          SHA: "${{ matrix.sha }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init tool
+          git -C tool remote add origin "https://github.com/$UPSTREAM.git"
+          git -C tool fetch --depth 1 origin "$SHA"
+          git -C tool checkout --detach FETCH_HEAD
+          test "$(git -C tool rev-parse HEAD)" = "$SHA"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Runtime smoke
+        env:
+          MODE: "${{ matrix.mode }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip >/dev/null
+          case "$MODE" in
+            tiktok_api)
+              python -m pip install -r tool/requirements.txt >/dev/null
+              (
+                cd tool
+                python -c "from app.main import app; assert app.title == 'TikTok API Server'; print(app.title)"
+                python -m uvicorn app.main:app --host 127.0.0.1 --port 18080 >/tmp/tiktok-api.log 2>&1 &
+                PID=$!
+                trap 'kill $PID 2>/dev/null || true' EXIT
+                for i in {1..20}; do
+                  if curl -fsS http://127.0.0.1:18080/health >/tmp/health.json; then break; fi
+                  sleep 1
+                done
+                cat /tmp/health.json
+                grep -Fq '"status":"healthy"' /tmp/health.json
+              )
+              ;;
+            apify_gate)
+              python -m pip install -r tool/requirements.txt >/dev/null
+              set +e
+              OUT="$(cd tool && env -u APIFY_API_TOKEN python main.py 2>&1)"
+              RC=$?
+              set -e
+              echo "$OUT"
+              test "$RC" -ne 0
+              echo "$OUT" | grep -Fq "APIFY_API_TOKEN missing"
+              ;;
+            tracker_import)
+              python -m pip install -r tool/requirements.txt playwright >/dev/null
+              (cd tool && python -c "import main; print('tracker import ok')")
+              ;;
+            instagrapi)
+              python -m pip install -e tool >/dev/null
+              python -c "import instagrapi; from instagrapi import Client; print(instagrapi.__version__ if hasattr(instagrapi,'__version__') else 'import ok')"
+              ;;
+            instaloader)
+              python -m pip install -e tool >/dev/null
+              python -c "import instaloader; print(instaloader.__version__)"
+              ;;
+            demand_agent)
+              (
+                cd tool
+                python -m unittest discover -s tests -v
+                python scripts/signal_agent.py demo --reset
+                python scripts/signal_agent.py setup-status
+              )
+              ;;
+            *)
+              exit 2
+              ;;
+          esac
+          git -C tool diff --exit-code
