@@ -19,7 +19,6 @@ const sources = {
   jpeg: await base.clone().jpeg({ quality: 96 }).toBuffer(),
   png: await base.clone().png().toBuffer(),
   webp: await base.clone().webp({ quality: 92 }).toBuffer(),
-  avif: await base.clone().avif({ quality: 65, effort: 2 }).toBuffer(),
 };
 
 const rows = [];
@@ -43,4 +42,21 @@ for (const [sourceFormat, buffer] of Object.entries(sources)) {
   }
 }
 
-console.log(JSON.stringify({ fixture: { width, height }, rows }, null, 2));
+const blockedInputs = [];
+const blockedAvif = await base.clone().avif({ quality: 65, effort: 2 }).toBuffer();
+try {
+  await optimizeImage(blockedAvif, {
+    target: { width: 640 },
+    policy: { format: 'webp', quality: 80, effort: 2 },
+  });
+  throw new Error('security gate regression: AVIF input was unexpectedly accepted');
+} catch (error) {
+  if (error?.code !== 'INPUT_FORMAT_NOT_ALLOWED') throw error;
+  blockedInputs.push({
+    sourceFormat: 'avif',
+    status: 'BLOCK',
+    code: error.code,
+  });
+}
+
+console.log(JSON.stringify({ fixture: { width, height }, rows, blockedInputs }, null, 2));
