@@ -51,12 +51,34 @@ jobs:
       - name: Install image-core
         working-directory: packages/image-core
         run: npm install --no-audit --no-fund
+      - name: Capture image-core runtime versions
+        shell: bash
+        working-directory: packages/image-core
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import sharp from 'sharp';
+          const pkg = JSON.parse(fs.readFileSync('./node_modules/sharp/package.json', 'utf8'));
+          console.log(JSON.stringify({
+            sharpPackageVersion: pkg.version,
+            node: process.version,
+            platform: process.platform,
+            arch: process.arch,
+            sharpVersions: sharp.versions,
+          }, null, 2));
+          if (pkg.version !== '0.35.4') process.exit(23);
+          NODE
+          npm ls sharp @img/sharp-linux-x64 @img/sharp-libvips-linux-x64 --all
       - name: Test image-core
         working-directory: packages/image-core
         run: npm test
       - name: Benchmark image-core
+        shell: bash
         working-directory: packages/image-core
-        run: npm run benchmark | tee /tmp/lp078-benchmark.json
+        run: |
+          set -euo pipefail
+          npm run benchmark | tee /tmp/lp078-benchmark.json
       - name: Install MCP dependencies
         working-directory: packages/image-optimizer-mcp
         run: npm install --ignore-scripts --no-audit --no-fund
@@ -69,19 +91,26 @@ jobs:
       - name: Verify clean source setup
         shell: bash
         working-directory: packages/image-optimizer-mcp
-        run: node scripts/verify-source-setup.mjs | tee "$RUNNER_TEMP/lp097-source-setup.json"
+        run: |
+          set -euo pipefail
+          node scripts/verify-source-setup.mjs | tee "$RUNNER_TEMP/lp097-source-setup.json"
       - name: Install MCP client for protocol smoke
         working-directory: packages/image-optimizer-mcp
         run: npm install --no-save --package-lock=false @modelcontextprotocol/client@^2.0.0 --ignore-scripts --no-audit --no-fund
       - name: Verify MCP artifact resource protocol
+        shell: bash
         working-directory: packages/image-optimizer-mcp
-        run: node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-artifact-protocol.json
+        run: |
+          set -euo pipefail
+          node scripts/mcp-artifact-protocol-smoke.mjs | tee /tmp/lp095-artifact-protocol.json
       - name: Verify clean tarball through MCP client and decoded resource
         shell: bash
         working-directory: packages/image-optimizer-mcp
         env:
           LP096_PROOF_DIR: ${{ runner.temp }}/lp097-release-proof
-        run: node scripts/release-tarball-client-smoke.mjs | tee "$RUNNER_TEMP/lp097-tarball-smoke.json"
+        run: |
+          set -euo pipefail
+          node scripts/release-tarball-client-smoke.mjs | tee "$RUNNER_TEMP/lp097-tarball-smoke.json"
       - name: Smoke start stdio server from source package
         working-directory: packages/image-optimizer-mcp
         run: |
