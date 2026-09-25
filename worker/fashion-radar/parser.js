@@ -22,9 +22,8 @@ function tag(block, name) {
   return match ? stripTags(match[1]) : '';
 }
 
-function attrTag(block, name, attr) {
-  const rx = new RegExp('<' + name + '\\b[^>]*\\b' + attr + '=["\\']([^"\\']+)["\\'][^>]*>', 'i');
-  const match = String(block || '').match(rx);
+function attrTag(block) {
+  const match = String(block || '').match(/<link\b[^>]*href=["']([^"']+)["'][^>]*>/i);
   return match ? decodeXml(match[1]).trim() : '';
 }
 
@@ -55,7 +54,7 @@ function parseFeed(xml, meta) {
   for (const block of blocks) {
     const title = tag(block, 'title');
     const description = tag(block, 'description') || tag(block, 'summary') || tag(block, 'content');
-    const link = tag(block, 'link') || attrTag(block, 'link', 'href');
+    const link = tag(block, 'link') || attrTag(block);
     const published = tag(block, 'pubDate') || tag(block, 'published') || tag(block, 'updated');
 
     rows.push({
