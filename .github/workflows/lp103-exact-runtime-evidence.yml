@@ -93,13 +93,6 @@ jobs:
           set -euo pipefail
           npm test 2>&1 | tee "$RUNNER_TEMP/lp103-evidence/image-core-tests.log"
 
-      - name: Benchmark image-core
-        working-directory: packages/image-core
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm run benchmark 2>&1 | tee "$RUNNER_TEMP/lp103-evidence/image-core-benchmark.log"
-
       - name: Install MCP dependencies and sync core
         working-directory: packages/image-optimizer-mcp
         shell: bash
