@@ -45,7 +45,7 @@ function isoDate(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-function parseFeed(xml, meta) {
+export function parseFeed(xml, meta) {
   const items = String(xml || '').match(/<item\b[\s\S]*?<\/item>/gi) || [];
   const entries = String(xml || '').match(/<entry\b[\s\S]*?<\/entry>/gi) || [];
   const blocks = items.concat(entries).slice(0, 25);
