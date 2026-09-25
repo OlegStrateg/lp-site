@@ -4,7 +4,7 @@ Technical candidate for page-aware website image optimization through Model Cont
 
 ## Status
 
-The package is release-prepared but is **not yet claimed as a public npm or Official MCP Registry release**. Publication status changes only after the exact npm version and Registry entry are externally verified.
+Version 0.1.0 is already public on npm. Version 0.1.1 is the security-hardening release candidate. Official MCP Registry publication is a separate step and is not implied by npm publication.
 
 Registry identity:
 
@@ -57,9 +57,7 @@ node src/server.js
 
 The last command starts the stdio MCP server and waits for a client connection. `npm pack` also runs `sync:core` through `prepack`; source setup and packed-artifact setup are verified separately.
 
-## Installation after public release
-
-Do not treat this command as available until the npm package has actually been published and verified:
+## Installation
 
 ```bash
 npx -y @layerporter/image-optimizer-mcp
@@ -80,6 +78,8 @@ Official MCP Registry publication happens only **after** the matching npm versio
 ## Safety boundary
 
 The current MCP package:
+
+- accepts untrusted image input only as JPEG, PNG, or WebP; HEIF/AVIF, TIFF, GIF, SVG and unknown input decoders are fail-closed blocked; AVIF remains available as an output format;
 
 - performs bounded public HTTP(S) reads only through `analyze_url_images` and `optimize_url_images`;
 - blocks unsafe URL schemes, URL credentials, localhost/private/link-local/reserved targets, unsafe DNS answers and redirects to prohibited addresses;
@@ -116,7 +116,6 @@ Canonical product pages after site release:
 
 ## Not yet included
 
-- confirmed public npm release;
 - confirmed Official MCP Registry publication;
 - hosted endpoint;
 - full browser crawler/runtime metrics collection;
