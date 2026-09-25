@@ -1,6 +1,9 @@
 name: LP-079 Image MCP Release
 
 on:
+  push:
+    branches:
+      - release/LP-103-security-0.1.1
   workflow_dispatch:
     inputs:
       mode:
@@ -15,7 +18,7 @@ on:
       version:
         description: Expected release version
         required: true
-        default: 0.1.0
+        default: 0.1.1
         type: string
 
 permissions:
@@ -37,7 +40,8 @@ jobs:
         run: npm install --global npm@11.15.0
       - name: Verify release remains explicitly enabled
         run: |
-          if [ "${{ inputs.mode }}" != "dry-run" ] && [ "${{ vars.LP_MCP_RELEASE_ENABLED }}" != "true" ]; then
+          MODE="${{ github.event_name == 'push' && 'stage-npm' || inputs.mode }}"
+          if [ "$MODE" != "dry-run" ] && [ "${{ vars.LP_MCP_RELEASE_ENABLED }}" != "true" ]; then
             echo "Release blocked: repository variable LP_MCP_RELEASE_ENABLED must equal true"
             exit 1
           fi
@@ -45,17 +49,18 @@ jobs:
         working-directory: packages/image-optimizer-mcp
         run: npm run release:preflight
       - name: Verify publication metadata contract
-        if: inputs.mode != 'dry-run'
+        if: github.event_name == 'push' || inputs.mode != 'dry-run'
         working-directory: packages/image-optimizer-mcp
         run: npm run release:preflight -- --publishable
       - name: Verify version lock
         run: |
           PKG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/package.json').version")
           REG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/server.json').version")
-          test "$PKG_VERSION" = "${{ inputs.version }}"
-          test "$REG_VERSION" = "${{ inputs.version }}"
+          EXPECTED_VERSION="${{ github.event_name == 'push' && '0.1.1' || inputs.version }}"
+          test "$PKG_VERSION" = "$EXPECTED_VERSION"
+          test "$REG_VERSION" = "$EXPECTED_VERSION"
       - name: Require existing npm package for staged or Registry release
-        if: inputs.mode != 'dry-run'
+        if: github.event_name == 'push' || inputs.mode != 'dry-run'
         run: |
           PKG_NAME=$(node -p "require('./packages/image-optimizer-mcp/package.json').name")
           npm view "$PKG_NAME" name >/dev/null 2>&1 || {
@@ -117,7 +122,7 @@ jobs:
           ./mcp-publisher validate server.json
 
   stage-npm:
-    if: inputs.mode == 'stage-npm' && vars.LP_MCP_RELEASE_ENABLED == 'true'
+    if: (github.event_name == 'push' || inputs.mode == 'stage-npm') && vars.LP_MCP_RELEASE_ENABLED == 'true'
     needs: validate
     runs-on: ubuntu-24.04
     environment: mcp-release
