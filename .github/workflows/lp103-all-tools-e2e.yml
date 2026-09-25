@@ -1,0 +1,413 @@
+name: LP-103 All Tools E2E
+
+on:
+  push:
+    branches:
+      - verify/LP-103-all-tools-e2e-2026-09-25
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact LP-103 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: bf509e8b3a1335f6a8ab056efb1381ec6de2e034
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+
+      - name: Pack candidate
+        shell: bash
+        working-directory: packages/image-optimizer-mcp
+        run: |
+          set -euo pipefail
+          npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+          npm run sync:core
+          mkdir -p "$RUNNER_TEMP/lp103-all-tools/pack"
+          npm pack --pack-destination "$RUNNER_TEMP/lp103-all-tools/pack"
+          sha256sum "$RUNNER_TEMP"/lp103-all-tools/pack/*.tgz | tee "$RUNNER_TEMP/lp103-all-tools/tarball-sha256.txt"
+
+      - name: Clean install candidate and client
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLEAN="$RUNNER_TEMP/lp103-all-tools/clean"
+          mkdir -p "$CLEAN"
+          cd "$CLEAN"
+          npm init -y >/dev/null
+          npm install "$RUNNER_TEMP"/lp103-all-tools/pack/*.tgz @modelcontextprotocol/client@^2.0.0 --package-lock=false --no-audit --no-fund
+          npm ls @layerporter/image-optimizer-mcp sharp @img/sharp-linux-x64 @img/sharp-libvips-linux-x64 --all --json             > "$RUNNER_TEMP/lp103-all-tools/dependency-tree.json"
+
+      - name: Run all 7 MCP tools through real stdio client
+        shell: bash
+        env:
+          TEST_URL: https://www.python.org/community/logos/
+        run: |
+          set -euo pipefail
+          CLEAN="$RUNNER_TEMP/lp103-all-tools/clean"
+          OUT="$RUNNER_TEMP/lp103-all-tools/results"
+          mkdir -p "$OUT"
+          cat > "$RUNNER_TEMP/lp103-all-tools/all-tools.mjs" <<'NODE'
+          import assert from 'node:assert/strict';
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import { writeFile } from 'node:fs/promises';
+          import path from 'node:path';
+          import { createRequire } from 'node:module';
+          import { pathToFileURL } from 'node:url';
+
+          const cleanRoot = process.env.CLEAN_ROOT;
+          const outDir = process.env.OUT_DIR;
+          const testUrl = process.env.TEST_URL;
+          const req = createRequire(path.join(cleanRoot, 'package.json'));
+
+          const { Client } = await import(pathToFileURL(req.resolve('@modelcontextprotocol/client')).href);
+          const { StdioClientTransport } = await import(pathToFileURL(req.resolve('@modelcontextprotocol/client/stdio')).href);
+          const sharp = (await import(pathToFileURL(req.resolve('sharp')).href)).default;
+
+          const pkgDir = path.join(cleanRoot, 'node_modules/@layerporter/image-optimizer-mcp');
+          const serverPath = path.join(pkgDir, 'src/server.js');
+          const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
+          const sharpPkg = JSON.parse(fs.readFileSync(path.join(cleanRoot, 'node_modules/sharp/package.json'), 'utf8'));
+
+          const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
+          const textOf = (result) => result.content?.filter(x => x.type === 'text').map(x => x.text).join('\n') ?? '';
+          const jsonOf = (result) => {
+            const text = textOf(result);
+            if (!text) return null;
+            try { return JSON.parse(text); } catch { return { rawText: text }; }
+          };
+
+          async function readLinks(client, result, prefix) {
+            const links = result.content?.filter(x => x.type === 'resource_link') ?? [];
+            const outputs = [];
+            let i = 0;
+            for (const link of links) {
+              i += 1;
+              const resource = await client.readResource({ uri: link.uri });
+              const binary = resource.contents.find(x => typeof x.blob === 'string');
+              assert.ok(binary?.blob, 'resource must contain binary blob');
+              const bytes = Buffer.from(binary.blob, 'base64');
+              const meta = await sharp(bytes).metadata();
+              const pixels = await sharp(bytes).raw().toBuffer();
+              assert.ok(pixels.length > 0, 'full decode must produce pixels');
+              const ext = meta.format === 'heif' && meta.compression === 'av1'
+                ? 'avif'
+                : (meta.format === 'jpeg' ? 'jpg' : meta.format || 'bin');
+              const file = path.join(outDir, `${prefix}-${i}.${ext}`);
+              await writeFile(file, bytes);
+              outputs.push({
+                uri: link.uri,
+                file,
+                bytes: bytes.length,
+                sha256: sha256(bytes),
+                mimeType: binary.mimeType,
+                width: meta.width,
+                height: meta.height,
+                format: meta.format,
+                compression: meta.compression ?? null,
+                fullDecode: 'PASS'
+              });
+            }
+            return outputs;
+          }
+
+          const client = new Client({ name: 'layerporter-all-tools-e2e', version: '1.0.0' });
+          const transport = new StdioClientTransport({ command: process.execPath, args: [serverPath], cwd: cleanRoot });
+          const report = {
+            status: 'RUNNING',
+            candidateSha: 'bf509e8b3a1335f6a8ab056efb1381ec6de2e034',
+            package: { name: pkg.name, version: pkg.version },
+            runtime: {
+              node: process.version,
+              platform: process.platform,
+              arch: process.arch,
+              sharpPackageVersion: sharpPkg.version,
+              sharpVersions: sharp.versions
+            },
+            testUrl,
+            tools: {}
+          };
+
+          try {
+            await client.connect(transport);
+
+            const listed = await client.listTools();
+            const toolNames = listed.tools.map(x => x.name).sort();
+            const expected = [
+              'analyze_page_images',
+              'analyze_url_images',
+              'compare_image_versions',
+              'generate_responsive_variants',
+              'optimize_image',
+              'optimize_page_images',
+              'optimize_url_images'
+            ].sort();
+            assert.deepEqual(toolNames, expected);
+            report.toolList = { count: toolNames.length, names: toolNames, status: 'PASS' };
+
+            const raw = Buffer.alloc(1200 * 800 * 3);
+            for (let y = 0; y < 800; y++) {
+              for (let x = 0; x < 1200; x++) {
+                const i = (y * 1200 + x) * 3;
+                raw[i] = (x * 3 + y) % 256;
+                raw[i + 1] = (y * 5 + x) % 256;
+                raw[i + 2] = (x * 7 + y * 11) % 256;
+              }
+            }
+            const sourceJpeg = await sharp(raw, { raw: { width: 1200, height: 800, channels: 3 } })
+              .jpeg({ quality: 96, chromaSubsampling: '4:4:4' })
+              .toBuffer();
+            await writeFile(path.join(outDir, 'source.jpg'), sourceJpeg);
+
+            // 1. analyze_page_images
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'analyze_page_images',
+                arguments: {
+                  snapshot: {
+                    pageUrl: 'https://example.test/product',
+                    images: [
+                      {
+                        currentSrc: 'https://cdn.example.test/hero.jpg',
+                        intrinsicWidth: 2400,
+                        intrinsicHeight: 1600,
+                        renderedWidth: 600,
+                        renderedHeight: 400,
+                        devicePixelRatio: 1,
+                        bytes: 460000,
+                        format: 'jpeg',
+                        lcp: true,
+                        loading: 'lazy',
+                        fetchPriority: 'auto',
+                        widthAttr: 0,
+                        heightAttr: 0,
+                        srcset: '',
+                        sizes: ''
+                      },
+                      {
+                        currentSrc: 'https://cdn.example.test/card.webp',
+                        intrinsicWidth: 800,
+                        intrinsicHeight: 600,
+                        renderedWidth: 400,
+                        renderedHeight: 300,
+                        devicePixelRatio: 1,
+                        bytes: 82000,
+                        format: 'webp',
+                        srcset: 'card-400.webp 400w, card-800.webp 800w',
+                        sizes: ''
+                      }
+                    ]
+                  }
+                }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.equal(value.imageCount, 2);
+              assert.ok(value.findingsCount >= 4);
+              report.tools.analyze_page_images = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                imageCount: value.imageCount,
+                findingsCount: value.findingsCount,
+                findings: value.findings.map(x => ({ id: x.id, severity: x.severity, imageIndex: x.imageIndex }))
+              };
+            }
+
+            // 2. optimize_image
+            let optimizedBytes;
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'optimize_image',
+                arguments: {
+                  imageBase64: sourceJpeg.toString('base64'),
+                  target: { width: 480 },
+                  policy: { format: 'webp', quality: 80 }
+                }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.equal(value.status, 'ACCEPT');
+              const outputs = await readLinks(client, result, 'optimize-image');
+              assert.equal(outputs.length, 1);
+              optimizedBytes = fs.readFileSync(outputs[0].file);
+              report.tools.optimize_image = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                sourceBytes: sourceJpeg.length,
+                outputBytes: outputs[0].bytes,
+                savingsBytes: sourceJpeg.length - outputs[0].bytes,
+                savingsPercent: Number((((sourceJpeg.length - outputs[0].bytes) / sourceJpeg.length) * 100).toFixed(2)),
+                output: outputs[0]
+              };
+            }
+
+            // 3. generate_responsive_variants
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'generate_responsive_variants',
+                arguments: {
+                  imageBase64: sourceJpeg.toString('base64'),
+                  widths: [240, 480, 960],
+                  maxVariants: 3,
+                  policy: { format: 'webp', quality: 80 }
+                }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.equal(value.status, 'ACCEPT');
+              const outputs = await readLinks(client, result, 'variant');
+              assert.equal(outputs.length, 3);
+              report.tools.generate_responsive_variants = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                variants: outputs.map(x => ({ width: x.width, height: x.height, bytes: x.bytes, sha256: x.sha256, fullDecode: x.fullDecode }))
+              };
+            }
+
+            // 4. compare_image_versions
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'compare_image_versions',
+                arguments: {
+                  originalBase64: sourceJpeg.toString('base64'),
+                  candidateBase64: optimizedBytes.toString('base64')
+                }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.equal(value.status, 'ACCEPT');
+              report.tools.compare_image_versions = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                savingsBytes: value.savingsBytes,
+                savingsPercent: value.savingsPercent,
+                alphaRegression: value.checks.alphaRegression,
+                dimensionRegression: value.checks.dimensionRegression,
+                original: { bytes: value.original.bytes, width: value.original.width, height: value.original.height, format: value.original.format },
+                candidate: { bytes: value.candidate.bytes, width: value.candidate.width, height: value.candidate.height, format: value.candidate.format }
+              };
+            }
+
+            // 5. optimize_page_images
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'optimize_page_images',
+                arguments: {
+                  items: [
+                    { id: 'hero', imageBase64: sourceJpeg.toString('base64'), target: { width: 600 }, policy: { format: 'webp', quality: 80 } },
+                    { id: 'card', imageBase64: sourceJpeg.toString('base64'), target: { width: 320 }, policy: { format: 'webp', quality: 78 } }
+                  ],
+                  maxItems: 2
+                }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.equal(value.status, 'ACCEPT');
+              assert.equal(value.processed, 2);
+              assert.equal(value.accepted, 2);
+              const outputs = await readLinks(client, result, 'page-opt');
+              assert.equal(outputs.length, 2);
+              report.tools.optimize_page_images = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                processed: value.processed,
+                accepted: value.accepted,
+                outputs: outputs.map(x => ({ bytes: x.bytes, width: x.width, height: x.height, format: x.format, fullDecode: x.fullDecode }))
+              };
+            }
+
+            // 6. analyze_url_images
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'analyze_url_images',
+                arguments: { url: testUrl, maxImages: 10 }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.ok(['OK', 'NO_IMAGES'].includes(value.status));
+              report.tools.analyze_url_images = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                resultStatus: value.status,
+                page: value.page,
+                fetched: value.fetched,
+                skipped: value.skipped,
+                fetchedImageBytes: value.fetchedImageBytes,
+                images: value.images?.map(x => ({
+                  status: x.status,
+                  sourceUrl: x.sourceUrl,
+                  reason: x.reason ?? null,
+                  mimeType: x.mimeType ?? null,
+                  bytes: x.image?.bytes ?? null,
+                  format: x.image?.format ?? null,
+                  width: x.image?.width ?? null,
+                  height: x.image?.height ?? null,
+                  observations: x.observations ?? []
+                }))
+              };
+            }
+
+            // 7. optimize_url_images
+            {
+              const started = performance.now();
+              const result = await client.callTool({
+                name: 'optimize_url_images',
+                arguments: { url: testUrl, maxImages: 10, policy: { format: 'webp', quality: 80 } }
+              });
+              assert.notEqual(result.isError, true);
+              const value = jsonOf(result);
+              assert.ok(['ACCEPT', 'REJECT'].includes(value.status));
+              const outputs = await readLinks(client, result, 'url-opt');
+              report.tools.optimize_url_images = {
+                status: 'PASS',
+                elapsedMs: Number((performance.now() - started).toFixed(2)),
+                resultStatus: value.status,
+                processed: value.processed,
+                accepted: value.accepted,
+                resourceLinks: outputs.length,
+                outputs: outputs.map(x => ({ bytes: x.bytes, width: x.width, height: x.height, format: x.format, sha256: x.sha256, fullDecode: x.fullDecode })),
+                results: value.results?.map(x => ({
+                  sourceUrl: x.sourceUrl,
+                  mimeType: x.mimeType ?? null,
+                  status: x.optimization?.status ?? x.status ?? null,
+                  reason: x.optimization?.reason ?? x.reason ?? null,
+                  originalBytes: x.original?.bytes ?? null,
+                  outputBytes: x.optimization?.output?.bytes ?? null,
+                  savingsPercent: x.optimization?.savingsPercent ?? null
+                }))
+              };
+            }
+
+            report.status = 'PASS';
+            await writeFile(path.join(outDir, 'all-tools-report.json'), JSON.stringify(report, null, 2));
+            console.log(JSON.stringify(report, null, 2));
+          } finally {
+            await client.close().catch(() => {});
+          }
+          NODE
+
+          CLEAN_ROOT="$CLEAN" OUT_DIR="$OUT" TEST_URL="$TEST_URL"             node "$RUNNER_TEMP/lp103-all-tools/all-tools.mjs"             2>&1 | tee "$RUNNER_TEMP/lp103-all-tools/all-tools.log"
+
+      - name: Upload all-tools evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lp103-all-tools-e2e-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/lp103-all-tools/
+          if-no-files-found: error
+          retention-days: 30
