@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import sharp from 'sharp';
 import { inspectImage, optimizeImage } from '../src/index.js';
@@ -25,10 +26,17 @@ async function encode(format, options = {}) {
   if (format === 'png') return pipeline.png().toBuffer();
   if (format === 'webp') return pipeline.webp({ quality: 92 }).toBuffer();
   if (format === 'avif') return pipeline.avif({ quality: 65, effort: 2 }).toBuffer();
+  if (format === 'tiff') return pipeline.tiff().toBuffer();
   throw new Error(`unknown format ${format}`);
 }
 
-for (const format of ['jpeg', 'png', 'webp', 'avif']) {
+function expectFormatBlocked(error) {
+  assert.equal(error?.code, 'INPUT_FORMAT_NOT_ALLOWED');
+  assert.match(error?.message ?? '', /allowed input formats: JPEG, PNG, WebP/i);
+  return true;
+}
+
+for (const format of ['jpeg', 'png', 'webp']) {
   test(`inspectImage reads ${format}`, async () => {
     const input = await encode(format);
     const meta = await inspectImage(input);
@@ -38,6 +46,27 @@ for (const format of ['jpeg', 'png', 'webp', 'avif']) {
     assert.ok(meta.bytes > 0);
   });
 }
+
+test('HEIF/AVIF input is rejected by the pre-decode format gate', async () => {
+  const input = await encode('avif');
+  await assert.rejects(() => inspectImage(input), expectFormatBlocked);
+  await assert.rejects(
+    () => optimizeImage(input, { policy: { format: 'webp' } }),
+    expectFormatBlocked,
+  );
+});
+
+test('non-allowlisted decoder input is rejected with the same stable code', async () => {
+  const input = await encode('tiff');
+  await assert.rejects(() => inspectImage(input), expectFormatBlocked);
+});
+
+test('unknown bytes fail closed before native decode', async () => {
+  await assert.rejects(
+    () => inspectImage(Buffer.from('not-an-image-but-untrusted-input')),
+    expectFormatBlocked,
+  );
+});
 
 test('transparent PNG converted to WebP keeps alpha', async () => {
   const input = await encode('png', { channels: 4, width: 128, height: 96 });
@@ -57,10 +86,45 @@ test('autoOrient normalizes EXIF orientation while preserving safe dimensions', 
   assert.ok(result.output.orientation === null || result.output.orientation === 1);
 });
 
-test('explicit AVIF encode is supported and guarded', async () => {
+test('explicit AVIF output remains supported while AVIF input stays blocked', async () => {
   const input = await encode('jpeg', { width: 480, height: 320 });
-  const result = await optimizeImage(input, { policy: { format: 'avif', avifQuality: 48, effort: 2 } });
-  assert.ok(['ACCEPT', 'REJECT'].includes(result.status));
-  if (result.status === 'ACCEPT') assert.equal(result.output.format, 'avif');
-  else assert.equal(result.reason, 'no_byte_saving');
+  const result = await optimizeImage(input, {
+    policy: { format: 'avif', avifQuality: 48, effort: 2, neverIncreaseBytes: false },
+  });
+  assert.equal(result.status, 'ACCEPT');
+  assert.equal(result.output.format, 'avif');
+
+  const decoder = `
+    const sharp = require('sharp');
+    const chunks = [];
+    process.stdin.on('data', (chunk) => chunks.push(chunk));
+    process.stdin.on('end', async () => {
+      try {
+        const metadata = await sharp(Buffer.concat(chunks)).metadata();
+        process.stdout.write(JSON.stringify({
+          format: metadata.format,
+          compression: metadata.compression,
+          width: metadata.width,
+          height: metadata.height,
+        }));
+      } catch (error) {
+        console.error(error);
+        process.exit(1);
+      }
+    });
+  `;
+  const child = spawnSync(process.execPath, ['-e', decoder], {
+    cwd: process.cwd(),
+    input: result.buffer,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+  assert.equal(child.status, 0, child.stderr);
+  const metadata = JSON.parse(child.stdout);
+  assert.equal(metadata.format, 'heif');
+  assert.equal(metadata.compression, 'av1');
+  assert.equal(metadata.width, 480);
+  assert.equal(metadata.height, 320);
+
+  await assert.rejects(() => inspectImage(result.buffer), expectFormatBlocked);
 });

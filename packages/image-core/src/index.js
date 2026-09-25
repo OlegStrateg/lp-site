@@ -1,10 +1,46 @@
 import sharp from 'sharp';
 import { chooseOutputFormat, validatePolicy } from './policy.js';
 
+const ALLOWED_UNTRUSTED_BUFFER_LOADERS = Object.freeze([
+  'VipsForeignLoadJpegBuffer',
+  'VipsForeignLoadPngBuffer',
+  'VipsForeignLoadWebpBuffer',
+]);
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+// Native decoder boundary: fail closed for all foreign input, then reopen only
+// Buffer loaders that are part of LayerPorter's supported input contract.
+// HEIF/AVIF decoding stays disabled until the bundled runtime is independently
+// verified with libheif >=1.23.4, the current advisory set is re-reviewed, and
+// input support is explicitly re-approved.
+sharp.block({ operation: ['VipsForeignLoad'] });
+sharp.unblock({ operation: ALLOWED_UNTRUSTED_BUFFER_LOADERS });
+
 function assertBuffer(input) {
   if (!Buffer.isBuffer(input) || input.length === 0) {
     throw new TypeError('input must be a non-empty Buffer');
   }
+}
+
+function detectAllowedInputFormat(input) {
+  if (input.length >= 2 && input[0] === 0xff && input[1] === 0xd8) return 'jpeg';
+  if (input.length >= PNG_SIGNATURE.length && input.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) return 'png';
+  if (
+    input.length >= 12
+    && input.toString('ascii', 0, 4) === 'RIFF'
+    && input.toString('ascii', 8, 12) === 'WEBP'
+  ) return 'webp';
+  return null;
+}
+
+function assertAllowedInputFormat(input) {
+  const format = detectAllowedInputFormat(input);
+  if (format) return format;
+
+  const error = new TypeError('Unsupported or security-blocked input format; allowed input formats: JPEG, PNG, WebP');
+  error.code = 'INPUT_FORMAT_NOT_ALLOWED';
+  throw error;
 }
 
 function assertTarget(target = {}) {
@@ -42,8 +78,32 @@ function encoder(pipeline, format, policy) {
   }
 }
 
+async function inspectEncodedOutput(data, info, outputFormat, policy) {
+  // HEIF/AVIF input is intentionally blocked in this process. For an AVIF we
+  // just encoded from an already validated input, use Sharp's encode result
+  // metadata instead of reopening the HEIF decoder. Independent fresh-process
+  // decode remains part of the regression/release gate.
+  if (outputFormat === 'avif') {
+    return {
+      format: 'avif',
+      hasAlpha: info.channels === 4,
+      orientation: null,
+      space: info.space ?? null,
+    };
+  }
+
+  const metadata = await sharp(data, { limitInputPixels: policy.maxPixels }).metadata();
+  return {
+    format: normalizeFormat(metadata.format, metadata.compression),
+    hasAlpha: Boolean(metadata.hasAlpha),
+    orientation: metadata.orientation ?? null,
+    space: metadata.space ?? null,
+  };
+}
+
 export async function inspectImage(input, options = {}) {
   assertBuffer(input);
+  assertAllowedInputFormat(input);
   const policy = validatePolicy(options.policy);
   const metadata = await sharp(input, { limitInputPixels: policy.maxPixels }).metadata();
 
@@ -139,7 +199,7 @@ export async function optimizeImage(input, options = {}) {
     };
   }
 
-  const outputMetadata = await sharp(data, { limitInputPixels: policy.maxPixels }).metadata();
+  const outputMetadata = await inspectEncodedOutput(data, info, outputFormat, policy);
   if (policy.preserveAlpha && original.hasAlpha && !outputMetadata.hasAlpha) {
     throw new Error('alpha preservation guard failed');
   }
@@ -150,12 +210,12 @@ export async function optimizeImage(input, options = {}) {
     original,
     output: {
       bytes: data.length,
-      format: normalizeFormat(outputMetadata.format, outputMetadata.compression),
+      format: outputMetadata.format,
       width: info.width,
       height: info.height,
-      hasAlpha: Boolean(outputMetadata.hasAlpha),
-      orientation: outputMetadata.orientation ?? null,
-      space: outputMetadata.space ?? null,
+      hasAlpha: outputMetadata.hasAlpha,
+      orientation: outputMetadata.orientation,
+      space: outputMetadata.space,
     },
     outputFormat,
     savingsBytes,
