@@ -1,0 +1,47 @@
+name: Instagram public comments live lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/instagram-comments-public-live.yml'
+  workflow_dispatch:
+
+jobs:
+  graphql_guest_comments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/uandersonpsantos/instagram-comments-scraper-api.git tool
+          git -C tool checkout 5a6c0c6bbbbdff53fd414c4b6ec64ceafe4a1e18
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install original dependencies
+        run: python -m pip install -r tool/requirements.txt >/dev/null
+      - name: Run original scraper unchanged on public Vogue Japan reel
+        shell: bash
+        run: |
+          set +e
+          cd tool
+          printf '%s\n' 'https://www.instagram.com/reel/DPRIZK7k0Rq/' | timeout 120s python main.py > /tmp/ig-comments.log 2>&1
+          RC=$?
+          set -e
+          cat /tmp/ig-comments.log
+          FILE=comments_DPRIZK7k0Rq.txt
+          COUNT=0
+          if test -f "$FILE"; then
+            COUNT=$(wc -l < "$FILE")
+            echo "comment_lines=$COUNT"
+            head -n 10 "$FILE" || true
+          fi
+          echo "runtime_exit=$RC"
+          if [ "$RC" -eq 0 ] && [ "$COUNT" -gt 0 ]; then
+            echo "COMMENTS_STATUS=PASS"
+          else
+            echo "COMMENTS_STATUS=BLOCKED_OR_EMPTY"
+            exit 1
+          fi
