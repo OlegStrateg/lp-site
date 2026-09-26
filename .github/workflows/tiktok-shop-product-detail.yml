@@ -32,7 +32,7 @@ jobs:
           cat > tool/apify_storage/key_value_stores/default/INPUT.json <<'JSON'
           {
             "productUrls": [
-              "https://shop.tiktok.com/us/pdp/chicme-womens-2-piece-sweatsuit-set-o-neck-top-wide-leg/1732185257429406198"
+              "https://www.tiktok.com/shop/product/1732185257429406198"
             ],
             "region": "US",
             "includeCreatorVideos": true,
@@ -47,6 +47,6 @@ jobs:
           echo "=== DATASET RECORDS ==="
           for f in apify_storage/datasets/default/*.json; do
             case "$f" in *__metadata__.json) continue;; esac
-            cat "$f"
+            if test -f "$f"; then cat "$f"; fi
             echo
           done
