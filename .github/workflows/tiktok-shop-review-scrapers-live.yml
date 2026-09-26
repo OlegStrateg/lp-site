@@ -1,0 +1,83 @@
+name: TikTok Shop review scrapers live lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/tiktok-shop-review-scrapers-live.yml'
+  workflow_dispatch:
+
+jobs:
+  aymane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          git clone https://github.com/aymaneallaoui/tiktok-shop-reviews-scraper.git tool
+          git -C tool checkout e345bb9e297dd55e572c3e6f6df83abccc3a4b2c
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.11' }
+      - run: python -m pip install -r tool/requirements.txt >/dev/null
+      - name: Original unit tests
+        run: cd tool && python -m unittest test_scraper -v
+      - name: Live current TikTok Shop product
+        shell: bash
+        run: |
+          cd tool
+          timeout 120s python - <<'PY'
+          import json
+          from dataclasses import asdict
+          from aymane_aallaoui_tiktok_shop_code import TikTokShopScraper, ProductInfo
+          url="https://shop.tiktok.com/us/pdp/chicme-womens-2-piece-sweatsuit-set-o-neck-top-wide-leg/1732185257429406198"
+          p=ProductInfo(url=url,name="CHICME 2-piece set",price="N/A",rating="N/A",review_count="278",brand="CHICME",market="us")
+          s=TikTokShopScraper(headless=True)
+          rows=s.scrape_product_reviews(p)
+          print("review_count",len(rows))
+          print(json.dumps([asdict(x) for x in rows[:3]],ensure_ascii=False))
+          PY
+
+  ochlzo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          git clone https://github.com/ochlzo/tiktok-shop-ph-scraper.git tool
+          git -C tool checkout c9ad036e49791e89d1158bb245e71deeb9595ce2
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.11' }
+      - run: python -m pip install -r tool/requirements.txt >/dev/null
+      - name: Original unit tests
+        run: cd tool && python -m unittest test_scraper -v
+      - name: Live current TikTok Shop product
+        shell: bash
+        run: |
+          cd tool
+          timeout 120s python - <<'PY'
+          import json
+          from dataclasses import asdict
+          from tiktok_shop_scraper import TikTokShopScraper, ProductInfo
+          url="https://shop.tiktok.com/us/pdp/chicme-womens-2-piece-sweatsuit-set-o-neck-top-wide-leg/1732185257429406198"
+          p=ProductInfo(url=url,name="CHICME 2-piece set",price="N/A",rating="N/A",review_count="278",brand="CHICME",market="us")
+          s=TikTokShopScraper(headless=True,persist_session=False,enable_debug_dumps=False)
+          rows=s.scrape_product_reviews(p)
+          print("review_count",len(rows))
+          print(json.dumps([asdict(x) for x in rows[:3]],ensure_ascii=False))
+          PY
+
+  gumilang_duplicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          git clone https://github.com/gumilang88/tiktok-shop-reviews-scraper.git tool
+          git -C tool checkout e345bb9e297dd55e572c3e6f6df83abccc3a4b2c
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.11' }
+      - run: python -m pip install -r tool/requirements.txt >/dev/null
+      - name: Original unit tests
+        run: cd tool && python -m unittest test_scraper -v
+      - name: Confirm duplicate commit identity
+        run: |
+          test "$(git -C tool rev-parse HEAD)" = "e345bb9e297dd55e572c3e6f6df83abccc3a4b2c"
+          echo "same_commit_as_aymane=true"
