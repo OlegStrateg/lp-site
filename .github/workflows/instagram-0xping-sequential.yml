@@ -1,0 +1,33 @@
+name: 0xping Instagram sequential verification
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/instagram-0xping-sequential.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - run: |
+          git clone https://github.com/0xping/instagram-scraper.git tool
+          git -C tool checkout 6915cf126f6e81958d718dfd44efd835368cbb48
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+      - run: cd tool && npm ci
+      - name: Build unchanged source
+        run: cd tool && npm run build
+      - name: Run same original unit test files sequentially
+        run: cd tool && node --test --test-concurrency=1 tests/*.test.mjs
+      - name: Run original fake-Instagram E2E
+        run: |
+          cd tool
+          node tests/e2e/validate.mjs
+          node --test --test-concurrency=1 tests/e2e/app-collect.test.mjs
+      - name: Verify no source modifications
+        run: git -C tool diff --exit-code
