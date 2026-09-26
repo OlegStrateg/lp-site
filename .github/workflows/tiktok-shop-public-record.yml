@@ -1,0 +1,51 @@
+name: TikTok Shop public record probe
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/tiktok-shop-public-record.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fetch original tracker
+        run: |
+          git clone https://github.com/MisterSeitz/TikTok-Shop-Product-and-Creator-Tracker.git tool
+          git -C tool checkout b677da799fbaedd9004ceffe03afbdbe667255ed
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install original dependencies
+        run: |
+          python -m pip install -r tool/requirements.txt playwright >/dev/null
+          python -m playwright install --with-deps chromium >/dev/null
+      - name: Collect and print original dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tool/apify_storage/key_value_stores/default
+          cat > tool/apify_storage/key_value_stores/default/INPUT.json <<'JSON'
+          {
+            "categoryUrls": ["https://shop.tiktok.com/us/k/womens-clothing"],
+            "region": "US",
+            "captureScreenshots": false,
+            "maxConcurrency": 1,
+            "limits": {"maxProducts": 10, "maxProductsPerCategory": 10},
+            "timeouts": {"navigationTimeoutSecs": 35, "requestTimeoutSecs": 35},
+            "debug": false
+          }
+          JSON
+          cd tool
+          APIFY_LOCAL_STORAGE_DIR=./apify_storage timeout 120s python main.py
+          echo "=== DATASET RECORDS ==="
+          for f in apify_storage/datasets/default/*.json; do
+            case "$f" in *__metadata__.json) continue;; esac
+            echo "--- $f"
+            cat "$f"
+            echo
+          done
