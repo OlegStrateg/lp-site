@@ -23,7 +23,7 @@ jobs:
       - name: Install minimal inference dependencies
         run: |
           python -m pip install --upgrade pip >/dev/null
-          python -m pip install torch torchvision transformers pillow curl_cffi huggingface_hub >/dev/null
+          python -m pip install torch torchvision transformers pillow curl_cffi huggingface_hub open_clip_torch >/dev/null
       - name: Fetch real Instagram fashion image
         run: |
           python - <<'PY'
