@@ -57,33 +57,34 @@ jobs:
           print("image_size=",im.size)
           im.save("live-fashion.jpg",quality=95)
           PY
-      - name: Run FashionCLIP and FashionSigLIP inference pinned to resolved model SHAs
+      - name: Run FashionCLIP and FashionSigLIP through vendor-documented OpenCLIP path
         run: |
           python - <<'PY'
-          import gc,json,torch
+          import gc,json,torch,open_clip
           from PIL import Image
           from huggingface_hub import HfApi
-          from transformers import AutoModel,AutoProcessor
 
-          image=[Image.open("live-fashion.jpg").convert("RGB")]
+          raw_image=Image.open("live-fashion.jpg").convert("RGB")
           labels=["a bodysuit","a top","a dress","a skirt","jeans","pants","shoes","a bag","a jacket"]
           models=["Marqo/marqo-fashionCLIP","Marqo/marqo-fashionSigLIP"]
           api=HfApi()
           all_results={}
           for name in models:
               sha=api.model_info(name).sha
-              print("MODEL",name,"REVISION",sha)
-              model=AutoModel.from_pretrained(name,revision=sha,trust_remote_code=True)
-              processor=AutoProcessor.from_pretrained(name,revision=sha,trust_remote_code=True)
-              processed=processor(text=labels,images=image,padding="max_length",return_tensors="pt")
+              print("MODEL",name,"RESOLVED_REVISION",sha)
+              spec="hf-hub:"+name
+              model,_,preprocess=open_clip.create_model_and_transforms(spec)
+              tokenizer=open_clip.get_tokenizer(spec)
+              image=preprocess(raw_image).unsqueeze(0)
+              text=tokenizer(labels)
               with torch.no_grad():
-                  image_features=model.get_image_features(processed["pixel_values"],normalize=True)
-                  text_features=model.get_text_features(processed["input_ids"],normalize=True)
+                  image_features=model.encode_image(image,normalize=True)
+                  text_features=model.encode_text(text,normalize=True)
                   probs=(100.0*image_features@text_features.T).softmax(dim=-1)[0].cpu().tolist()
               ranked=sorted(zip(labels,probs),key=lambda x:x[1],reverse=True)
-              all_results[name]={"revision":sha,"ranking":ranked}
+              all_results[name]={"resolved_revision":sha,"ranking":ranked}
               print("RANKING",name,json.dumps(ranked,ensure_ascii=False))
-              del model,processor,processed,image_features,text_features
+              del model,image,text,image_features,text_features
               gc.collect()
           open("fashion-model-results.json","w").write(json.dumps(all_results,ensure_ascii=False,indent=2))
           PY
