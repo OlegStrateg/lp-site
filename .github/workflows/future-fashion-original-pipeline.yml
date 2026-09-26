@@ -1,0 +1,110 @@
+name: Original future fashion pipeline lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/future-fashion-original-pipeline.yml'
+  workflow_dispatch:
+
+jobs:
+  preprocess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          git clone https://github.com/macedoti13/Future-Fashion-Trends-Forecasting.git tool
+          git -C tool checkout 373520f118a1211328d250a4c268dd73bde57ed8
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.12' }
+      - run: python -m pip install pandas numpy emot openpyxl >/dev/null
+      - name: Run original preprocessing
+        run: |
+          cd tool
+          python data_preprocessing.py
+          python - <<'PY'
+          import pandas as pd
+          p=pd.read_csv("data/posts.csv")
+          c=pd.read_csv("data/posts_comments.csv", sep=";")
+          print({"posts":len(p),"comments":len(c),"post_columns":list(p.columns),"comment_columns":list(c.columns)})
+          print(p.head(2).to_json(orient="records"))
+          print(c.head(5).to_json(orient="records"))
+          PY
+
+  clustering:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          git clone https://github.com/macedoti13/Future-Fashion-Trends-Forecasting.git tool
+          git -C tool checkout 373520f118a1211328d250a4c268dd73bde57ed8
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.12' }
+      - run: python -m pip install pandas numpy scikit-learn tables >/dev/null
+      - name: Run original latent clustering
+        run: |
+          cd tool
+          python - <<'PY'
+          import pandas as pd
+          df=pd.read_hdf("data/latent_spaces.h5")
+          print("before_rows",len(df),"before_cols",list(df.columns))
+          PY
+          python latent_space_clustering.py
+          python - <<'PY'
+          import pandas as pd
+          df=pd.read_hdf("data/latent_spaces.h5")
+          print("after_rows",len(df),"columns",list(df.columns))
+          print("clusters",df["cluster"].value_counts().sort_index().to_dict())
+          PY
+
+  sentiment_model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          git clone https://github.com/macedoti13/Future-Fashion-Trends-Forecasting.git tool
+          git -C tool checkout 373520f118a1211328d250a4c268dd73bde57ed8
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.12' }
+      - run: |
+          python -m pip install pandas numpy emoji joblib nltk scikit-learn openpyxl >/dev/null
+          python -m nltk.downloader punkt punkt_tab stopwords >/dev/null
+      - name: Load shipped model and predict real intent-like comments
+        run: |
+          cd tool
+          python - <<'PY'
+          import joblib
+          import sentiment_analysis_model
+          model=joblib.load("models/sentiment_analysis_model.joblib")
+          samples=[
+            "where can I buy this",
+            "link please I need this",
+            "how much is it",
+            "this outfit is beautiful",
+            "I would never wear this"
+          ]
+          print("model_type",type(model).__name__)
+          print("predictions",list(zip(samples,model.predict(samples).tolist())))
+          PY
+
+  segmentation_readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          git clone https://github.com/macedoti13/Future-Fashion-Trends-Forecasting.git tool
+          git -C tool checkout 373520f118a1211328d250a4c268dd73bde57ed8
+      - name: Check exact upstream artifacts required by original script
+        run: |
+          cd tool
+          test -f models/yolo_weights.pt
+          test -d images/original_images
+          echo "original_images=$(find images/original_images -type f -name '*.jpg' | wc -l)"
+          echo "segmented_images=$(find images/segmented_images -type f -name '*.png' | wc -l)"
+          if test -f models/sam_weights.pth; then
+            echo "sam_checkpoint=present"
+          else
+            echo "sam_checkpoint=MISSING"
+          fi
+          grep -F 'CHECKPOINT_PATH = os.path.join(os.getcwd(), "models", "sam_weights.pth")' image_segmentation.py
