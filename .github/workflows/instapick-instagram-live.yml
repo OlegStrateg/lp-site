@@ -1,0 +1,61 @@
+name: Licensed Instagram comments live lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/instapick-instagram-live.yml'
+  workflow_dispatch:
+
+jobs:
+  instapick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/andresayac/instapick.git tool
+          git -C tool checkout c89ce99756f06948465163727c23fedae7bbb2a2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install original dependencies
+        run: cd tool && npm ci
+      - name: Run original server unchanged
+        shell: bash
+        run: |
+          cd tool
+          node server.js > /tmp/instapick-server.log 2>&1 &
+          echo $! > /tmp/instapick.pid
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          set +e
+          curl --max-time 180 -sS             -H 'content-type: application/json'             -d '{"url":"https://www.instagram.com/reel/C6w6f49Asga/"}'             http://127.0.0.1:3000/api/extract > /tmp/result.json
+          RC=$?
+          set -e
+          echo "curl_exit=$RC"
+          tail -n 120 /tmp/instapick-server.log || true
+          python - <<'PY'
+          import json,re
+          p="/tmp/result.json"
+          try:
+              d=json.load(open(p))
+          except Exception as e:
+              print("json_error",repr(e))
+              raise SystemExit(2)
+          print("success=",d.get("success"))
+          print("error=",d.get("error"))
+          comments=d.get("comments") or []
+          print("comments_count=",len(comments))
+          rx=re.compile(r"\b(where (?:can|do|did) (?:i|you) (?:buy|get|find)|where (?:is|are) (?:this|these) from|where to buy|link(?: please)?|how much|price|what brand|what (?:top|dress|pants|jeans|skirt|bag|jacket|shoes)|i (?:need|want) (?:this|these|it))\b",re.I)
+          hits=[c for c in comments if rx.search(c.get("text") or "")]
+          print("purchase_regex_hits=",len(hits))
+          for c in hits[:30]:
+              print("INTENT",c.get("username"),":",c.get("text"))
+          if not d.get("success") or len(comments)==0:
+              raise SystemExit(3)
+          PY
+          test "$RC" -eq 0
