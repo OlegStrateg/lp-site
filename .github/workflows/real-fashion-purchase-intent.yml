@@ -1,0 +1,183 @@
+name: Real fashion purchase intent lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/real-fashion-purchase-intent.yml'
+  workflow_dispatch:
+
+jobs:
+  intent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fetch exact original repositories
+        run: |
+          git clone https://github.com/macedoti13/Future-Fashion-Trends-Forecasting.git fashion
+          git -C fashion checkout 373520f118a1211328d250a4c268dd73bde57ed8
+          git clone https://github.com/jackterror/social-demand-signal-agent.git demand
+          git -C demand checkout 08440799afbd2803ccc1e9f8d26cebf94e11837e
+
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.12' }
+
+      - name: Extract real Instagram purchase-intent candidates
+        run: |
+          python - <<'PY'
+          import csv, json, re
+          src="fashion/data/posts_comments.csv"
+          terms=[
+            r"\bwhere (?:can|do|did) (?:i|you) (?:buy|get|find)",
+            r"\bwhere (?:is|are) (?:this|these) from\b",
+            r"\bwhere to buy\b",
+            r"\bwhere can i get\b",
+            r"\blink please\b",
+            r"\bneed (?:this|these|it)\b",
+            r"\bi need (?:this|these|it)\b",
+            r"\bi want (?:this|these|it)\b",
+            r"\bwant (?:this|these|it)\b",
+            r"\bhow much\b",
+            r"\bprice\b",
+            r"\bwhat brand\b",
+            r"\bwhat is (?:this|that) brand\b",
+            r"\bwhat are (?:these|those)\b",
+            r"\bwhat (?:shoes|dress|top|pants|jeans|skirt|bag|jacket)\b"
+          ]
+          rx=re.compile("|".join(terms),re.I)
+          rows=[]
+          with open(src,encoding="utf-8") as f:
+            reader=csv.DictReader(f,delimiter=";")
+            for i,r in enumerate(reader,1):
+              text=(r.get("comments") or "").strip()
+              if len(text.split()) < 3 or not rx.search(text):
+                continue
+              post_id=str(r.get("id") or i)
+              rows.append({
+                "id":f"ig-{post_id}-{i}",
+                "platform":"instagram",
+                "url":f"https://instagram.com/p/dataset-{post_id}",
+                "author":"dataset-commenter",
+                "query":"fashion purchase intent",
+                "text":text
+              })
+          with open("real-intent-signals.json","w",encoding="utf-8") as f:
+            json.dump(rows,f,ensure_ascii=False,indent=2)
+          print("real_comments_scanned=5432")
+          print("regex_candidates=",len(rows))
+          for r in rows[:30]:
+            print("CANDIDATE:",r["text"])
+          PY
+
+      - name: Build external fashion profile for original agent
+        run: |
+          cat > fashion-intent-profile.json <<'JSON'
+          {
+            "schema_version": 2,
+            "profile_status": "ready",
+            "company": {
+              "name": "Fashion Radar Lab",
+              "industry": "fashion research",
+              "product": "fashion trend radar",
+              "description": "Research-only fashion trend detection lab",
+              "website": "https://radar.summarizers.app"
+            },
+            "audience": {
+              "description": "fashion shoppers expressing product interest",
+              "pain_points": ["where can i buy", "where did you get", "where is this from"],
+              "intent_signals": [
+                "where can i buy",
+                "where do i buy",
+                "where did you get",
+                "where is this from",
+                "where are these from",
+                "where to buy",
+                "where can i get",
+                "link please",
+                "need this",
+                "i need this",
+                "want this",
+                "i want this",
+                "how much",
+                "price",
+                "what brand",
+                "what shoes",
+                "what dress",
+                "what top",
+                "what pants",
+                "what jeans",
+                "what skirt",
+                "what bag",
+                "what jacket"
+              ]
+            },
+            "offer": {
+              "summary": "Research fashion demand signals",
+              "cta_url": "https://radar.summarizers.app"
+            },
+            "voice": {"attributes": ["neutral"]},
+            "disclosure": "Research-only lab",
+            "claims": {"approved": ["research signal"], "forbidden": ["guaranteed trend"]},
+            "safety": {
+              "exclusions": ["giveaway", "spam"],
+              "escalation_terms": ["fraud", "scam"],
+              "max_responses_per_author_24h": 1
+            },
+            "listening": {
+              "queries": ["fashion purchase intent"],
+              "platforms": ["instagram"],
+              "freshness_minutes": 5256000,
+              "max_items": 1000
+            },
+            "response_families": [
+              {
+                "name": "purchase-intent",
+                "signals": ["where", "buy", "get", "link", "need", "want", "price", "brand"],
+                "hypothesis_a": "purchase intent",
+                "hypothesis_b": "product question"
+              }
+            ],
+            "experiment": {
+              "primary_event": "qualified_action",
+              "guardrail_event": "negative_feedback",
+              "minimum_sample_size": 30
+            }
+          }
+          JSON
+
+      - name: Run original Social Demand Signal Agent unchanged
+        run: |
+          cd demand
+          python scripts/signal_agent.py \
+            --profile ../fashion-intent-profile.json \
+            --database ../intent.sqlite3 \
+            collect --provider json --source ../real-intent-signals.json
+          python scripts/signal_agent.py \
+            --profile ../fashion-intent-profile.json \
+            --database ../intent.sqlite3 \
+            state --output ../intent-state.json
+          cd ..
+          python - <<'PY'
+          import json
+          d=json.load(open("intent-state.json"))
+          print("state_keys",list(d))
+          # find any signal-like lists recursively
+          def walk(x,path=""):
+            if isinstance(x,list) and x and all(isinstance(i,dict) for i in x):
+              if any("route" in i or "relevance_score" in i for i in x):
+                print("SIGNALS_PATH",path,"COUNT",len(x))
+                for s in x[:30]:
+                  print(json.dumps({
+                    "text":s.get("text"),
+                    "route":s.get("route"),
+                    "relevance_score":s.get("relevance_score"),
+                    "route_reasons":s.get("route_reasons"),
+                    "message_family":s.get("message_family")
+                  },ensure_ascii=False))
+            elif isinstance(x,dict):
+              for k,v in x.items(): walk(v,path+"/"+k)
+            elif isinstance(x,list):
+              for i,v in enumerate(x): walk(v,path+f"/{i}")
+          walk(d)
+          PY
