@@ -1,0 +1,99 @@
+name: Instagram product purchase intent benchmark
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/instagram-product-intent-benchmark.yml'
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact original repositories
+        run: |
+          git clone https://github.com/uandersonpsantos/instagram-comments-scraper-api.git instagram_comments
+          git -C instagram_comments checkout 5a6c0c6bbbbdff53fd414c4b6ec64ceafe4a1e18
+          git clone https://github.com/jackterror/social-demand-signal-agent.git demand
+          git -C demand checkout 08440799afbd2803ccc1e9f8d26cebf94e11837e
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install original Instagram dependencies
+        run: python -m pip install -r instagram_comments/requirements.txt >/dev/null
+      - name: Collect bounded product-focused comments
+        run: |
+          python - <<'PY'
+          import sys,json,re
+          sys.path.insert(0,"instagram_comments")
+          import main as ig
+          url="https://www.instagram.com/reel/C6w6f49Asga/"
+          shortcode=ig.extract_shortcode(url)
+          media_id=ig.shortcode_to_media_id(shortcode)
+          session=ig.requests.Session(impersonate="chrome146")
+          lsd,csrf=ig.get_page_tokens(shortcode,session)
+          out=[]; cursor=None
+          for page in range(1,21):
+              payload=ig.fetch_comments_page(media_id,cursor,lsd,csrf,session)
+              comments,next_cursor=ig.parse_comments(payload)
+              print(f"page={page} comments={len(comments)} has_next={bool(next_cursor)}")
+              for idx,(username,text) in enumerate(comments):
+                  if text:
+                      out.append({"id":f"ig-{shortcode}-{page}-{idx}","platform":"instagram","url":url,"author":username or "unknown","query":"fashion purchase intent","text":text})
+              if not next_cursor: break
+              cursor=next_cursor
+          print("comments_collected=",len(out))
+          patterns=[
+            r"where (?:can|do|did) (?:i|you) (?:buy|get|find)",
+            r"where (?:is|are) (?:this|these|it|they) from",
+            r"where to buy",r"link(?: please| pls)?",r"how much",r"price",
+            r"what brand",r"what (?:top|dress|pants|jeans|skirt|bag|jacket|shoes|bodysuit)",
+            r"(?:i|we) (?:need|want) (?:this|these|it|them)",
+            r"where.*(?:top|dress|pants|jeans|skirt|bag|jacket|shoes|bodysuit)"
+          ]
+          rx=re.compile("|".join(patterns),re.I)
+          hits=[x for x in out if rx.search(x["text"])]
+          print("regex_purchase_hits=",len(hits))
+          for x in hits[:50]: print("REGEX_INTENT:",x["text"])
+          json.dump(out,open("product-comments.json","w"),ensure_ascii=False,indent=2)
+          if len(out)<20: raise SystemExit("not enough comments")
+          PY
+      - name: Build external fashion profile
+        run: |
+          cat > fashion-intent-profile.json <<'JSON'
+          {
+            "schema_version":2,
+            "profile_status":"ready",
+            "company":{"name":"Fashion Radar Lab","industry":"fashion research","product":"fashion trend radar","description":"Research-only fashion trend detection lab","website":"https://radar.summarizers.app"},
+            "audience":{"description":"fashion shoppers expressing product interest","pain_points":["where can i buy","where did you get","where is this from"],"intent_signals":["where can i buy","where do i buy","where did you get","where is this from","where are these from","where to buy","where can i get","link please","need this","i need this","want this","i want this","how much","price","what brand","what shoes","what dress","what top","what pants","what jeans","what skirt","what bag","what jacket","what bodysuit"]},
+            "offer":{"summary":"Research fashion demand signals","cta_url":"https://radar.summarizers.app"},
+            "voice":{"attributes":["neutral"]},
+            "disclosure":"Research-only lab",
+            "claims":{"approved":["research signal"],"forbidden":["guaranteed trend"]},
+            "safety":{"exclusions":["giveaway","spam"],"escalation_terms":["fraud","scam"],"max_responses_per_author_24h":1},
+            "listening":{"queries":["fashion purchase intent"],"platforms":["instagram"],"freshness_minutes":5256000,"max_items":1000},
+            "response_families":[{"name":"purchase-intent","signals":["where","buy","get","link","need","want","price","brand"],"hypothesis_a":"purchase intent","hypothesis_b":"product question"}],
+            "experiment":{"primary_event":"qualified_action","guardrail_event":"negative_feedback","minimum_sample_size":30}
+          }
+          JSON
+      - name: Run original demand agent unchanged
+        run: |
+          cd demand
+          python scripts/signal_agent.py --profile ../fashion-intent-profile.json --database ../product-intent.sqlite3 collect --provider json --source ../product-comments.json
+          python scripts/signal_agent.py --profile ../fashion-intent-profile.json --database ../product-intent.sqlite3 state --output ../product-intent-state.json
+          cd ..
+          python - <<'PY'
+          import json,re
+          d=json.load(open("product-intent-state.json"))
+          sig=d.get("signals") or []
+          pi=[s for s in sig if s.get("message_family")=="purchase-intent"]
+          routed=[s for s in sig if s.get("route")!="suppress"]
+          print("agent_signals=",len(sig))
+          print("agent_purchase_family=",len(pi))
+          print("agent_non_suppressed=",len(routed))
+          for s in pi[:50]:
+              print("AGENT_INTENT:",json.dumps({"text":s.get("text"),"route":s.get("route"),"score":s.get("relevance_score"),"reasons":s.get("route_reasons")},ensure_ascii=False))
+          PY
