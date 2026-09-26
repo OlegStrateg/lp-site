@@ -1,0 +1,154 @@
+name: Live Instagram purchase intent lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/instagram-live-purchase-intent.yml'
+  workflow_dispatch:
+
+jobs:
+  live_intent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact original repositories
+        run: |
+          git clone https://github.com/uandersonpsantos/instagram-comments-scraper-api.git instagram_comments
+          git -C instagram_comments checkout 5a6c0c6bbbbdff53fd414c4b6ec64ceafe4a1e18
+          git clone https://github.com/jackterror/social-demand-signal-agent.git demand
+          git -C demand checkout 08440799afbd2803ccc1e9f8d26cebf94e11837e
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install original Instagram scraper dependencies
+        run: python -m pip install -r instagram_comments/requirements.txt >/dev/null
+
+      - name: Collect bounded live comments through external wrapper
+        run: |
+          python - <<'PY'
+          import sys, json
+          sys.path.insert(0, "instagram_comments")
+          import main as ig
+
+          url="https://www.instagram.com/reel/DPRIZK7k0Rq/"
+          shortcode=ig.extract_shortcode(url)
+          media_id=ig.shortcode_to_media_id(shortcode)
+          session=ig.requests.Session(impersonate="chrome146")
+          lsd,csrf=ig.get_page_tokens(shortcode,session)
+
+          out=[]
+          cursor=None
+          max_pages=20
+          for page in range(1,max_pages+1):
+              payload=ig.fetch_comments_page(media_id,cursor,lsd,csrf,session)
+              comments,next_cursor=ig.parse_comments(payload)
+              print(f"page={page} comments={len(comments)} has_next={bool(next_cursor)}")
+              for idx,(username,text) in enumerate(comments):
+                  if not text:
+                      continue
+                  out.append({
+                    "id":f"ig-{shortcode}-{page}-{idx}",
+                    "platform":"instagram",
+                    "url":url,
+                    "author":username or "unknown",
+                    "query":"fashion purchase intent",
+                    "text":text
+                  })
+              if not next_cursor:
+                  break
+              cursor=next_cursor
+
+          with open("live-instagram-comments.json","w",encoding="utf-8") as f:
+              json.dump(out,f,ensure_ascii=False,indent=2)
+          print("live_comments_collected=",len(out))
+          for x in out[:20]:
+              print("COMMENT:",x["text"])
+          if len(out) < 50:
+              raise SystemExit("not enough live comments")
+          PY
+
+      - name: Build external fashion profile
+        run: |
+          cat > fashion-intent-profile.json <<'JSON'
+          {
+            "schema_version": 2,
+            "profile_status": "ready",
+            "company": {
+              "name": "Fashion Radar Lab",
+              "industry": "fashion research",
+              "product": "fashion trend radar",
+              "description": "Research-only fashion trend detection lab",
+              "website": "https://radar.summarizers.app"
+            },
+            "audience": {
+              "description": "fashion shoppers expressing product interest",
+              "pain_points": ["where can i buy", "where did you get", "where is this from"],
+              "intent_signals": [
+                "where can i buy", "where do i buy", "where did you get",
+                "where is this from", "where are these from", "where to buy",
+                "where can i get", "link please", "need this", "i need this",
+                "want this", "i want this", "how much", "price", "what brand",
+                "what shoes", "what dress", "what top", "what pants",
+                "what jeans", "what skirt", "what bag", "what jacket"
+              ]
+            },
+            "offer": {"summary": "Research fashion demand signals", "cta_url": "https://radar.summarizers.app"},
+            "voice": {"attributes": ["neutral"]},
+            "disclosure": "Research-only lab",
+            "claims": {"approved": ["research signal"], "forbidden": ["guaranteed trend"]},
+            "safety": {
+              "exclusions": ["giveaway", "spam"],
+              "escalation_terms": ["fraud", "scam"],
+              "max_responses_per_author_24h": 1
+            },
+            "listening": {
+              "queries": ["fashion purchase intent"],
+              "platforms": ["instagram"],
+              "freshness_minutes": 5256000,
+              "max_items": 1000
+            },
+            "response_families": [
+              {
+                "name": "purchase-intent",
+                "signals": ["where", "buy", "get", "link", "need", "want", "price", "brand"],
+                "hypothesis_a": "purchase intent",
+                "hypothesis_b": "product question"
+              }
+            ],
+            "experiment": {
+              "primary_event": "qualified_action",
+              "guardrail_event": "negative_feedback",
+              "minimum_sample_size": 30
+            }
+          }
+          JSON
+
+      - name: Run original Social Demand Signal Agent unchanged on live comments
+        run: |
+          cd demand
+          python scripts/signal_agent.py             --profile ../fashion-intent-profile.json             --database ../live-intent.sqlite3             collect --provider json --source ../live-instagram-comments.json
+          python scripts/signal_agent.py             --profile ../fashion-intent-profile.json             --database ../live-intent.sqlite3             state --output ../live-intent-state.json
+          cd ..
+          python - <<'PY'
+          import json
+          d=json.load(open("live-intent-state.json"))
+          signals=d.get("signals") or []
+          print("agent_signals=",len(signals))
+          routed=[s for s in signals if s.get("route")!="suppress"]
+          pi=[s for s in signals if s.get("message_family")=="purchase-intent"]
+          print("non_suppressed=",len(routed))
+          print("purchase_intent_family=",len(pi))
+          for s in sorted(pi,key=lambda x: x.get("relevance_score") or 0,reverse=True)[:30]:
+              print(json.dumps({
+                "text":s.get("text"),
+                "author":s.get("author"),
+                "route":s.get("route"),
+                "relevance_score":s.get("relevance_score"),
+                "route_reasons":s.get("route_reasons"),
+                "message_family":s.get("message_family")
+              },ensure_ascii=False))
+          PY
