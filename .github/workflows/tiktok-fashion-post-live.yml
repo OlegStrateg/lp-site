@@ -1,0 +1,26 @@
+name: TikTok fashion post live parse
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/tiktok-fashion-post-live.yml'
+  workflow_dispatch:
+
+jobs:
+  gymshark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          git clone https://github.com/ChocoData-com/tiktok-post-scraper.git tool
+          git -C tool checkout c9014ff2cd8a8e9e76f1274b279541afe1e3a496
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.12' }
+      - run: python -m pip install -r tool/requirements.txt >/dev/null
+      - name: Parse public Gymshark fashion post
+        run: |
+          cd tool
+          python free_scraper/tiktok_post_free_scraper.py \
+            "https://www.tiktok.com/@gymshark/video/7624598554920701206"
