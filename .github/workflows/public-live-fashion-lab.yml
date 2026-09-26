@@ -1,0 +1,176 @@
+name: Public live fashion source lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/public-live-fashion-lab.yml'
+  workflow_dispatch:
+
+jobs:
+  tiktok_shop_playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/MisterSeitz/TikTok-Shop-Product-and-Creator-Tracker.git tool
+          git -C tool checkout b677da799fbaedd9004ceffe03afbdbe667255ed
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install original dependencies
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install -r tool/requirements.txt playwright >/dev/null
+          python -m playwright install --with-deps chromium >/dev/null
+      - name: Run original tracker against public TikTok Shop fashion page
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tool/apify_storage/key_value_stores/default
+          cat > tool/apify_storage/key_value_stores/default/INPUT.json <<'JSON'
+          {
+            "categoryUrls": ["https://shop.tiktok.com/us/k/womens-clothing"],
+            "region": "US",
+            "captureScreenshots": false,
+            "maxConcurrency": 1,
+            "limits": {
+              "maxProducts": 10,
+              "maxProductsPerCategory": 10
+            },
+            "timeouts": {
+              "navigationTimeoutSecs": 35,
+              "requestTimeoutSecs": 35
+            },
+            "debug": true
+          }
+          JSON
+          cd tool
+          set +e
+          APIFY_LOCAL_STORAGE_DIR=./apify_storage timeout 150s python main.py > /tmp/tiktok-shop.log 2>&1
+          RC=$?
+          set -e
+          cat /tmp/tiktok-shop.log
+          echo "runtime_exit=$RC"
+          echo "dataset files:"
+          find apify_storage -type f -maxdepth 5 -print || true
+          echo "dataset_count=$(find apify_storage/datasets -type f -name '*.json' 2>/dev/null | wc -l || true)"
+          test "$RC" -eq 0 -o "$RC" -eq 124
+
+  instagram_instaloader_public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/instaloader/instaloader.git tool
+          git -C tool checkout 7efc78de12e02feb1794b71125a48e66250f0db0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install and query public fashion account
+        run: |
+          python -m pip install -e tool >/dev/null
+          python - <<'PY'
+          import json
+          import instaloader
+          from instaloader import Profile
+          L = instaloader.Instaloader(download_pictures=False, download_videos=False, save_metadata=False, quiet=True)
+          out = {"library_version": instaloader.__version__}
+          try:
+              p = Profile.from_username(L.context, "vogue")
+              out.update({
+                  "status": "public_profile_ok",
+                  "username": p.username,
+                  "followers": p.followers,
+                  "mediacount": p.mediacount,
+                  "biography_present": bool(p.biography),
+              })
+              try:
+                  first = next(iter(p.get_posts()))
+                  out["first_post"] = {
+                      "shortcode": first.shortcode,
+                      "likes": first.likes,
+                      "comments": first.comments,
+                      "is_video": first.is_video,
+                  }
+              except Exception as e:
+                  out["posts_status"] = "blocked_or_login_required"
+                  out["posts_error"] = type(e).__name__ + ": " + str(e)[:300]
+          except Exception as e:
+              out["status"] = "blocked_or_login_required"
+              out["error"] = type(e).__name__ + ": " + str(e)[:500]
+          print(json.dumps(out, ensure_ascii=False))
+          PY
+
+  instagram_instagrapi_public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/subzeroid/instagrapi.git tool
+          git -C tool checkout 13ebe3b73f9a3fc2d495124c94d958d7b438e007
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install and probe public endpoint without login
+        run: |
+          python -m pip install -e tool >/dev/null
+          python - <<'PY'
+          import json
+          from instagrapi import Client
+          cl = Client()
+          out = {}
+          try:
+              info = cl.user_info_by_username_gql("vogue")
+              out = {
+                  "status": "public_profile_ok",
+                  "username": info.username,
+                  "followers": info.follower_count,
+                  "media_count": info.media_count,
+              }
+          except Exception as e:
+              out = {
+                  "status": "blocked_or_login_required",
+                  "error": type(e).__name__ + ": " + str(e)[:500]
+              }
+          print(json.dumps(out, ensure_ascii=False))
+          PY
+
+  kream_scrapling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/fivetaku/fashion-trend.git tool
+          git -C tool checkout a7fea3927e8e72fa423a3212bb3c7d09e1511af9
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install original crawler dependency
+        run: |
+          python -m pip install "scrapling[all]" >/dev/null
+          scrapling install >/dev/null
+      - name: Run original KREAM crawl
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 120s bash tool/scripts/crawl.sh "$(command -v scrapling)" \
+            "https://kream.co.kr/exhibitions/15242" \
+            "/tmp/kream-result.md" \
+            45000 5000 > /tmp/kream-run.log 2>&1
+          RC=$?
+          set -e
+          cat /tmp/kream-run.log
+          echo "runtime_exit=$RC"
+          if test -f /tmp/kream-result.md; then
+            echo "bytes=$(wc -c < /tmp/kream-result.md)"
+            echo "preview:"
+            head -c 2500 /tmp/kream-result.md || true
+          fi
+          test "$RC" -eq 0 -o "$RC" -eq 124
