@@ -1,0 +1,57 @@
+name: Modern TikTok public comments live lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/tamnd-tiktok-comments-live.yml'
+  workflow_dispatch:
+
+jobs:
+  public_video_and_comments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/tamnd/tiktok-cli.git tool
+          git -C tool checkout 035b3d0ce4100c0210aad319fc96b7ad19d6b429
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+      - name: Build original tool unchanged
+        run: |
+          cd tool
+          go build -o ../tt ./cmd/tt
+      - name: Control — public video SSR
+        shell: bash
+        run: |
+          set +e
+          timeout 60s ./tt video "https://www.tiktok.com/@gymshark/video/7624598554920701206" -o json > /tmp/video.json 2>/tmp/video.err
+          RC=$?
+          set -e
+          cat /tmp/video.err
+          head -c 5000 /tmp/video.json || true
+          echo
+          echo "video_exit=$RC"
+          test "$RC" -eq 0
+      - name: Test — public comments API
+        shell: bash
+        run: |
+          set +e
+          timeout 90s ./tt comments "https://www.tiktok.com/@gymshark/video/7624598554920701206" -n 20 -o json > /tmp/comments.json 2>/tmp/comments.err
+          RC=$?
+          set -e
+          cat /tmp/comments.err
+          head -c 8000 /tmp/comments.json || true
+          echo
+          echo "comments_exit=$RC"
+          case "$RC" in
+            0) echo "COMMENTS_STATUS=PASS" ;;
+            3) echo "COMMENTS_STATUS=EMPTY_VALID" ;;
+            4) echo "COMMENTS_STATUS=WALLED_DATACENTER" ;;
+            124) echo "COMMENTS_STATUS=TIMEOUT" ;;
+            *) echo "COMMENTS_STATUS=BROKEN_OR_BLOCKED" ;;
+          esac
+          test "$RC" -eq 0
