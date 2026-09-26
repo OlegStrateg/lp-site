@@ -1,0 +1,147 @@
+name: TikTok comments public live lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/tiktok-comments-public-live.yml'
+  workflow_dispatch:
+
+jobs:
+  xtekky_direct_api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/xtekky/TikTok-Comment-Scraper.git tool
+          git -C tool checkout ecd544329f96729af24b0c0e6cd0af6f323b7491
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Run original scraper unchanged
+        shell: bash
+        run: |
+          set -uo pipefail
+          python -m pip install requests >/dev/null
+          set +e
+          printf '%s\n' 'https://www.tiktok.com/@gymshark/video/7624598554920701206' | timeout 90s python tool/main.py > /tmp/xtekky.log 2>&1
+          RC=$?
+          set -e
+          cat /tmp/xtekky.log
+          LINES=$(wc -l < /tmp/xtekky.log)
+          echo "runtime_exit=$RC"
+          echo "output_lines=$LINES"
+          if [ "$RC" -eq 0 ] && [ "$LINES" -gt 5 ]; then
+            echo "TOOL_STATUS=PASS"
+          else
+            echo "TOOL_STATUS=BLOCKED_OR_BROKEN"
+            exit 1
+          fi
+
+  kavindu_direct_api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/kavindu-udara/tiktok-comment-scraper.git tool
+          git -C tool checkout 88a09e55d4478bcc6620b1f23d649f38e43fa69c
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Run original scraper unchanged
+        shell: bash
+        run: |
+          set -uo pipefail
+          python -m pip install -r tool/backend/requirements.txt >/dev/null
+          set +e
+          timeout 90s python - <<'PY' > /tmp/kavindu.log 2>&1
+          import json, sys
+          sys.path.insert(0, "tool/backend")
+          from script2 import Script
+          url = "https://www.tiktok.com/@gymshark/video/7624598554920701206"
+          s = Script(url)
+          comments = s.getComments()
+          print("comments_count=" + str(len(comments)))
+          print(json.dumps(comments[:5], ensure_ascii=False))
+          if not comments:
+              raise SystemExit(3)
+          PY
+          RC=$?
+          set -e
+          cat /tmp/kavindu.log
+          echo "runtime_exit=$RC"
+          if [ "$RC" -eq 0 ]; then
+            echo "TOOL_STATUS=PASS"
+          else
+            echo "TOOL_STATUS=BLOCKED_OR_BROKEN"
+            exit 1
+          fi
+
+  cubernetes_dom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Fetch exact upstream
+        run: |
+          git clone https://github.com/cubernetes/TikTokCommentScraper.git tool
+          git -C tool checkout 5339823b50c267fb17ef104458aab94ddf33e93b
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Run original DOM scraper unchanged in browser
+        shell: bash
+        run: |
+          set -uo pipefail
+          python -m pip install playwright >/dev/null
+          python -m playwright install --with-deps chromium >/dev/null
+          set +e
+          timeout 150s python - <<'PY' > /tmp/cubernetes.log 2>&1
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+
+          url = "https://www.tiktok.com/@gymshark/video/7624598554920701206"
+          vendor = Path("tool/src/ScrapeTikTokComments.js").read_text(encoding="utf-8")
+          wrapper = """
+          (async () => {
+            let captured = null;
+            function copy(x) { captured = x; }
+            try {
+          """ + vendor + """
+              return {ok: true, csv: captured};
+            } catch (e) {
+              return {ok: false, error: String(e), stack: e && e.stack ? String(e.stack) : ""};
+            }
+          })()
+          """
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page(viewport={"width": 1440, "height": 1200})
+              page.goto(url, wait_until="domcontentloaded", timeout=60000)
+              page.wait_for_timeout(8000)
+              print("page_title=" + page.title())
+              print("page_url=" + page.url)
+              result = page.evaluate(wrapper)
+              print(result)
+              browser.close()
+
+          if not result.get("ok"):
+              raise SystemExit(4)
+          csv = result.get("csv") or ""
+          lines = [x for x in csv.splitlines() if x.strip()]
+          print("csv_lines=" + str(len(lines)))
+          if len(lines) < 10:
+              raise SystemExit(5)
+          PY
+          RC=$?
+          set -e
+          cat /tmp/cubernetes.log
+          echo "runtime_exit=$RC"
+          if [ "$RC" -eq 0 ]; then
+            echo "TOOL_STATUS=PASS"
+          else
+            echo "TOOL_STATUS=BLOCKED_OR_BROKEN"
+            exit 1
+          fi
