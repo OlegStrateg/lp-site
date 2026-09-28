@@ -1,0 +1,184 @@
+name: Russian fashion broad social scan
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/russian-fashion-broad-social.yml'
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Fetch pinned tools
+        run: |
+          git clone https://github.com/uandersonpsantos/instagram-comments-scraper-api.git instagram_comments
+          git -C instagram_comments checkout 5a6c0c6bbbbdff53fd414c4b6ec64ceafe4a1e18
+          git clone https://github.com/marqo-ai/marqo-FashionCLIP.git fashionclip
+          git -C fashionclip checkout d0b3bdfb62fb4964537cb582e76d6ddab0be8450
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install -r instagram_comments/requirements.txt torch torchvision pillow curl_cffi huggingface_hub open_clip_torch >/dev/null
+      - name: Broad social scan
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re, html, json, sys, collections
+          from io import BytesIO
+          from PIL import Image
+          from curl_cffi import requests
+          import torch, open_clip
+          from datetime import datetime, date
+
+          sys.path.insert(0, "instagram_comments")
+          import main as ig
+
+          POSTS = {
+          "karina_nigay":[
+          "https://www.instagram.com/karina_nigay/reel/Dd1YcT1usA3/?hl=en","https://www.instagram.com/karina_nigay/reel/Dd1JpPfOPoY/?hl=en","https://www.instagram.com/karina_nigay/reel/Ddy8kvhuBi6/?hl=en","https://www.instagram.com/karina_nigay/reel/DdyYPHluxNv/?hl=en","https://www.instagram.com/karina_nigay/reel/Ddt0PvPOtrn/?hl=en","https://www.instagram.com/karina_nigay/reel/DdtlF0XuZKG/?hl=en","https://www.instagram.com/karina_nigay/reel/Dds6-KWOGUe/?hl=en","https://www.instagram.com/karina_nigay/reel/DdrEUKZubh6/?hl=en","https://www.instagram.com/karina_nigay/reel/DdqSvpYOJTc/?hl=en","https://www.instagram.com/karina_nigay/p/DdlYMJLjgGM/?hl=en"],
+          "lenaperminova":[
+          "https://www.instagram.com/lenaperminova/p/DdwSWvtDAH6/?hl=en","https://www.instagram.com/lenaperminova/p/Ddt5oSfDDM3/?hl=en","https://www.instagram.com/lenaperminova/p/DdmLVtJDAyQ/?hl=en","https://www.instagram.com/lenaperminova/p/Ddb2PIzEiOp/?hl=en","https://www.instagram.com/lenaperminova/p/DdB4bxGjHYE/?hl=en","https://www.instagram.com/lenaperminova/p/DcLrsl5jGU4/?hl=en","https://www.instagram.com/lenaperminova/p/Db8a6RNDCrt/?hl=en","https://www.instagram.com/lenaperminova/reel/Db3Y0s3Mbux/?hl=en","https://www.instagram.com/lenaperminova/reel/Da7__UUM-n7/?hl=en","https://www.instagram.com/lenaperminova/p/Dax_njDjJU4/?hl=en"],
+          "yanafisti":[
+          "https://www.instagram.com/yanafisti/p/Ddl84YrjdQG/?hl=en","https://www.instagram.com/yanafisti/reel/DdjvNQxN8Hu/?hl=en","https://www.instagram.com/yanafisti/p/Dddm45wjerv/?hl=en","https://www.instagram.com/yanafisti/reel/DdQoTyONgQI/?hl=en","https://www.instagram.com/yanafisti/p/DdOGhT2DXgW/?hl=en","https://www.instagram.com/yanafisti/p/DdEdPffjbgq/?hl=en","https://www.instagram.com/yanafisti/p/DdB9piMjS9P/?hl=en","https://www.instagram.com/yanafisti/p/DcyFVEZDUGR/?hl=en","https://www.instagram.com/yanafisti/p/DcvGpnujcPA/?hl=en","https://www.instagram.com/yanafisti/p/DcsmcmdDWx6/?hl=en"],
+          "diana_korkunova":[
+          "https://www.instagram.com/diana_korkunova/p/DdyVcUiDJmy/?hl=en","https://www.instagram.com/diana_korkunova/p/DdlqyO3jMcy/?hl=en","https://www.instagram.com/diana_korkunova/p/DdYlwaVDMcz/?hl=en","https://www.instagram.com/diana_korkunova/p/Dcl4MgmjHOe/?hl=en","https://www.instagram.com/diana_korkunova/p/DavT6oejAF1/?hl=en","https://www.instagram.com/diana_korkunova/p/DaVjTIlDO2B/?hl=en","https://www.instagram.com/diana_korkunova/p/DdB8_s0DDN4/?hl=en","https://www.instagram.com/diana_korkunova/p/Db-ZPCwDC0u/?hl=en","https://www.instagram.com/diana_korkunova/p/DaLVKcdDLMD/?hl=en","https://www.instagram.com/diana_korkunova/reel/DaSw15hs80A/?hl=en"],
+          "pollyhey":[
+          "https://www.instagram.com/pollyhey/reel/Dd1HoR5qNDz/?hl=en","https://www.instagram.com/pollyhey/p/DdwkBw9DJz5/?hl=en","https://www.instagram.com/pollyhey/reel/DdtRPJXKQ3_/?hl=en","https://www.instagram.com/pollyhey/reel/Ddq0v7cqPGP/?hl=en","https://www.instagram.com/pollyhey/reel/Ddor20hqMLw/?hl=en","https://www.instagram.com/pollyhey/reel/DdleE7QK-de/?hl=en","https://www.instagram.com/pollyhey/p/DdjoIr_it9b/?hl=en","https://www.instagram.com/pollyhey/p/Ddg5JKACojK/?hl=en","https://www.instagram.com/pollyhey/p/DddyaUFCt4P/?hl=en","https://www.instagram.com/pollyhey/p/DdbSVNtCuWG/?hl=en"],
+          "lizarudkevich":[
+          "https://www.instagram.com/lizarudkevich/p/DdviXxIE7Kg/?hl=en","https://www.instagram.com/lizarudkevich/reel/Ddq0JAZSR78/?hl=en","https://www.instagram.com/lizarudkevich/p/DdY1ZZtF5Q3/?hl=en","https://www.instagram.com/lizarudkevich/p/DdT6kZcFyqw/?hl=en","https://www.instagram.com/lizarudkevich/p/Dc6K_PLl06o/?hl=en","https://www.instagram.com/lizarudkevich/p/DdRJ7qrl6AA/?hl=en","https://www.instagram.com/lizarudkevich/p/Dc_ga-NFzXT/?hl=en","https://www.instagram.com/lizarudkevich/p/Dc83Ye0Fydp/?hl=en","https://www.instagram.com/lizarudkevich/p/DdGsLz2F1eq/?hl=en","https://www.instagram.com/lizarudkevich/reel/DdB08zlPXaV/?hl=en"],
+          "gizhik":[
+          "https://www.instagram.com/gizhik/reel/DdrOZxTIQZp/?hl=en","https://www.instagram.com/gizhik/p/DdozzL6CPPN/?hl=en","https://www.instagram.com/gizhik/reel/Ddn6t0NoGsr/?hl=en","https://www.instagram.com/gizhik/reel/DdZWiCQwvEB/?hl=en","https://www.instagram.com/gizhik/reel/DdO2GZEoZ7H/?hl=en","https://www.instagram.com/gizhik/reel/DdEClqCILTj/?hl=en","https://www.instagram.com/gizhik/reel/Dc_Wyo7oymu/?hl=en","https://www.instagram.com/gizhik/reel/Dc9T3UpoJHA/?hl=en","https://www.instagram.com/gizhik/reel/Dc5nhgko8yM/?hl=en"],
+          "minogarova":[
+          "https://www.instagram.com/minogarova/p/Dd0_yWXiq-g/?hl=en","https://www.instagram.com/minogarova/reel/Ddy7ktJKRc_/?hl=en","https://www.instagram.com/minogarova/p/DdHO8kdq2Tv/?hl=en","https://www.instagram.com/minogarova/reel/DdGtt6xqwzw/?hl=en","https://www.instagram.com/minogarova/reel/Dc2yXlwKO_P/?hl=en","https://www.instagram.com/minogarova/reel/Dc5g1T9qJiV/?hl=en","https://www.instagram.com/minogarova/reel/Dc1UcBfKcvc/?hl=en","https://www.instagram.com/minogarova/reel/DcvYJC4qeGI/?hl=en"],
+          "iamgalaborzova":[
+          "https://www.instagram.com/iamgalaborzova/p/DdoKsgmjA3t/?hl=en","https://www.instagram.com/iamgalaborzova/p/Dc_inx_DIKS/?hl=en","https://www.instagram.com/iamgalaborzova/p/Dc5sNKYjY81/?hl=en","https://www.instagram.com/iamgalaborzova/p/DcvdBsOjOwT/?hl=en","https://www.instagram.com/iamgalaborzova/p/Dck7jmUjKCP/?hl=en","https://www.instagram.com/iamgalaborzova/p/DcJWWPlkakp/?hl=en","https://www.instagram.com/iamgalaborzova/p/DcGijjxEQGi/?hl=en","https://www.instagram.com/iamgalaborzova/p/DcDxQmYEaTV/?hl=en"],
+          "alexandrrogov":[
+          "https://www.instagram.com/alexandrrogov/reel/Ddtu-QOKTDB/?hl=en","https://www.instagram.com/alexandrrogov/reel/DdyxYImITr1/?hl=en","https://www.instagram.com/alexandrrogov/reel/Ddsli8aTCqy/?hl=en","https://www.instagram.com/alexandrrogov/reel/DdrKFgLTsXN/?hl=en","https://www.instagram.com/alexandrrogov/p/DdnsCGRlsRR/?hl=en","https://www.instagram.com/alexandrrogov/reel/Ddaz_KDoBzM/?hl=en","https://www.instagram.com/alexandrrogov/reel/DdOC92moHQE/?hl=en","https://www.instagram.com/alexandrrogov/p/DdGnK5QiMSo/?hl=en","https://www.instagram.com/alexandrrogov/reel/DdEThzXoGlE/?hl=en"]
+          }
+
+          GARMENTS=[
+          "fitted vest","tailored vest","knit vest","corset top","fitted top","draped top","asymmetrical top","sheer blouse","white shirt","striped shirt","polo knit top","cardigan","fitted knit sweater","oversized knit sweater","bodysuit",
+          "mini dress","midi dress","maxi dress","bodycon dress","slip dress","drop waist dress",
+          "mini skirt","midi skirt","maxi skirt","pencil skirt","pleated skirt","bubble skirt",
+          "wide leg trousers","straight trousers","barrel trousers","low rise trousers","high waist trousers",
+          "wide leg jeans","straight jeans","barrel jeans","skinny jeans",
+          "fitted blazer","oversized blazer"
+          ]
+          FABRICS=[
+          "denim fabric","satin fabric","silk fabric","lace fabric","sheer mesh fabric","fine knit fabric","chunky knit fabric","ribbed knit fabric","linen fabric","tweed fabric","velvet fabric","corduroy fabric","suede fabric","leather fabric","chiffon fabric","sequin fabric"
+          ]
+          INTENT_PATTERNS=[
+          r"where.{0,20}(?:buy|get|find|from)",r"where can i",r"where do i",r"what brand",r"what is (?:this|that)",
+          r"link(?: please)?",r"need this",r"i need",r"want this",r"i want",r"how much",r"price",
+          r"где.{0,25}(?:купить|взять|найти|заказать)",r"откуда.{0,25}(?:платье|юбка|брюки|джинсы|топ|жилет|рубашка|жакет|кофта|свитер|кардиган)",
+          r"что за.{0,20}(?:бренд|модель|платье|юбка|брюки|джинсы|топ|жилет|рубашка|жакет|кофта|свитер|кардиган)",
+          r"ссылк",r"хочу (?:такое|такую|этот|эту)",r"мне (?:надо|нужен|нужна|нужно)",r"сколько стоит"
+          ]
+          rx=re.compile("|".join(INTENT_PATTERNS),re.I)
+          months={m:i for i,m in enumerate(["January","February","March","April","May","June","July","August","September","October","November","December"],1)}
+
+          def meta(text,prop):
+              pats=[rf'<meta[^>]+property=["\']{re.escape(prop)}["\'][^>]+content=["\']([^"\']+)',rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']{re.escape(prop)}["\']']
+              for p in pats:
+                  m=re.search(p,text,re.I)
+                  if m:return html.unescape(m.group(1))
+          def parse_date(desc):
+              if not desc:return None
+              m=re.search(r'on ([A-Z][a-z]+) (\d{1,2}), (2026)',desc)
+              if not m:return None
+              try:return date(2026,months[m.group(1)],int(m.group(2)))
+              except:return None
+          def likes_comments(desc):
+              if not desc:return (None,None)
+              m=re.search(r'([\d.,]+K?) likes, ([\d.,]+K?) comments',desc)
+              return (m.group(1),m.group(2)) if m else (None,None)
+
+          session=requests.Session(impersonate="chrome146")
+          spec="hf-hub:Marqo/marqo-fashionCLIP"
+          model,_,preprocess=open_clip.create_model_and_transforms(spec)
+          tok=open_clip.get_tokenizer(spec)
+          gt=tok(GARMENTS); ft=tok(FABRICS)
+          with torch.no_grad():
+              gf=model.encode_text(gt,normalize=True); ff=model.encode_text(ft,normalize=True)
+
+          rows=[]
+          for author,urls in POSTS.items():
+              for url in urls:
+                  row={"author":author,"url":url}
+                  try:
+                      r=session.get(url,headers={"Accept":"text/html,application/xhtml+xml","Accept-Language":"en-US,en;q=0.9"})
+                      desc=meta(r.text,"og:description") or ""
+                      row["description"]=desc
+                      d=parse_date(desc); row["date"]=d.isoformat() if d else None
+                      likes,comc=likes_comments(desc); row["likes_meta"]=likes; row["comments_meta"]=comc
+                      img=meta(r.text,"og:image")
+                      row["image_found"]=bool(img)
+                      if img:
+                          ir=session.get(img,headers={"Referer":"https://www.instagram.com/","User-Agent":"Mozilla/5.0"})
+                          im=Image.open(BytesIO(ir.content)).convert("RGB")
+                          x=preprocess(im).unsqueeze(0)
+                          with torch.no_grad():
+                              imf=model.encode_image(x,normalize=True)
+                              gp=(100.0*imf@gf.T).softmax(dim=-1)[0].cpu().tolist()
+                              fp=(100.0*imf@ff.T).softmax(dim=-1)[0].cpu().tolist()
+                          gr=sorted(zip(GARMENTS,gp),key=lambda z:z[1],reverse=True)
+                          fr=sorted(zip(FABRICS,fp),key=lambda z:z[1],reverse=True)
+                          row["garment_top"]=[{"label":a,"score":round(float(b),4)} for a,b in gr[:3]]
+                          row["fabric_top"]=[{"label":a,"score":round(float(b),4)} for a,b in fr[:3]]
+                      # one page of comments for market-response signal
+                      try:
+                          shortcode=ig.extract_shortcode(url)
+                          media_id=ig.shortcode_to_media_id(shortcode)
+                          ss=ig.requests.Session()
+                          lsd,csrf=ig.get_page_tokens(shortcode,ss)
+                          payload=ig.fetch_comments_page(media_id,None,lsd,csrf,ss)
+                          comments,_=ig.parse_comments(payload)
+                          texts=[t for _,t in comments]
+                          hits=[t for t in texts if rx.search(t or "")]
+                          row["comments_sampled"]=len(texts)
+                          row["intent_hits"]=len(hits)
+                          row["intent_examples"]=hits[:4]
+                      except Exception as ce:
+                          row["comments_error"]=type(ce).__name__
+                  except Exception as e:
+                      row["error"]=repr(e)
+                  rows.append(row)
+                  print("ROW",json.dumps(row,ensure_ascii=False))
+
+          # only date-known current posts Sep 1-28
+          current=[r for r in rows if r.get("date") and "2026-09-" in r["date"] and r.get("garment_top")]
+          def period(d):
+              day=int(d[-2:])
+              if day>=22:return "Sep22-28"
+              if day>=15:return "Sep15-21"
+              if day>=8:return "Sep08-14"
+              return "Sep01-07"
+
+          def summarize(field):
+              stats={}
+              for r in current:
+                  lbl=r[field][0]["label"]
+                  p=period(r["date"])
+                  s=stats.setdefault(lbl,{"posts":0,"authors":set(),"periods":collections.Counter(),"intent":0,"sampled_comments":0,"examples":[]})
+                  s["posts"]+=1;s["authors"].add(r["author"]);s["periods"][p]+=1
+                  s["intent"]+=r.get("intent_hits",0);s["sampled_comments"]+=r.get("comments_sampled",0)
+                  for ex in r.get("intent_examples",[]): 
+                      if len(s["examples"])<5:s["examples"].append(ex)
+              out=[]
+              for lbl,s in stats.items():
+                  out.append({"label":lbl,"posts":s["posts"],"authors":len(s["authors"]),"periods":dict(s["periods"]),"intent_hits":s["intent"],"comments_sampled":s["sampled_comments"],"examples":s["examples"]})
+              out.sort(key=lambda z:(z["authors"],z["posts"],z["intent_hits"]),reverse=True)
+              return out
+
+          print("TOTAL_ROWS",len(rows))
+          print("CURRENT_SEP_ROWS",len(current))
+          print("GARMENT_SUMMARY",json.dumps(summarize("garment_top"),ensure_ascii=False))
+          print("FABRIC_SUMMARY",json.dumps(summarize("fabric_top"),ensure_ascii=False))
+          PY
