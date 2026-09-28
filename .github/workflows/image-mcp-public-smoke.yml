@@ -32,9 +32,10 @@ jobs:
       - name: Verify exact public npm package against authorized release source
         working-directory: packages/image-optimizer-mcp
         env:
-          LP_PUBLIC_PACKAGE_SPEC: '@layerporter/image-optimizer-mcp@0.1.0'
-          LP_RELEASE_SOURCE_SHA: '8ca11132b8cec267d1b88ff85232d58483353c63'
+          LP_PUBLIC_PACKAGE_SPEC: '@layerporter/image-optimizer-mcp@0.1.1'
+          LP_RELEASE_SOURCE_SHA: 'e7d6f7e2244da18ba9165efe61dd02a6a9882d11'
           LP_PUBLIC_PROOF_DIR: ${{ runner.temp }}/lp098-public-proof
+          LP_EXPECTED_PUBLIC_VERSION: '0.1.1'
         run: node scripts/verify-public-npm.mjs | tee "$RUNNER_TEMP/lp098-public-smoke.stdout.json"
 
       - name: Clean install public package and capture dependency security evidence
@@ -45,7 +46,7 @@ jobs:
           mkdir -p "$INSPECTOR_DIR"
           cd "$INSPECTOR_DIR"
           npm init -y >/dev/null
-          npm install --no-audit --no-fund @layerporter/image-optimizer-mcp@0.1.0
+          npm install --no-audit --no-fund @layerporter/image-optimizer-mcp@0.1.1
           npm ls --all --json > "$RUNNER_TEMP/lp098-dependency-tree.json"
 
           set +e

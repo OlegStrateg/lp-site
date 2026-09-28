@@ -12,6 +12,7 @@ const packageDir = path.resolve(here, '..');
 const repoRoot = path.resolve(packageDir, '../..');
 const publicSpec = process.env.LP_PUBLIC_PACKAGE_SPEC || '@layerporter/image-optimizer-mcp@0.1.0';
 const releaseSha = process.env.LP_RELEASE_SOURCE_SHA || '8ca11132b8cec267d1b88ff85232d58483353c63';
+const expectedPublicVersion = process.env.LP_EXPECTED_PUBLIC_VERSION || '0.1.0';
 const tmpRoot = await mkdtemp(path.join(os.tmpdir(), 'lp098-public-npm-'));
 const proofDir = process.env.LP_PUBLIC_PROOF_DIR
   ? path.resolve(process.env.LP_PUBLIC_PROOF_DIR)
@@ -89,7 +90,7 @@ try {
 
   const npmView = JSON.parse(run('npm', ['view', publicSpec, 'name', 'version', 'dist.integrity', 'dist.shasum', 'dist.tarball', '--json'], tmpRoot).stdout);
   assert.equal(npmView.name, '@layerporter/image-optimizer-mcp');
-  assert.equal(npmView.version, '0.1.0');
+  assert.equal(npmView.version, expectedPublicVersion);
 
   const publicPack = parsePackJson(run('npm', ['pack', publicSpec, '--json', '--pack-destination', publicPackDir], tmpRoot).stdout);
   const publicTarball = path.join(publicPackDir, publicPack.filename);
@@ -113,7 +114,7 @@ try {
   const installedPackageJson = JSON.parse(await readFile(path.join(installedPackageDir, 'package.json'), 'utf8'));
   const installedServerJson = JSON.parse(await readFile(path.join(installedPackageDir, 'server.json'), 'utf8'));
   assert.equal(installedPackageJson.name, '@layerporter/image-optimizer-mcp');
-  assert.equal(installedPackageJson.version, '0.1.0');
+  assert.equal(installedPackageJson.version, expectedPublicVersion);
   assert.equal(installedPackageJson.mcpName, 'com.layerporter/website-image-optimizer');
   assert.equal(installedServerJson.name, installedPackageJson.mcpName);
 
