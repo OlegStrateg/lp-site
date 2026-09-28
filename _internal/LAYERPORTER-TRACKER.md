@@ -47,6 +47,7 @@ Master tracker: GitHub Issue #153.
 | Управление | LP-117 — Growth OS 11/10 | #290 | PRODUCTION | каноническая стратегия SEO/Web → Extensions → MCP → AI/Paid |
 | Управление | Документы roadmap/tracker | #155 | REVIEW | новая каноническая roadmap и tracker в отдельной ветке |
 | C | LP-097 — Agent Reputation pilot | #229 | ACTIVE | 14-шаговый PostingBoard эксперимент: репутация → цитирование → внешний след |
+| C | LP-122 — MCP landing SEO/CRO | #301 | ACTIVE | EXP-001: problem-intent + install path + sitemap/llms discovery |
 | A | Sprint A0 — полный аудит сайта | #154 | ACTIVE | реестр URL + READY/IMPROVE/HOLD + Pareto |
 | A | Sprint A1 — техническая индексация | #156 | BLOCKED | ждёт завершения A0 |
 | A | Sprint A2 — денежные страницы | — | BACKLOG | Home + Extensions + 2 расширения |
@@ -59,6 +60,24 @@ Master tracker: GitHub Issue #153.
 | B | Sprint B5 — Media Core | — | BACKLOG | Remove Sound + Extract Audio |
 | B | Sprint B6 — Background Removal benchmark | — | BACKLOG | выбор решения по quality/cost/license |
 | B | Sprint B7 — следующие AI-функции | — | BACKLOG | только после подтверждения спроса |
+
+## EXP-001 — MCP landing problem-intent SEO/CRO
+
+Issue: #301.  
+Статус: `ACTIVE`.  
+URL: `/mcp/website-image-optimizer/`.  
+Стартовый baseline: GSC за последние 90 дней возвращает 0 строк по MCP landing / запросам image optimizer; это не доказательство отсутствия индексации.  
+Demand evidence: Google Suggest set #2562 — `optimize website images`, `compress images for website`, `responsive images`, `lcp image optimization`; SERP по `image optimizer mcp` уже содержит конкурентные MCP-серверы.
+
+Гипотеза: если основной MCP URL совместит точный MCP-intent с problem-intent, быстрым install path, примерами естественных запросов, честными capability/limit blocks и будет явно включён в sitemap/llms.txt, то вырастут discovery и доля пользователей, доходящих до установки.
+
+Основные метрики:
+- GSC impressions / clicks / query breadth для MCP URL;
+- позиции по MCP/problem-intent запросам;
+- npm download trend как вторичный downstream signal без заявления прямой атрибуции.
+
+Контрольные окна: 7 / 14 / 30 / 60 дней.  
+Guardrails: не создавать отдельные слабые страницы под вариации запроса; не обещать LCP/Core Web Vitals improvement; не раскрывать основной GitHub.
 
 ## Track C — Agent Reputation / Field Intelligence
 
@@ -181,6 +200,14 @@ Issue: #154.
 Текущий предварительный Pareto: `Crop → Resize → Compress/Convert → Text/Meme → Media Core → AI benchmark`.
 
 ## Журнал решений трекера
+
+### 2026-09-28
+
+- Запущен LP-122 / EXP-001: SEO/CRO оптимизация основной MCP landing.
+- URL owner остаётся один: `/mcp/website-image-optimizer/`; вариации problem-intent не дробятся на thin pages.
+- В scope входят intent copy, install path, SoftwareApplication schema, sitemap и llms.txt.
+- Зафиксирован pre-change GSC baseline: 0 строк за последние 90 дней по MCP landing / image optimizer query filter; отсутствие строк не трактуется как отсутствие индексации.
+- Основной GitHub запрещено раскрывать в публичной MCP landing/docs.
 
 ### 2026-09-23
 
