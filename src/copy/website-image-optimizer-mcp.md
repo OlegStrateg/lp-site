@@ -2,7 +2,20 @@
 
 **Page-aware image optimization for AI agents and developer workflows.**
 
-LayerPorter Website Image Optimizer is a Model Context Protocol server that analyzes caller-supplied page facts or a bounded set of images discovered from a public HTTP(S) page, optimizes selected images with deterministic safety guards, generates responsive variants, and returns before/after evidence.
+LayerPorter Website Image Optimizer is a public Model Context Protocol server that analyzes caller-supplied page facts or a bounded set of images discovered from a public HTTP(S) page, optimizes selected images with deterministic safety guards, generates responsive variants, and returns before/after evidence.
+
+Current public npm version: **0.1.2**.
+
+## Install
+
+```bash
+npx -y @layerporter/image-optimizer-mcp@latest
+```
+
+- npm: [@layerporter/image-optimizer-mcp](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
+- GitHub: [OlegStrateg/lp-site](https://github.com/OlegStrateg/lp-site)
+- Node.js: `>=22.12.0`
+- transport: `stdio`
 
 It is intentionally **not** a generic image editor, full browser crawler, CDN, hosted image service, or autonomous production writer.
 
@@ -67,7 +80,11 @@ WebP is the conservative automatic baseline for JPEG/PNG sources. AVIF is suppor
 
 ## Verified technical status
 
-The current candidate has automated coverage for image-core transforms, MCP tool contracts, SSRF boundaries, temporary artifact integrity, `resource_link → resources/read`, and live URL ingestion against a controlled public target. Release status is still **technical candidate** until public npm and Official MCP Registry publication are separately verified.
+Public npm version **0.1.2** has been externally verified through clean public installation, MCP initialize, an exact seven-tool `tools/list`, a real `optimize_image` call, and the temporary `resource_link → resources/read` artifact flow.
+
+The package also has automated coverage for image-core transforms, MCP tool contracts, SSRF boundaries, temporary artifact integrity, and controlled URL ingestion.
+
+Official MCP Registry publication is a separate distribution step and is **not** claimed as completed here.
 
 ## Benchmark status
 
@@ -75,6 +92,9 @@ Synthetic fixture numbers are engineering evidence only and must not be treated 
 
 ## Release status
 
-**Technical candidate.** Public npm/registry distribution and a hosted endpoint are not claimed on this page until they actually exist and pass their own release gate.
+- public npm: **0.1.2 — verified**
+- Official MCP Registry: **not yet claimed as published**
+- hosted endpoint: **not included**
+- production write/apply: **not included**
 
 For implementation details, tool inputs, privacy boundaries, compatibility and known limitations, see the [Website Image Optimizer MCP documentation](/docs/mcp/website-image-optimizer/).
