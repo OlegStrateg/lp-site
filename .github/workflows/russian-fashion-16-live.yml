@@ -1,0 +1,123 @@
+name: Russian fashion 16-post visual scan
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/russian-fashion-16-live.yml'
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Fetch pinned FashionCLIP
+        run: |
+          git clone https://github.com/marqo-ai/marqo-FashionCLIP.git fashionclip
+          git -C fashionclip checkout d0b3bdfb62fb4964537cb582e76d6ddab0be8450
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install torch torchvision pillow curl_cffi huggingface_hub open_clip_torch >/dev/null
+      - name: Scan direct Instagram posts
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re, html, json, collections
+          from io import BytesIO
+          from PIL import Image
+          from curl_cffi import requests
+          import torch, open_clip
+
+          POSTS = [
+            ("karina_nigay","https://www.instagram.com/karina_nigay/reel/Ddy8kvhuBi6/?hl=en"),
+            ("karina_nigay","https://www.instagram.com/karina_nigay/reel/DdyYPHluxNv/?hl=en"),
+            ("karina_nigay","https://www.instagram.com/karina_nigay/reel/Ddt0PvPOtrn/?hl=en"),
+            ("karina_nigay","https://www.instagram.com/karina_nigay/reel/DdtlF0XuZKG/?hl=en"),
+
+            ("lenaperminova","https://www.instagram.com/lenaperminova/p/DdwSWvtDAH6/?hl=en"),
+            ("lenaperminova","https://www.instagram.com/lenaperminova/p/Ddt5oSfDDM3/?hl=en"),
+            ("lenaperminova","https://www.instagram.com/lenaperminova/p/DdmLVtJDAyQ/?hl=en"),
+            ("lenaperminova","https://www.instagram.com/lenaperminova/p/Ddb2PIzEiOp/?hl=en"),
+
+            ("yanafisti","https://www.instagram.com/yanafisti/p/Ddl84YrjdQG/?hl=en"),
+            ("yanafisti","https://www.instagram.com/yanafisti/reel/DdjvNQxN8Hu/?hl=en"),
+            ("yanafisti","https://www.instagram.com/yanafisti/p/Dddm45wjerv/?hl=en"),
+            ("yanafisti","https://www.instagram.com/yanafisti/reel/DdQoTyONgQI/?hl=en"),
+
+            ("diana_korkunova","https://www.instagram.com/diana_korkunova/p/DdyVcUiDJmy/?hl=en"),
+            ("diana_korkunova","https://www.instagram.com/diana_korkunova/p/DdlqyO3jMcy/?hl=en"),
+            ("diana_korkunova","https://www.instagram.com/diana_korkunova/p/DdYlwaVDMcz/?hl=en"),
+            ("diana_korkunova","https://www.instagram.com/diana_korkunova/p/Dcl4MgmjHOe/?hl=en"),
+          ]
+
+          LABELS = [
+            "leather jacket","bomber jacket","cropped jacket","oversized blazer","fitted blazer",
+            "trench coat","long wool coat","fur coat","shearling jacket","cardigan","knit sweater",
+            "white shirt","striped shirt","t-shirt","bodysuit","corset top","fitted top","oversized top",
+            "mini dress","midi dress","maxi dress","mini skirt","midi skirt","maxi skirt",
+            "wide leg jeans","straight jeans","wide leg trousers","straight trousers","leggings","shorts",
+            "tall boots","ankle boots","loafers","ballet flats","sneakers","heels",
+            "oversized bag","shoulder bag","small handbag","belt","scarf"
+          ]
+
+          def meta(text, prop):
+              pats=[
+                  rf'<meta[^>]+property=["\']{re.escape(prop)}["\'][^>]+content=["\']([^"\']+)',
+                  rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']{re.escape(prop)}["\']'
+              ]
+              for p in pats:
+                  m=re.search(p,text,re.I)
+                  if m: return html.unescape(m.group(1))
+              return None
+
+          s=requests.Session(impersonate="chrome146")
+          spec="hf-hub:Marqo/marqo-fashionCLIP"
+          model,_,preprocess=open_clip.create_model_and_transforms(spec)
+          tokenizer=open_clip.get_tokenizer(spec)
+          tokens=tokenizer(LABELS)
+          with torch.no_grad():
+              text_features=model.encode_text(tokens,normalize=True)
+
+          out=[]
+          for author,url in POSTS:
+              row={"author":author,"url":url}
+              try:
+                  r=s.get(url,headers={"Accept":"text/html,application/xhtml+xml","Accept-Language":"en-US,en;q=0.9"})
+                  row["status"]=r.status_code
+                  row["description"]=meta(r.text,"og:description")
+                  img_url=meta(r.text,"og:image")
+                  row["image_found"]=bool(img_url)
+                  if img_url:
+                      ir=s.get(img_url,headers={"Referer":"https://www.instagram.com/","User-Agent":"Mozilla/5.0"})
+                      im=Image.open(BytesIO(ir.content)).convert("RGB")
+                      image=preprocess(im).unsqueeze(0)
+                      with torch.no_grad():
+                          image_features=model.encode_image(image,normalize=True)
+                          probs=(100.0*image_features@text_features.T).softmax(dim=-1)[0].cpu().tolist()
+                      ranked=sorted(zip(LABELS,probs),key=lambda x:x[1],reverse=True)
+                      row["labels"]=[{"label":a,"score":round(float(b),4)} for a,b in ranked[:7]]
+              except Exception as e:
+                  row["error"]=repr(e)
+              out.append(row)
+              print("RESULT",json.dumps(row,ensure_ascii=False))
+
+          label_authors=collections.defaultdict(set)
+          label_posts=collections.Counter()
+          for row in out:
+              for x in (row.get("labels") or [])[:3]:
+                  label_posts[x["label"]]+=1
+                  label_authors[x["label"]].add(row["author"])
+          candidates=[]
+          for label,n in label_posts.most_common():
+              authors=sorted(label_authors[label])
+              if len(authors)>=2:
+                  candidates.append({"label":label,"posts_top3":n,"independent_authors":len(authors),"authors":authors})
+          print("CROSS_AUTHOR_CANDIDATES",json.dumps(candidates,ensure_ascii=False))
+          print("USABLE_POSTS",sum(1 for x in out if x.get("labels")),"OF",len(out))
+          PY
