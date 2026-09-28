@@ -1,0 +1,80 @@
+name: LP-122 MCP SEO Production Smoke
+
+on:
+  push:
+    branches:
+      - verify/LP-122-mcp-production
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify live MCP SEO/CRO landing
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://layerporter.com/mcp/website-image-optimizer/?verify=${GITHUB_SHA}"
+          curl -fsSL --max-time 30 -A "Mozilla/5.0" "$URL" -o /tmp/mcp.html
+
+          grep -Fq '<title>Website Image Optimizer MCP for AI Agents | LayerPorter</title>' /tmp/mcp.html
+          grep -Fq 'Optimize website images with an MCP server for AI agents.' /tmp/mcp.html
+          grep -Fq 'Optimize website images with AI agents' /tmp/mcp.html
+          grep -Fq 'Install Website Image Optimizer MCP' /tmp/mcp.html
+          grep -Fq '@layerporter/image-optimizer-mcp@latest' /tmp/mcp.html
+          grep -Fq 'Try these prompts' /tmp/mcp.html
+          grep -Fq 'Compress and resize website images safely' /tmp/mcp.html
+          grep -Fq 'Generate responsive image variants' /tmp/mcp.html
+          grep -Fq 'Frequently asked questions' /tmp/mcp.html
+          grep -Fq '"softwareVersion":"0.1.2"' /tmp/mcp.html
+          grep -Fq '"price":"0"' /tmp/mcp.html
+          grep -Fq '"isAccessibleForFree":true' /tmp/mcp.html
+          grep -Fq 'rel="canonical" href="https://layerporter.com/mcp/website-image-optimizer/"' /tmp/mcp.html
+          grep -Fq 'name="robots" content="index, follow, max-image-preview:large, max-snippet:-1"' /tmp/mcp.html
+
+          if grep -Eq 'github\.com/OlegStrateg|OlegStrateg/lp-site|layerporter-site' /tmp/mcp.html; then
+            echo "Private/canonical GitHub identity leaked on MCP landing"
+            exit 1
+          fi
+
+          echo "MCP landing SEO/CRO LIVE"
+
+      - name: Verify live MCP docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://layerporter.com/docs/mcp/website-image-optimizer/?verify=${GITHUB_SHA}"
+          curl -fsSL --max-time 30 -A "Mozilla/5.0" "$URL" -o /tmp/mcp-docs.html
+
+          grep -Fq 'Website Image Optimizer MCP Docs — Install, Tools &amp; Limits | LayerPorter' /tmp/mcp-docs.html
+          grep -Fq '@layerporter/image-optimizer-mcp@latest' /tmp/mcp-docs.html
+
+          if grep -Eq 'github\.com/OlegStrateg|OlegStrateg/lp-site|layerporter-site' /tmp/mcp-docs.html; then
+            echo "Private/canonical GitHub identity leaked in MCP docs"
+            exit 1
+          fi
+
+          echo "MCP docs LIVE"
+
+      - name: Verify sitemap and llms discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 30 -A "Mozilla/5.0" "https://layerporter.com/sitemap.xml?verify=${GITHUB_SHA}" -o /tmp/sitemap.xml
+          grep -Fq '<loc>https://layerporter.com/mcp/website-image-optimizer/</loc>' /tmp/sitemap.xml
+          grep -Fq '<loc>https://layerporter.com/docs/mcp/website-image-optimizer/</loc>' /tmp/sitemap.xml
+
+          curl -fsSL --max-time 30 -A "Mozilla/5.0" "https://layerporter.com/llms.txt?verify=${GITHUB_SHA}" -o /tmp/llms.txt
+          grep -Fq '## MCP / Agents' /tmp/llms.txt
+          grep -Fq 'https://layerporter.com/mcp/website-image-optimizer/' /tmp/llms.txt
+          grep -Fq 'https://layerporter.com/docs/mcp/website-image-optimizer/' /tmp/llms.txt
+
+          if grep -Eq 'github\.com/OlegStrateg|OlegStrateg/lp-site|layerporter-site' /tmp/llms.txt; then
+            echo "Private/canonical GitHub identity leaked in llms.txt"
+            exit 1
+          fi
+
+          echo "Sitemap + llms discovery LIVE"
