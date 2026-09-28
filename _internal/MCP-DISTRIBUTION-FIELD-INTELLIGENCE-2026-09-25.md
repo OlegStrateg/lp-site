@@ -466,3 +466,57 @@ STOP/RETEST канал, если после достаточной выборк�
 `широкий problem demand → доказанный результат → frictionless MCP activation → автоматический правильный tool selection → repeat → Remote LayerPorter`.
 
 Это соответствует общей Growth OS и даёт общий рост Web / Extensions / MCP / future AI, вместо отдельного мини-проекта «продвижение MCP».
+
+
+---
+
+## 9. Решение владельца и baseline эксперимента — 2026-09-28
+
+### Решение
+
+Платёжный контур, тарифы, лимиты и принудительный account gate **не внедрять до получения данных бесплатного использования**.
+
+Текущий эксперимент проверяет только:
+
+`DISCOVERY → INSTALL/CONNECT → FIRST SUCCESS → REPEAT`.
+
+Монетизация возвращается в работу только после фактического evidence по использованию и повторяемости.
+
+### Что запрещено в этом эксперименте
+
+- не добавлять скрытую телеметрию в локальный stdio MCP;
+- не строить billing/account infrastructure;
+- не ухудшать бесплатный first-success ради будущей монетизации;
+- не считать stars, каталог-листинги или просмотры достаточным доказательством product demand.
+
+### Фактический baseline на 2026-09-28
+
+Проверено внешним read-back:
+
+- npm latest public version: `0.1.0`;
+- npm weekly downloads: `0` на момент проверки;
+- публичный npm README всё ещё содержит устаревший pre-publication status и старый repository URL;
+- Search Console, последние 90 дней: для `/mcp/website-image-optimizer/` строк нет;
+- related image/WebP queries в доступном GSC окне: 4 единичных impressions на испанской Picture Converter странице, без clicks; это не MCP traffic и не evidence спроса на MCP.
+
+Отсутствие GSC rows **не означает**, что MCP page не индексируется. Это означает только отсутствие возвращённых Search Analytics rows в проверенном диапазоне.
+
+### Три независимых проверки результата
+
+1. **Release truth:** внешний `npm view` + clean install exact public version.
+2. **Technical activation:** реальный MCP client → initialize → `tools/list` → successful tool call → `resource_link` → `resources/read` → full decode.
+3. **Acquisition evidence:** GSC / referral source / npm download trend / directory read-back; сравнение до/после конкретных distribution actions.
+
+### Release blocker
+
+`0.1.1` остаётся подготовленным и проверенным кандидатом, но штатный GitHub Actions release блокируется repository variable `LP_MCP_RELEASE_ENABLED`: в exact failed log значение было пустым и gate завершил job до публикации.
+
+Release candidate не изменять маркетинговыми правками: это изменит проверенный SHA и потребует повторной security/release verification.
+
+### Следующее действие после разблокировки release switch
+
+1. штатно опубликовать только npm `0.1.1`;
+2. внешний read-back exact version;
+3. clean public install + E2E;
+4. только после VERIFIED — отдельная activation/distribution итерация;
+5. Official MCP Registry остаётся отдельным owner decision.
