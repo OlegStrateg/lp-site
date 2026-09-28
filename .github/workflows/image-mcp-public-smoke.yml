@@ -32,10 +32,10 @@ jobs:
       - name: Verify exact public npm package against authorized release source
         working-directory: packages/image-optimizer-mcp
         env:
-          LP_PUBLIC_PACKAGE_SPEC: '@layerporter/image-optimizer-mcp@0.1.1'
-          LP_RELEASE_SOURCE_SHA: 'e7d6f7e2244da18ba9165efe61dd02a6a9882d11'
+          LP_PUBLIC_PACKAGE_SPEC: '@layerporter/image-optimizer-mcp@0.1.2'
+          LP_RELEASE_SOURCE_SHA: '3cbfeeac535cc67d7b8ba52271c626cfa4ba78b7'
           LP_PUBLIC_PROOF_DIR: ${{ runner.temp }}/lp098-public-proof
-          LP_EXPECTED_PUBLIC_VERSION: '0.1.1'
+          LP_EXPECTED_PUBLIC_VERSION: '0.1.2'
         run: node scripts/verify-public-npm.mjs | tee "$RUNNER_TEMP/lp098-public-smoke.stdout.json"
 
       - name: Clean install public package and capture dependency security evidence
