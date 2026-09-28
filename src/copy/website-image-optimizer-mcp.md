@@ -13,7 +13,6 @@ npx -y @layerporter/image-optimizer-mcp@latest
 ```
 
 - npm: [@layerporter/image-optimizer-mcp](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
-- GitHub: [OlegStrateg/lp-site](https://github.com/OlegStrateg/lp-site)
 - Node.js: `>=22.12.0`
 - transport: `stdio`
 
