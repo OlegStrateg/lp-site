@@ -15,7 +15,6 @@ npx -y @layerporter/image-optimizer-mcp@latest
 ```
 
 - npm: [@layerporter/image-optimizer-mcp](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
-- repository: [OlegStrateg/lp-site](https://github.com/OlegStrateg/lp-site)
 
 ## Runtime
 
