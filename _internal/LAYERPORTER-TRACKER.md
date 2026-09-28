@@ -45,6 +45,7 @@ Master tracker: GitHub Issue #153.
 |---|---|---:|---|---|
 | Управление | Каноническая roadmap + tracker | #153 | ACTIVE | master tracker и execution-roadmap |
 | Управление | LP-117 — Growth OS 11/10 | #290 | PRODUCTION | каноническая стратегия SEO/Web → Extensions → MCP → AI/Paid |
+| C | LP-118 — MCP distribution / бесплатный activation baseline | #294 | REVIEW | Field Intelligence, Pareto-каналы, baseline npm/GSC; monetization HOLD до usage evidence |
 | Управление | Документы roadmap/tracker | #155 | REVIEW | новая каноническая roadmap и tracker в отдельной ветке |
 | C | LP-097 — Agent Reputation pilot | #229 | ACTIVE | 14-шаговый PostingBoard эксперимент: репутация → цитирование → внешний след |
 | A | Sprint A0 — полный аудит сайта | #154 | ACTIVE | реестр URL + READY/IMPROVE/HOLD + Pareto |
@@ -181,6 +182,14 @@ Issue: #154.
 Текущий предварительный Pareto: `Crop → Resize → Compress/Convert → Text/Meme → Media Core → AI benchmark`.
 
 ## Журнал решений трекера
+
+### 2026-09-28
+
+- LP-118 / #294: зафиксирован Field Intelligence по MCP distribution и бесплатный baseline.
+- Решение владельца: платёжку, тарифы, лимиты и account gate не внедрять до фактических данных бесплатного использования.
+- Эксперимент: `discovery → install/connect → first success → repeat`; скрытую телеметрию в локальный stdio MCP не добавлять.
+- На baseline 2026-09-28 публичен npm 0.1.0; 0.1.1 остаётся release candidate и блокируется release-switch `LP_MCP_RELEASE_ENABLED`.
+- Draft PR #295. Official MCP Registry остаётся отдельным owner decision.
 
 ### 2026-09-23
 
