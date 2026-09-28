@@ -1,37 +1,96 @@
 # Website Image Optimizer MCP
 
-**Page-aware image optimization for AI agents and developer workflows.**
+**Optimize website images with AI agents: analyze page images, compress and resize safely, generate responsive variants, and verify before/after results.**
 
-LayerPorter Website Image Optimizer is a public Model Context Protocol server that analyzes caller-supplied page facts or a bounded set of images discovered from a public HTTP(S) page, optimizes selected images with deterministic safety guards, generates responsive variants, and returns before/after evidence.
+LayerPorter Website Image Optimizer is a public Model Context Protocol server for website image optimization. It gives MCP-compatible AI agents bounded tools for inspecting image usage, optimizing selected images, generating responsive variants, and comparing results before anything is applied to production.
 
-Current public npm version: **0.1.2**.
+Current public npm version: **0.1.2 — verified**. No account or API key is required for the local stdio package.
 
-## Install
+## Install Website Image Optimizer MCP
 
 ```bash
 npx -y @layerporter/image-optimizer-mcp@latest
 ```
 
-- npm: [@layerporter/image-optimizer-mcp](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
+[Open the npm package →](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
+
 - Node.js: `>=22.12.0`
 - transport: `stdio`
+- accepted inputs: JPEG, PNG, WebP
+- available outputs: JPEG, PNG, WebP, AVIF
 
-It is intentionally **not** a generic image editor, full browser crawler, CDN, hosted image service, or autonomous production writer.
+### MCP client configuration
 
-## What it solves
+For MCP clients that use the common JSON stdio configuration shape:
 
-For browser-aware workflows, the caller can supply normalized page context including intrinsic/rendered dimensions, DPR, `srcset`, `sizes`, loading priority and confirmed LCP evidence. For a faster URL-only workflow, the MCP server can inspect static HTML and fetch a bounded set of public image URLs through a dedicated SSRF-protected read-only network boundary.
+```json
+{
+  "mcpServers": {
+    "layerporter-image-optimizer": {
+      "command": "npx",
+      "args": ["-y", "@layerporter/image-optimizer-mcp@latest"]
+    }
+  }
+}
+```
 
-URL mode is deliberately narrower than browser mode: it does not claim rendered size, `currentSrc`, LCP, CSS-background discovery, or JavaScript-driven lazy content. It recompresses URL-discovered images at their original dimensions rather than inferring a resize from HTML attributes.
+Client configuration formats vary. If your client uses a different format, use the same `npx` command and package arguments.
+
+## Try these prompts
+
+You do not need to call tool names manually. A compatible agent can choose the appropriate tool from the request.
+
+- “Analyze the images on this public page and show me which files can be optimized.”
+- “Optimize this image for web at a maximum width of 1600px without accepting a larger file.”
+- “Generate responsive image variants at 480, 768, 1200 and 1600px without upscaling.”
+- “Compare the original and optimized image and show the byte savings and any guard failures.”
+
+## Optimize website images with AI agents
+
+The MCP server separates analysis from modification. An agent can inspect normalized page-image facts or a bounded set of static `<img>` resources from a public HTTP(S) page, then optimize only the images selected for processing.
+
+For browser-aware workflows, callers can provide intrinsic and rendered dimensions, DPR, `srcset`, `sizes`, loading priority and confirmed LCP evidence. For URL-only workflows, the server uses a narrower read-only static HTML mode.
 
 The result is a deterministic chain:
 
 `PAGE OR URL INPUT → IMAGE FACTS → POLICY → VERIFIED CANDIDATE → TEMPORARY RESOURCE → BEFORE/AFTER EVIDENCE`
 
-## Seven bounded MCP tools
+## Compress and resize website images safely
+
+`optimize_image` and the bounded batch workflows can resize and recompress supported images. The default policy prevents upscaling and uses `neverIncreaseBytes`, so a candidate that is larger than the source is rejected instead of being presented as an improvement.
+
+That is a byte-size guard, not a universal visual-quality or SEO guarantee. The server also preserves alpha where applicable, normalizes EXIF orientation, retains ICC profile information when supported by the pipeline, and enforces decoded-pixel limits.
+
+## Generate responsive image variants
+
+`generate_responsive_variants` creates up to six requested width variants without upscaling. This is useful when an agent needs multiple image sizes for responsive delivery.
+
+The tool generates the image variants themselves. It does **not** claim to generate final `srcset` or `<picture>` markup for your application.
+
+## Analyze images from a website URL
+
+`analyze_url_images` can fetch a public HTTP(S) page through an SSRF-protected read-only network boundary and inspect a bounded set of static `<img>` sources.
+
+`optimize_url_images` can fetch those discovered images and recompress accepted candidates at their original dimensions. It never writes the result back to the website.
+
+URL mode is intentionally not a browser crawler. It does not claim:
+
+- browser-rendered dimensions;
+- browser-selected `currentSrc`;
+- live LCP measurement;
+- CSS background-image discovery;
+- JavaScript-driven lazy content.
+
+## Why use a specialized image optimization MCP?
+
+A generic shell or image library can transform files, but an AI agent also needs a predictable contract around what may be read, what may be changed, what counts as an accepted result, and how the result is returned.
+
+LayerPorter adds bounded tool contracts, deterministic image guards, before/after evidence, temporary MCP resources, and a deliberately read-only website boundary. The current server does not expose arbitrary shell execution or autonomous production writes.
+
+## Seven MCP tools
 
 ### `analyze_page_images`
-Analyzes an already-normalized page snapshot and returns deterministic image findings.
+Analyzes normalized page-image facts supplied by the caller and returns deterministic findings.
 
 ### `optimize_image`
 Optimizes one caller-provided image with bounded resize and format policy. Accepted output is exposed as a temporary MCP resource.
@@ -46,14 +105,14 @@ Compares original and candidate versions for byte savings and guard regressions.
 Processes an already-selected bounded batch of SAFE image items. Maximum: 20 images per call.
 
 ### `analyze_url_images`
-Safely fetches a public HTTP(S) page and inspects a bounded set of static `<img>` sources. It is a fast HTTP mode, not a browser crawl.
+Safely fetches a public HTTP(S) page and inspects a bounded set of static `<img>` sources.
 
 ### `optimize_url_images`
-Safely fetches a public HTTP(S) page and recompresses a bounded set of discovered images at their original dimensions. Accepted outputs are exposed as temporary MCP resources; the tool never writes back to the website.
+Safely fetches a public HTTP(S) page and recompresses a bounded set of discovered images at their original dimensions.
 
 ## Artifact delivery
 
-Accepted optimized binaries are not embedded in the initial tool text. The result contains an MCP `resource_link`; a compatible client can then call `resources/read` to retrieve the resource blob and verify its MIME type, byte length and SHA-256 metadata.
+Accepted optimized binaries are not embedded in the initial tool text. The result contains an MCP `resource_link`; a compatible client can call `resources/read` to retrieve the resource blob and verify MIME type, byte length and SHA-256 metadata.
 
 Resources are temporary and process-local, not permanent public download URLs.
 
@@ -63,31 +122,49 @@ The current stdio server:
 
 - never writes to a website or production environment;
 - restricts network access to the two URL tools;
-- allows only public HTTP(S) targets and blocks unsafe schemes, URL credentials, localhost/private/link-local/reserved addresses, unsafe DNS answers and redirects to prohibited targets;
+- blocks unsafe schemes, URL credentials, localhost/private/link-local/reserved addresses, unsafe DNS answers and redirects to prohibited targets;
 - bounds page bytes, per-image bytes, accepted total image bytes, redirects, timeouts, image count and concurrency;
 - stores accepted artifacts only in an isolated temporary store;
-- does not execute shell commands or perform arbitrary filesystem mutation;
+- does not execute arbitrary shell commands or perform arbitrary filesystem mutation;
 - does not modify checkout, forms, analytics, authentication, backend code, pricing, positioning, or business logic.
 
-Image-core protections include no-upscale by default, `never-increase-bytes`, alpha preservation, EXIF orientation normalization, ICC profile retention, decoded-pixel limits, and allowlisted JPEG/PNG/WebP/AVIF output formats.
-
-`ACCEPT` means the candidate passed the implemented deterministic guards. It is not a guarantee of visual identity, SEO improvement, or Core Web Vitals improvement.
+`ACCEPT` means the candidate passed the implemented deterministic guards. It is not a guarantee of visual identity, SEO improvement, LCP improvement, or Core Web Vitals improvement.
 
 ## Format policy
 
-WebP is the conservative automatic baseline for JPEG/PNG sources. AVIF is supported explicitly, but is not automatically selected solely because it can produce a smaller file.
+WebP is the conservative automatic baseline for JPEG/PNG sources. AVIF is available as an output format when explicitly requested, but is not automatically selected solely because it can produce a smaller file.
+
+HEIF/AVIF/TIFF/GIF/SVG and unknown formats are blocked as inputs by the current hardened input policy.
 
 ## Verified technical status
 
-Public npm version **0.1.2** has been externally verified through clean public installation, MCP initialize, an exact seven-tool `tools/list`, a real `optimize_image` call, and the temporary `resource_link → resources/read` artifact flow.
+Public npm version **0.1.2** has been externally verified through a clean public installation, MCP initialization, an exact seven-tool `tools/list`, a real `optimize_image` call, and the temporary `resource_link → resources/read` artifact flow.
 
 The package also has automated coverage for image-core transforms, MCP tool contracts, SSRF boundaries, temporary artifact integrity, and controlled URL ingestion.
 
 Official MCP Registry publication is a separate distribution step and is **not** claimed as completed here.
 
-## Benchmark status
+## Frequently asked questions
 
-Synthetic fixture numbers are engineering evidence only and must not be treated as universal savings or quality claims.
+### How do I optimize images for a website with AI?
+
+Install the MCP package in a compatible stdio client, then ask the agent to analyze page-image facts, inspect a supported public URL, or optimize selected image inputs. The agent can use the registered image tools and return accepted artifacts with before/after evidence.
+
+### Can it compress website images without increasing file size?
+
+The default `neverIncreaseBytes` guard rejects an optimized candidate when it is larger than the source. That protects against a larger accepted output, but it does not guarantee a particular visual-quality score or percentage saving.
+
+### Does it optimize images directly on my live website?
+
+No. The current MCP is read-only with respect to websites. It can analyze public static page images and return temporary optimized artifacts, but it does not upload or apply changes to production.
+
+### Does it generate responsive images?
+
+Yes. It can generate up to six requested responsive width variants without upscaling. It currently returns the image variants; it does not claim to generate final application-specific `srcset` markup.
+
+### Does it improve LCP or Core Web Vitals automatically?
+
+No automatic guarantee is made. Optimizing oversized image assets can be one part of performance work, but URL mode does not measure live browser LCP and the package does not claim universal Core Web Vitals improvement.
 
 ## Release status
 
@@ -96,4 +173,4 @@ Synthetic fixture numbers are engineering evidence only and must not be treated 
 - hosted endpoint: **not included**
 - production write/apply: **not included**
 
-For implementation details, tool inputs, privacy boundaries, compatibility and known limitations, see the [Website Image Optimizer MCP documentation](/docs/mcp/website-image-optimizer/).
+For exact inputs, resource behavior, security boundaries and limitations, see the [Website Image Optimizer MCP documentation](/docs/mcp/website-image-optimizer/).
