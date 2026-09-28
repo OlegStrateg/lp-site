@@ -9,12 +9,28 @@ const schema = {
   '@type': 'SoftwareApplication',
   name: 'LayerPorter Website Image Optimizer MCP',
   applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'Model Context Protocol server',
   operatingSystem: 'Node.js',
   softwareVersion: '0.1.2',
   softwareRequirements: 'Node.js >=22.12.0',
   downloadUrl: 'https://www.npmjs.com/package/@layerporter/image-optimizer-mcp',
+  softwareHelp: `${site}/docs/mcp/website-image-optimizer/`,
+  isAccessibleForFree: true,
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+  },
+  featureList: [
+    'Analyze page images',
+    'Optimize and resize images',
+    'Generate responsive image variants',
+    'Compare before and after image versions',
+    'Analyze bounded public URL image sources',
+  ],
   url: canonical,
-  description: 'Page-aware image optimization MCP server with deterministic safety guards, responsive variants, and before/after evidence.',
+  description: 'Optimize website images with an MCP server for AI agents: analyze page images, compress and resize safely, generate responsive variants, and verify results.',
   isPartOf: {
     '@type': 'WebSite',
     name: 'LayerPorter',
@@ -24,8 +40,8 @@ const schema = {
 ---
 
 <PageLayout
-  title="Website Image Optimizer MCP — LayerPorter"
-  description="Page-aware image optimization MCP server for AI agents: analyze image usage, optimize safely, generate responsive variants, and verify before/after results."
+  title="Website Image Optimizer MCP for AI Agents | LayerPorter"
+  description="Optimize website images with an MCP server for AI agents. Analyze page images, compress and resize safely, generate responsive variants, and verify results."
   canonicalPath="/mcp/website-image-optimizer/"
   ogImage={`${site}/og/home.png`}
 >

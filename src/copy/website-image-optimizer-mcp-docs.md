@@ -16,6 +16,21 @@ npx -y @layerporter/image-optimizer-mcp@latest
 
 - npm: [@layerporter/image-optimizer-mcp](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
 
+For MCP clients that use the common JSON stdio configuration shape:
+
+```json
+{
+  "mcpServers": {
+    "layerporter-image-optimizer": {
+      "command": "npx",
+      "args": ["-y", "@layerporter/image-optimizer-mcp@latest"]
+    }
+  }
+}
+```
+
+Client configuration formats vary. If a client uses another syntax, keep the same `npx` command and package arguments.
+
 ## Runtime
 
 - Node.js: `>=22.12.0`
@@ -40,7 +55,7 @@ Browser-aware facts and URL fast mode are intentionally separate. URL mode does 
 
 ## Tools
 
-The current stdio server registers seven tools.
+The current stdio server registers seven tools. The product page explains the problem-first workflows; this page documents the exact technical boundaries.
 
 ### `analyze_page_images`
 Analyzes normalized page-image facts supplied by the caller. Browser-only facts such as rendered size or confirmed LCP are trusted only when explicitly supplied by the collector.
