@@ -1,8 +1,8 @@
 # LayerPorter
 
-> LayerPorter is a set of free, single-purpose file converters that run
-> entirely in the browser. Every conversion happens on the user's own
-> device — no file is ever uploaded to a server, no account is required.
+> LayerPorter provides browser-based web graphics tools and agent-facing image optimization capabilities.
+> Browser conversion tools run on the user's device, while the Website Image Optimizer MCP runs locally
+> as a stdio package for MCP-compatible AI agents.
 
 ## Tools
 
@@ -21,3 +21,9 @@
 - [What Is a PSD File?](https://layerporter.com/formats/psd/): What the PSD format actually stores and when you need it.
 - [Flat Image vs. Editable Layers](https://layerporter.com/guides/flat-image-vs-editable-layers/): What converting a flat image to PSD can and can't give you back.
 - [Exporting Lovable, v0, or Bolt Designs to PSD or PowerPoint](https://layerporter.com/guides/export-from-ai-builders/): The actual workaround for getting a design file out of an AI app builder.
+
+
+## MCP / Agents
+
+- [Website Image Optimizer MCP](https://layerporter.com/mcp/website-image-optimizer/): Analyze website image usage, optimize and resize supported images, generate responsive variants, and verify before/after results through Model Context Protocol.
+- [Website Image Optimizer MCP Documentation](https://layerporter.com/docs/mcp/website-image-optimizer/): Installation, seven tool contracts, supported formats, temporary resources, security boundaries, URL-mode limitations, and release status.
