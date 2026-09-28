@@ -1,0 +1,43 @@
+name: LP-120 MCP Production Smoke
+
+on:
+  push:
+    branches:
+      - verify/LP-120-mcp-production
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify live MCP product page
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://layerporter.com/mcp/website-image-optimizer/?verify=${GITHUB_SHA}"
+          curl -fsSL --max-time 30 -A "Mozilla/5.0" "$URL" -o /tmp/mcp.html
+          grep -Fq '0.1.2' /tmp/mcp.html
+          grep -Fq '@layerporter/image-optimizer-mcp@latest' /tmp/mcp.html
+          grep -Fq '"softwareVersion":"0.1.2"' /tmp/mcp.html
+          if grep -Fiq 'Technical candidate.' /tmp/mcp.html; then
+            echo "stale technical candidate copy found"
+            exit 1
+          fi
+          echo "MCP product page LIVE"
+      - name: Verify live MCP docs page
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://layerporter.com/docs/mcp/website-image-optimizer/?verify=${GITHUB_SHA}"
+          curl -fsSL --max-time 30 -A "Mozilla/5.0" "$URL" -o /tmp/mcp-docs.html
+          grep -Fq '0.1.2' /tmp/mcp-docs.html
+          grep -Fq '@layerporter/image-optimizer-mcp@latest' /tmp/mcp-docs.html
+          grep -Fq 'Official MCP Registry publication' /tmp/mcp-docs.html
+          if grep -Fiq 'Current status: <strong>technical candidate</strong>' /tmp/mcp-docs.html; then
+            echo "stale technical candidate docs found"
+            exit 1
+          fi
+          echo "MCP docs page LIVE"
