@@ -3,7 +3,7 @@ name: LP-079 Image MCP Release
 on:
   push:
     branches:
-      - release/LP-103-security-0.1.1
+      - release/LP-119-docs-0.1.2
   workflow_dispatch:
     inputs:
       mode:
@@ -18,7 +18,7 @@ on:
       version:
         description: Expected release version
         required: true
-        default: 0.1.1
+        default: 0.1.2
         type: string
 
 permissions:
@@ -41,9 +41,9 @@ jobs:
       - name: Verify release remains explicitly enabled
         run: |
           MODE="${{ github.event_name == 'push' && 'stage-npm' || inputs.mode }}"
-          OWNER_AUTHORIZED_PUSH="${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[owner-authorized-npm-0.1.1]') }}"
+          OWNER_AUTHORIZED_PUSH="${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[owner-authorized-npm-0.1.2]') }}"
           if [ "$MODE" != "dry-run" ] && [ "${{ vars.LP_MCP_RELEASE_ENABLED }}" != "true" ] && [ "$OWNER_AUTHORIZED_PUSH" != "true" ]; then
-            echo "Release blocked: enable LP_MCP_RELEASE_ENABLED or use the one-shot owner-authorized 0.1.1 release marker"
+            echo "Release blocked: enable LP_MCP_RELEASE_ENABLED or use the one-shot owner-authorized 0.1.2 release marker"
             exit 1
           fi
       - name: Verify candidate metadata contract
@@ -57,7 +57,7 @@ jobs:
         run: |
           PKG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/package.json').version")
           REG_VERSION=$(node -p "require('./packages/image-optimizer-mcp/server.json').version")
-          EXPECTED_VERSION="${{ github.event_name == 'push' && '0.1.1' || inputs.version }}"
+          EXPECTED_VERSION="${{ github.event_name == 'push' && '0.1.2' || inputs.version }}"
           test "$PKG_VERSION" = "$EXPECTED_VERSION"
           test "$REG_VERSION" = "$EXPECTED_VERSION"
       - name: Require existing npm package for staged or Registry release
@@ -123,7 +123,7 @@ jobs:
           ./mcp-publisher validate server.json
 
   stage-npm:
-    if: (github.event_name == 'push' || inputs.mode == 'stage-npm') && (vars.LP_MCP_RELEASE_ENABLED == 'true' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[owner-authorized-npm-0.1.1]')))
+    if: (github.event_name == 'push' || inputs.mode == 'stage-npm') && (vars.LP_MCP_RELEASE_ENABLED == 'true' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[owner-authorized-npm-0.1.2]')))
     needs: validate
     runs-on: ubuntu-24.04
     environment: mcp-release

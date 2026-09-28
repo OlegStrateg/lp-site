@@ -1,7 +1,7 @@
 {
   "name": "@layerporter/image-optimizer-mcp",
-  "version": "0.1.1",
-  "description": "Page-aware MCP server for deterministic website image analysis and safe optimization.",
+  "version": "0.1.2",
+  "description": "MCP server for website image analysis, safe compression, resizing, responsive variants, and WebP/AVIF output.",
   "mcpName": "com.layerporter/website-image-optimizer",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
