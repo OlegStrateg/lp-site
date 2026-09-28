@@ -1,0 +1,124 @@
+name: Russian fashion sample live lab
+
+on:
+  push:
+    branches:
+      - lab/vendor-trend-tools-smoke
+    paths:
+      - '.github/workflows/russian-fashion-sample-live.yml'
+  workflow_dispatch:
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Fetch pinned vendor tools
+        run: |
+          git clone https://github.com/uandersonpsantos/instagram-comments-scraper-api.git instagram_comments
+          git -C instagram_comments checkout 5a6c0c6bbbbdff53fd414c4b6ec64ceafe4a1e18
+          git clone https://github.com/marqo-ai/marqo-FashionCLIP.git fashionclip
+          git -C fashionclip checkout d0b3bdfb62fb4964537cb582e76d6ddab0be8450
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install -r instagram_comments/requirements.txt torch torchvision transformers pillow curl_cffi huggingface_hub open_clip_torch >/dev/null
+      - name: Run Russian fashion sample
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re, html, json, sys, gc
+          from io import BytesIO
+          from PIL import Image
+          from curl_cffi import requests
+          import torch, open_clip
+
+          sys.path.insert(0, "instagram_comments")
+          import main as ig
+
+          POSTS = [
+            ("karina_nigay","2026-09-22","https://www.instagram.com/reel/DdmVBHvOk5i/"),
+            ("karina_nigay","2026-09-15","https://www.instagram.com/reel/DdURH0gOYj0/"),
+            ("lenaperminova","2026-08-30","https://www.instagram.com/reel/Dcqe3oJsKOb/"),
+            ("lenaperminova","2026-08-23","https://www.instagram.com/reel/DcZRSI0s2Wx/"),
+            ("mariecher","2026-08-15","https://www.instagram.com/reel/DcDcdWwDW5W/"),
+            ("mariecher","2026-08-24","https://www.instagram.com/p/Dcah59ttaxE/"),
+          ]
+
+          LABELS = [
+            "trench coat","long coat","blazer","cropped jacket","leather jacket",
+            "bomber jacket","cardigan","knit sweater","hoodie","shirt","t-shirt",
+            "bodysuit","corset top","fitted top","oversized top","mini dress",
+            "midi dress","maxi dress","mini skirt","midi skirt","wide leg trousers",
+            "straight trousers","jeans","shorts","tall boots","ankle boots",
+            "loafers","sneakers","shoulder bag","oversized bag"
+          ]
+
+          INTENT = [
+            r"where.*(?:from|buy|get|find)", r"where can i", r"where do i",
+            r"what brand", r"what (?:top|dress|pants|jeans|skirt|bag|jacket|boots|shoes|coat)",
+            r"link(?: please)?", r"need this", r"i need", r"want this", r"i want",
+            r"how much", r"price", r"где.*(?:купить|взять|найти)", r"что за (?:бренд|платье|юбка|куртка|пальто|сапоги|джинсы)",
+            r"ссылк", r"хочу такое", r"мне надо"
+          ]
+          rx = re.compile("|".join(INTENT), re.I)
+
+          session = requests.Session(impersonate="chrome146")
+          model_name="hf-hub:Marqo/marqo-fashionCLIP"
+          model,_,preprocess=open_clip.create_model_and_transforms(model_name)
+          tokenizer=open_clip.get_tokenizer(model_name)
+          text_tokens=tokenizer(LABELS)
+          with torch.no_grad():
+              text_features=model.encode_text(text_tokens,normalize=True)
+
+          out=[]
+          for author,date,url in POSTS:
+              row={"author":author,"date":date,"url":url}
+              try:
+                  r=session.get(url,headers={"Accept":"text/html,application/xhtml+xml","Accept-Language":"en-US,en;q=0.9"})
+                  row["page_status"]=r.status_code
+                  page=r.text
+                  pats=[
+                    r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)',
+                    r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']'
+                  ]
+                  img_url=None
+                  for p in pats:
+                      m=re.search(p,page,re.I)
+                      if m:
+                          img_url=html.unescape(m.group(1)); break
+                  row["image_found"]=bool(img_url)
+                  if img_url:
+                      ir=session.get(img_url,headers={"Referer":"https://www.instagram.com/","User-Agent":"Mozilla/5.0"})
+                      im=Image.open(BytesIO(ir.content)).convert("RGB")
+                      image=preprocess(im).unsqueeze(0)
+                      with torch.no_grad():
+                          image_features=model.encode_image(image,normalize=True)
+                          probs=(100.0*image_features@text_features.T).softmax(dim=-1)[0].cpu().tolist()
+                      ranked=sorted(zip(LABELS,probs),key=lambda x:x[1],reverse=True)
+                      row["top_visual_labels"]=[{"label":a,"score":round(float(b),4)} for a,b in ranked[:6]]
+                  shortcode=ig.extract_shortcode(url)
+                  media_id=ig.shortcode_to_media_id(shortcode)
+                  s=ig.requests.Session()
+                  lsd,csrf=ig.get_page_tokens(shortcode,s)
+                  cursor=None
+                  comments=[]
+                  for page_no in range(1,4):
+                      payload=ig.fetch_comments_page(media_id,cursor,lsd,csrf,s)
+                      page_comments,next_cursor=ig.parse_comments(payload)
+                      comments.extend([{"author":u,"text":t} for u,t in page_comments])
+                      cursor=next_cursor
+                      if not cursor: break
+                  row["comments_count"]=len(comments)
+                  hits=[c for c in comments if rx.search(c["text"] or "")]
+                  row["purchase_intent_hits"]=len(hits)
+                  row["purchase_intent_examples"]=hits[:8]
+              except Exception as e:
+                  row["error"]=repr(e)
+              out.append(row)
+              print("RESULT",json.dumps(row,ensure_ascii=False))
+          print("SUMMARY_JSON",json.dumps(out,ensure_ascii=False))
+          PY
