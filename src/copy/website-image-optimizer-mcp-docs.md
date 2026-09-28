@@ -2,9 +2,20 @@
 
 ## Status
 
-Current status: **technical candidate**.
+Current public npm version: **0.1.2 — verified**.
 
-The server and image core have passed technical verification gates. Public npm publication, Official MCP Registry publication, and a hosted endpoint are separate release steps and are not represented here as completed.
+The public package has passed external clean-install and MCP Inspector verification, including initialize, the exact seven-tool `tools/list`, a real `optimize_image` call, and the temporary artifact flow.
+
+Official MCP Registry publication and a hosted endpoint remain separate release steps and are not represented here as completed.
+
+## Install
+
+```bash
+npx -y @layerporter/image-optimizer-mcp@latest
+```
+
+- npm: [@layerporter/image-optimizer-mcp](https://www.npmjs.com/package/@layerporter/image-optimizer-mcp)
+- repository: [OlegStrateg/lp-site](https://github.com/OlegStrateg/lp-site)
 
 ## Runtime
 
@@ -156,13 +167,13 @@ Synthetic fixture benchmark values are engineering evidence only. They must not 
 - no JavaScript-driven lazy-content discovery in URL mode;
 - no rendered-size/currentSrc/LCP measurement inside URL mode;
 - no hosted endpoint yet;
-- no public npm/Official Registry release yet;
+- Official MCP Registry publication is not yet claimed;
 - no production write/apply step;
 - no universal visual-quality guarantee;
 - current batch and URL orchestration remain intentionally bounded.
 
 ## Release sequence
 
-Public-release status changes only after external evidence exists for the exact published package/version and, separately, the exact Official MCP Registry entry.
+Public npm **0.1.2** is verified. Official MCP Registry status changes only after separate external evidence exists for the exact Registry entry.
 
 Return to the [Website Image Optimizer MCP product page](/mcp/website-image-optimizer/).
