@@ -1,12 +1,18 @@
 # Privacy Policy
 
-**Last updated: September 7, 2026**
+**Last updated: October 13, 2026**
 
 LayerPorter is designed to collect as little data as practical. This policy describes the website, its browser extensions, installation and uninstall pages, limited first-party operational telemetry, and optional analytics used to understand whether a landing-page visit leads to an extension installation.
 
 ## Your files and downloaded content
 
 File conversion tools on LayerPorter process files locally in your browser unless a feature clearly states otherwise. For the Pinterest Downloader extension, the content you choose to download is handled for the download feature and is not sent to LayerPorter analytics. Our website telemetry and installation attribution do not collect the pages you browse outside LayerPorter, the Pins you view, or the files you download.
+
+## Optional AI photo editing
+
+The optional AI editing panel differs from local resize and crop. When explicitly initiated, the selected photo and text instruction are transmitted through a LayerPorter Cloudflare server function to the configured third-party image editing API provider. Do not submit sensitive photos without authorization. Image bytes, file names and prompts are not included in first-party analytics and are not intentionally stored by LayerPorter. The provider may have independent processing and retention terms; the provider identity and its applicable privacy notice must be confirmed and included before public activation.
+
+For cost control and abuse prevention, a secret-keyed cryptographic fingerprint of the network address, request counts and dates are stored in a separate quota database. Request entries older than 30 days are removed on the next public edit attempt; failed owner-login metadata older than 24 hours is removed on the next owner-login attempt. Owner authentication sets an HttpOnly, Secure, SameSite=Strict first-party cookie that expires after 24 hours. These records are not used for advertising.
 
 ## Accounts
 

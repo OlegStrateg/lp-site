@@ -233,5 +233,6 @@ export function initResizeImageTool(): void {
   });
 
   document.addEventListener('lp:image-workspace-imported', hydrateFromWorkspace, { once: true });
+  document.addEventListener('lp:image-workspace-change', hydrateFromWorkspace);
   hydrateFromWorkspace();
 }

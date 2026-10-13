@@ -1,0 +1,33 @@
+---
+interface Props { locale?: 'en'|'ru'; }
+const {locale='en'}=Astro.props;
+const ru=locale==='ru';
+---
+<section class="ai-photo-panel" id="ai-photo-panel" aria-labelledby="ai-photo-heading">
+  <p class="image-tool-mode-label">{ru?'ИИ-редактирование':'AI photo editing'}</p>
+  <h2 id="ai-photo-heading">{ru?'Редактировать фото с помощью GPT':'Edit your photo with GPT'}</h2>
+  <p class="ai-photo-intro">{ru?'Используйте изображение, выбранное выше, и опишите изменение.':'Use the image selected above and describe your change.'}</p>
+  <label for="ai-photo-prompt">{ru?'Что изменить':'What should change'}</label>
+  <textarea id="ai-photo-prompt" rows="4" maxlength="800" placeholder={ru?'Например: убери предметы на заднем плане, сохрани человека без изменений':'For example: remove background clutter but keep the person unchanged'}></textarea>
+  <p class="ai-photo-disclosure">{ru?'При запуске фото и ваш запрос отправляются внешнему провайдеру ИИ. Обычное изменение размера остаётся локальным.':'Running this edit sends the photo and your prompt to an external AI provider. Standard resizing stays local.'}</p>
+  <div id="ai-photo-turnstile"></div>
+  <button class="image-tool-primary" type="button" id="ai-photo-run" disabled>{ru?'Редактировать с ИИ':'Edit with AI'}</button>
+  <p id="ai-photo-status" class="image-tool-status" role="status" aria-live="polite"></p>
+  <p id="ai-photo-limit" class="ai-photo-limit"></p>
+  <div id="ai-photo-result" hidden>
+    <div class="ai-photo-compare">
+      <div><strong>{ru?'До':'Before'}</strong><img id="ai-photo-before" alt={ru?'Исходное фото':'Before editing'} /></div>
+      <div><strong>{ru?'После':'After'}</strong><img id="ai-photo-after" alt={ru?'Результат':'Edited result'} /></div>
+    </div>
+    <div class="image-tool-workspace-actions">
+      <a class="image-tool-download" id="ai-photo-download" download="layerporter-ai-edit.png">{ru?'Скачать результат':'Download result'}</a>
+      <button type="button" class="image-tool-secondary" id="ai-photo-use">{ru?'Продолжить редактирование':'Continue editing this result'}</button>
+    </div>
+  </div>
+  <details class="ai-photo-owner">
+    <summary>{ru?'Доступ владельца':'Owner access'}</summary>
+    <div class="ai-photo-owner-row"><input type="password" id="ai-photo-owner-password" autocomplete="off" placeholder={ru?'Пароль владельца':'Owner password'} />
+    <button type="button" class="image-tool-secondary" id="ai-photo-owner-login">{ru?'Войти':'Unlock'}</button></div>
+    <p id="ai-photo-owner-status" role="status"></p>
+  </details>
+</section>
