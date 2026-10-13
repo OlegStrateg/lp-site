@@ -2,6 +2,8 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ImageWorkspaceNav from '../../../components/ImageWorkspaceNav.astro';
 import '../../../styles/image-tools.css';
+import '../../../styles/ai-photo-panel.css';
+import AiPhotoPanel from '../../../components/AiPhotoPanel.astro';
 
 const site = 'https://layerporter.com';
 const title = 'Изменить размер фото онлайн в пикселях | LayerPorter';
@@ -75,6 +77,7 @@ const description = 'Измените ширину и высоту JPG, PNG ил
 
       </div>
     </div>
+    <AiPhotoPanel locale="ru" />
     <div class="image-tool-supporting-copy">
       <p>Измените ширину и высоту всего изображения без обрезки. Сохраняйте пропорции или отключите фиксацию, если нужны строго заданные размеры.</p>
       <div class="image-tool-badges" aria-label="Поддерживаемые файлы и обработка"><span>JPG, PNG, WebP</span><span>Ширина × Высота в пкс</span><span>Обработка в браузере</span></div>

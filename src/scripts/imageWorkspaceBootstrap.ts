@@ -2,6 +2,7 @@ import { initCropImageTool } from './cropImageTool';
 import { importExtensionImageFromUrl } from './extensionImageBridge';
 import { initMemeImageTool } from './memeImageTool';
 import { initResizeImageTool } from './resizeImageTool';
+import { initAiImagePanel } from './aiImagePanel';
 import { getWorkspaceSnapshot } from './imageWorkspaceStore';
 
 declare global {
@@ -23,7 +24,7 @@ function syncWorkspaceState(): void {
 
 function initCurrentTool(): void {
   const path = window.location.pathname;
-  if (path.endsWith('/tools/resize-image/') || path === '/tools/resize-image') initResizeImageTool();
+  if (path.endsWith('/tools/resize-image/') || path === '/tools/resize-image') { initResizeImageTool(); initAiImagePanel(); }
   if (path.endsWith('/tools/crop-image/') || path === '/tools/crop-image') initCropImageTool();
   if (path.endsWith('/tools/meme-generator/') || path === '/tools/meme-generator') initMemeImageTool();
 }
