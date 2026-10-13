@@ -12,7 +12,7 @@ File conversion tools on LayerPorter process files locally in your browser unles
 
 The optional AI editing panel differs from local resize and crop. When explicitly initiated, the selected photo and text instruction are transmitted through a LayerPorter Cloudflare server function to the configured third-party image editing API provider. Do not submit sensitive photos without authorization. Image bytes, file names and prompts are not included in first-party analytics and are not intentionally stored by LayerPorter. The provider may have independent processing and retention terms; the provider identity and its applicable privacy notice must be confirmed and included before public activation.
 
-For cost control and abuse prevention, an encrypted-hash fingerprint of the network address, request counts and dates are stored in a separate quota database for up to 30 days. Failed owner-login metadata is kept for up to 24 hours. Owner authentication sets an HttpOnly, Secure, SameSite=Strict first-party cookie that expires after 24 hours. These records are not used for advertising.
+For cost control and abuse prevention, a secret-keyed cryptographic fingerprint of the network address, request counts and dates are stored in a separate quota database. Request entries older than 30 days are removed on the next public edit attempt; failed owner-login metadata older than 24 hours is removed on the next owner-login attempt. Owner authentication sets an HttpOnly, Secure, SameSite=Strict first-party cookie that expires after 24 hours. These records are not used for advertising.
 
 ## Accounts
 

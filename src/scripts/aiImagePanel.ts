@@ -13,7 +13,7 @@ export function initAiImagePanel():void{
   const pass=get<HTMLInputElement>('ai-photo-owner-password'),login=get<HTMLButtonElement>('ai-photo-owner-login');
   const ownerStatus=get<HTMLElement>('ai-photo-owner-status');
   const ru=document.documentElement.lang.toLowerCase().startsWith('ru');
-  let config:Config|null=null,token='',widget='',busy=false,output:File|null=null,outputUrl='';
+  let config:Config|null=null,token='',widget='',busy=false,output:File|null=null,outputUrl='',sourceVersion=-1;
   const controller=new AbortController();
   const say=(en:string,rus:string)=>{status.textContent=ru?rus:en;};
   function sync(){
@@ -50,7 +50,7 @@ export function initAiImagePanel():void{
     sync();
   }
   prompt.addEventListener('input',sync,{signal:controller.signal});
-  document.addEventListener('lp:image-workspace-change',sync,{signal:controller.signal});
+  document.addEventListener('lp:image-workspace-change',()=>{if(sourceVersion!==-1&&getWorkspaceSnapshot().version!==sourceVersion){result.hidden=true;sourceVersion=-1;}sync();},{signal:controller.signal});
   document.addEventListener('lp:image-workspace-imported',sync,{signal:controller.signal});
   login.addEventListener('click',async()=>{
     if(!pass.value||busy)return;login.disabled=true;
@@ -85,7 +85,7 @@ export function initAiImagePanel():void{
       output=new File([arr],'layerporter-ai-edit.png',{type:'image/png'});
       if(outputUrl)URL.revokeObjectURL(outputUrl);
       outputUrl=URL.createObjectURL(output);
-      before.src=snap.sourceUrl;after.src=outputUrl;link.href=outputUrl;result.hidden=false;
+      sourceVersion=snap.version;before.src=snap.sourceUrl;after.src=outputUrl;link.href=outputUrl;result.hidden=false;
       say('Edit complete. Download or continue.','Готово. Скачайте или продолжите редактирование.');
     }catch{say('Connection interrupted; check before retrying.','Соединение прервано. Проверьте результат перед повтором.');}
     finally{

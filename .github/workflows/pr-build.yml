@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: AI image security unit tests
+        run: node --test scripts/test-ai-image-security.mjs
+
       - name: Build and static gates
         run: npm run build
 
