@@ -1,33 +1,89 @@
 ---
-interface Props { locale?: 'en'|'ru'; }
-const {locale='en'}=Astro.props;
+interface Props { locale?: 'en'|'ru' }
+const { locale='en' } = Astro.props;
 const ru=locale==='ru';
 ---
-<section class="ai-photo-panel" id="ai-photo-panel" aria-labelledby="ai-photo-heading">
-  <p class="image-tool-mode-label">{ru?'ИИ-редактирование':'AI photo editing'}</p>
-  <h2 id="ai-photo-heading">{ru?'Редактировать фото с помощью GPT':'Edit your photo with GPT'}</h2>
-  <p class="ai-photo-intro">{ru?'Используйте изображение, выбранное выше, и опишите изменение.':'Use the image selected above and describe your change.'}</p>
-  <label for="ai-photo-prompt">{ru?'Что изменить':'What should change'}</label>
-  <textarea id="ai-photo-prompt" rows="4" maxlength="800" placeholder={ru?'Например: убери предметы на заднем плане, сохрани человека без изменений':'For example: remove background clutter but keep the person unchanged'}></textarea>
-  <p class="ai-photo-disclosure">{ru?'При запуске фото и ваш запрос отправляются внешнему провайдеру ИИ. Обычное изменение размера остаётся локальным.':'Running this edit sends the photo and your prompt to an external AI provider. Standard resizing stays local.'}</p>
-  <div id="ai-photo-turnstile"></div>
-  <button class="image-tool-primary" type="button" id="ai-photo-run" disabled>{ru?'Редактировать с ИИ':'Edit with AI'}</button>
-  <p id="ai-photo-status" class="image-tool-status" role="status" aria-live="polite"></p>
-  <p id="ai-photo-limit" class="ai-photo-limit"></p>
-  <div id="ai-photo-result" hidden>
-    <div class="ai-photo-compare">
-      <div><strong>{ru?'До':'Before'}</strong><img id="ai-photo-before" alt={ru?'Исходное фото':'Before editing'} /></div>
-      <div><strong>{ru?'После':'After'}</strong><img id="ai-photo-after" alt={ru?'Результат':'Edited result'} /></div>
+<section id="ai-photo-panel" class="ai-editor" aria-labelledby="ai-editor-title">
+  <header class="ai-editor-header">
+    <div>
+      <span class="ai-editor-eyebrow">{ru?'РЕДАКТИРОВАНИЕ С ИИ':'AI IMAGE EDITING'}</span>
+      <h2 id="ai-editor-title">{ru?'Меняйте фото словами':'Edit photos with words'}</h2>
+      <p>{ru?'Напишите, что убрать, заменить или исправить. Продолжайте следующей командой, не начиная заново.':'Describe what to remove, replace or correct. Keep refining without starting over.'}</p>
     </div>
-    <div class="image-tool-workspace-actions">
-      <a class="image-tool-download" id="ai-photo-download" download="layerporter-ai-edit.png">{ru?'Скачать результат':'Download result'}</a>
-      <button type="button" class="image-tool-secondary" id="ai-photo-use">{ru?'Продолжить редактирование':'Continue editing this result'}</button>
+    <div class="ai-editor-counter" id="ai-photo-limit" aria-live="polite"></div>
+  </header>
+  <div class="ai-editor-body">
+    <div class="ai-editor-visual">
+      <div class="ai-editor-visual-toolbar">
+        <strong id="ai-photo-version">{ru?'Исходное фото':'Original photo'}</strong>
+        <div class="ai-editor-tools">
+          <button type="button" id="ai-photo-point-mode" class="ai-editor-tool" aria-pressed="false" disabled title={ru?'Указать место на фото':'Mark a place on the image'}>{ru?'Указать точку':'Mark point'}</button>
+          <button type="button" id="ai-photo-clear-point" class="ai-editor-tool" hidden>{ru?'Убрать метку':'Clear point'}</button>
+          <button type="button" id="ai-photo-compare-switch" class="ai-editor-tool" aria-pressed="false" disabled>{ru?'До / После':'Before / After'}</button>
+        </div>
+      </div>
+      <div class="ai-editor-stage" id="ai-photo-stage">
+        <div class="ai-editor-empty" id="ai-photo-empty">
+          <span aria-hidden="true">+</span>
+          <strong>{ru?'Загрузите фотографию':'Upload a photo'}</strong>
+          <p>{ru?'Выберите файл в инструменте выше или воспользуйтесь кнопкой.':'Select an image in the tool above or use the button below.'}</p>
+          <button type="button" class="ai-editor-choose" id="ai-photo-choose">{ru?'Выбрать фото':'Choose photo'}</button>
+        </div>
+        <div id="ai-photo-image-holder" class="ai-editor-image-holder" hidden>
+          <img id="ai-photo-base" alt={ru?'Исходная версия для сравнения':'Original image for comparison'} hidden />
+          <img id="ai-photo-image" alt={ru?'Текущая версия изображения':'Current image version'} draggable="false" />
+          <span class="ai-editor-pin" id="ai-photo-pin" hidden>1</span>
+        </div>
+      </div>
+      <div id="ai-photo-compare-controls" class="ai-editor-compare-controls" hidden>
+        <span>{ru?'Исходное':'Original'}</span>
+        <input id="ai-photo-compare-range" type="range" min="0" max="100" value="50" aria-label={ru?'Ползунок сравнения с оригиналом':'Compare with original'} />
+        <span>{ru?'Текущая версия':'Current'}</span>
+      </div>
+      <div class="ai-editor-history-head">
+        <strong>{ru?'История версий':'Version history'}</strong>
+        <small>{ru?'Нажмите на версию, чтобы продолжить с неё':'Select any version to continue from it'}</small>
+      </div>
+      <div class="ai-editor-history" id="ai-photo-history" role="group" aria-label={ru?'История изображений':'Image versions'}></div>
+      <div class="ai-editor-output">
+        <a class="ai-editor-download" id="ai-photo-download" hidden download>{ru?'Скачать эту версию':'Download this version'}</a>
+        <button type="button" class="ai-editor-use" id="ai-photo-use" disabled>{ru?'Открыть в инструментах':'Use in Resize / Crop'}</button>
+      </div>
+    </div>
+    <div class="ai-editor-conversation">
+      <div class="ai-editor-chat-head">
+        <strong>{ru?'Ваши изменения':'Your edits'}</strong>
+        <small>{ru?'Контекст выбранной версии':'Selected version context'}</small>
+      </div>
+      <div class="ai-editor-feed" id="ai-photo-feed" aria-live="polite">
+        <p class="ai-editor-welcome">{ru?'Загрузите фото и опишите первое изменение. Например: «Убери людей на заднем плане, лицо не меняй».':'Upload an image and describe your first change. For example: “Remove the people in the background, keep my face unchanged.”'}</p>
+      </div>
+      <div class="ai-editor-compose">
+        <label for="ai-photo-prompt">{ru?'Следующее изменение':'Your next edit'}</label>
+        <textarea id="ai-photo-prompt" rows="4" maxlength="800" placeholder={ru?'Убери, замени, исправь или измени…':'Remove, replace, retouch or change…'}></textarea>
+        <div class="ai-editor-examples" aria-label={ru?'Примеры запросов':'Example prompts'}>
+          <button type="button" data-ai-example={ru?'Убери лишние предметы на фоне, остальное сохрани':'Remove distracting background objects and keep the rest unchanged'}>{ru?'Убрать лишнее':'Remove objects'}</button>
+          <button type="button" data-ai-example={ru?'Замени фон на нейтральный, сохрани главный объект':'Replace the background with a neutral one, keep the subject'}>{ru?'Заменить фон':'Change background'}</button>
+          <button type="button" data-ai-example={ru?'Улучшить свет и цвет, сохрани естественный вид':'Improve lighting and color, keep a natural appearance'}>{ru?'Исправить свет':'Fix lighting'}</button>
+        </div>
+        <label class="ai-editor-preserve">
+          <input id="ai-photo-preserve" type="checkbox" checked />
+          <span>{ru?'Сохранять остальные детали без изменений':'Preserve unchanged details'}</span>
+        </label>
+        <div id="ai-photo-point-note" class="ai-editor-point-note" hidden></div>
+        <div id="ai-photo-turnstile" class="ai-editor-turnstile"></div>
+        <button type="button" class="ai-editor-send" id="ai-photo-run" disabled>{ru?'Применить изменение':'Apply edit'}</button>
+        <p class="ai-editor-status" id="ai-photo-status" role="status" aria-live="polite"></p>
+        <p class="ai-editor-disclosure">{ru?'При запуске фотография и текст отправляются внешнему провайдеру ИИ. Изменение размера выше выполняется только в браузере.':'AI edits send the photo and prompt to an external AI provider. Resizing above stays in your browser.'}</p>
+      </div>
     </div>
   </div>
-  <details class="ai-photo-owner">
+  <details class="ai-editor-owner">
     <summary>{ru?'Доступ владельца':'Owner access'}</summary>
-    <div class="ai-photo-owner-row"><input type="password" id="ai-photo-owner-password" autocomplete="off" placeholder={ru?'Пароль владельца':'Owner password'} />
-    <button type="button" class="image-tool-secondary" id="ai-photo-owner-login">{ru?'Войти':'Unlock'}</button></div>
+    <div class="ai-editor-owner-form">
+      <input id="ai-photo-owner-password" type="password" autocomplete="off" placeholder={ru?'Пароль владельца':'Owner password'} aria-label={ru?'Пароль владельца':'Owner password'} />
+      <button type="button" id="ai-photo-owner-login">{ru?'Войти':'Sign in'}</button>
+    </div>
     <p id="ai-photo-owner-status" role="status"></p>
   </details>
 </section>
