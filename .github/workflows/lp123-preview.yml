@@ -87,6 +87,38 @@ jobs:
             console.log('Configured preview-only endpoint, model and owner-only flags. No key or password touched.');
           }
           NODE
+      - name: Check whether encrypted production token supports secure server-side transfer
+        continue-on-error: true
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const url='https://api.cloudflare.com/client/v4/accounts/'+process.env.CF_ACCOUNT+'/pages/projects/layerporter';
+          const headers={Authorization:'Bearer '+process.env.CF_TOKEN,'Content-Type':'application/json'};
+          const r=await fetch(url,{headers});
+          if(!r.ok)process.exit(0);
+          const info=(await r.json()).result;
+          const preview=info.deployment_configs?.preview?.env_vars||{};
+          const token=info.deployment_configs?.production?.env_vars?.AI_IMAGE_API_KEY;
+          if(preview.AI_IMAGE_API_KEY){console.log('Preview AI key already configured.');process.exit(0);}
+          const v=token?.value;
+          if(token?.type!=='secret_text'||typeof v!=='string'||v.length<32||/^\*+$/.test(v)||v===''){
+            console.log('Production secret is encrypted/unreadable via API; transfer cannot be automated. No token value logged.');
+            process.exit(0);
+          }
+          const allowed=['AI_IMAGE_EDIT_URL','AI_IMAGE_MODEL','AI_IMAGE_PREVIEW_ENABLED','AI_IMAGE_PREVIEW_OWNER_ONLY'];
+          if(Object.keys(preview).some(k=>!allowed.includes(k))){
+            console.log('Preview contains other settings; automated transfer skipped to avoid overrides.');
+            process.exit(0);
+          }
+          const vars={...Object.fromEntries(allowed.map(k=>[k,preview[k]]).filter(([,v])=>v?.type==='plain_text')),
+            AI_IMAGE_API_KEY:{type:'secret_text',value:v}};
+          const response=await fetch(url,{method:'PATCH',headers,body:JSON.stringify({deployment_configs:{preview:{env_vars:vars}}})});
+          if(response.ok&&(await response.json()).success)console.log('Copied secret directly between Cloudflare environments without revealing its value.');
+          else console.log('Cloudflare rejected server-side transfer. Use Preview secret settings.');
+          NODE
       - name: Deploy only to Cloudflare Pages preview
         id: deploy
         uses: cloudflare/wrangler-action@v3
