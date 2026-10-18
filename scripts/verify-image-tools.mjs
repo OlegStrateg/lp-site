@@ -35,6 +35,17 @@ assert(resizeHtml.includes('Resize image to exact pixels'), 'Resize H1/copy miss
 assert(resizeHtml.includes('id="resize-width"') && resizeHtml.includes('id="resize-height"'), 'Resize pixel controls missing');
 assert(resizeHtml.includes('/tools/crop-image/'), 'Resize → Crop workspace link missing');
 
+const resizeRuHtml = await fs.readFile('dist/ru/tools/resize-image/index.html', 'utf8');
+for (const [locale, html] of [['en', resizeHtml], ['ru', resizeRuHtml]]) {
+  for (const id of [
+    'ai-photo-panel','ai-photo-stage','ai-photo-image-holder','ai-photo-history',
+    'ai-photo-feed','ai-photo-prompt','ai-photo-point-mode','ai-photo-compare-switch',
+    'ai-photo-compare-range','ai-photo-run','ai-photo-download','ai-photo-owner-password'
+  ]) assert(html.includes(`id="${id}"`), `AI editor missing ${id} in ${locale} resize page`);
+  assert(html.includes('ai-editor-body'), `AI conversation layout missing in ${locale}`);
+}
+
+
 assert(cropHtml.includes('https://layerporter.com/tools/crop-image/'), 'Crop canonical missing');
 assert(cropHtml.includes('Crop image to exact pixels'), 'Crop H1/copy missing');
 for (const id of ['crop-width', 'crop-height', 'crop-x', 'crop-y', 'crop-preset', 'crop-preview']) {
