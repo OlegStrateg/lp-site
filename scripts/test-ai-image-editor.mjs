@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildEditPrompt,validateContext,validatePoint} from '../functions/_lib/ai-image-prompt.js';
+import {buildEditPrompt,validateContext,validatePoint,validateReferenceRoles} from '../functions/_lib/ai-image-prompt.js';
 import {normalizedImage,trustedResultUrl} from '../functions/_lib/ai-image-provider.js';
 import {reserveDaily,onRequestPost as callProvider} from '../functions/api/ai-image-edit.js';
 import {ownerCookie} from '../functions/_lib/ai-image-security.js';
@@ -120,4 +120,56 @@ test('mock provider roundtrip only from authenticated owner with no key leakage'
     assert.equal(result.ok,true);assert.match(result.image,/^data:image\/png;base64,/);
     assert.equal(JSON.stringify(result).includes('placeholder'),false);
   }finally{globalThis.fetch=savedFetch;}
+});
+
+test('reference mapping: current / optional original / user images have correct indices',()=>{
+  assert.deepEqual(validateReferenceRoles(['clothing','face','background'],3),['clothing','face','background']);
+  assert.throws(()=>validateReferenceRoles(['clothing'],0));
+  assert.throws(()=>validateReferenceRoles(['clothing','invalid'],2));
+  assert.throws(()=>validateReferenceRoles(['clothing','face','background','object'],4));
+  let instructions=buildEditPrompt({command:'Replace shirt with the one in reference 1, do not alter face',referenceRoles:['clothing','face'],originalReference:false});
+  assert.match(instructions,/Image 2: CLOTHING:/);
+  assert.match(instructions,/Image 3: FACE\/IDENTITY:/);
+  instructions=buildEditPrompt({command:'Change jacket',referenceRoles:['clothing'],originalReference:true});
+  assert.match(instructions,/SECOND attached image is the ORIGINAL/);
+  assert.match(instructions,/Image 3: CLOTHING:/);
+});
+
+test('mock API forwards attached reference files in order without exposing credentials',async()=>{
+  const pngRef=new File([png],'sweater.png',{type:'image/png'});
+  const original=new File([jpg],'portrait.jpg',{type:'image/jpeg'});
+  const form=new FormData();
+  form.append('image',original);
+  form.append('references',pngRef);
+  form.append('referenceRoles',JSON.stringify(['clothing']));
+  form.append('prompt','Replace the jacket with clothes from reference');
+  form.append('context','[]');form.append('point','null');form.append('preserve','true');
+  const cookie=(await ownerCookie(env)).split(';')[0];
+  const req=new Request('https://layerporter.com/api/ai-image-edit',{
+    method:'POST',headers:{origin:'https://layerporter.com',cookie},body:form
+  });
+  const realFetch=globalThis.fetch;
+  globalThis.fetch=async(_url,options)=>{
+    const attachments=options.body.getAll('image[]');
+    assert.equal(attachments.length,2);
+    assert.equal(attachments[0].name,'portrait.jpg');assert.equal(attachments[1].name,'sweater.png');
+    assert.match(String(options.body.get('prompt')),/Image 2: CLOTHING:/);
+    return Response.json({data:[{b64_json:Buffer.from(png).toString('base64')}]});
+  };
+  try{const response=await callProvider({request:req,env});assert.equal(response.status,200);}
+  finally{globalThis.fetch=realFetch;}
+});
+
+test('unknown reference role and too many references reject request before the paid API',async()=>{
+  const original=new File([png],'photo.png',{type:'image/png'});
+  const cookie=(await ownerCookie(env)).split(';')[0];
+  for(const roles of [['nonexistent'],['clothing','face','background','object']]){
+    const form=new FormData();
+    form.append('image',original);
+    for(const role of roles)form.append('references',original);
+    form.append('referenceRoles',JSON.stringify(roles));
+    form.append('prompt','Change the clothing');
+    const req=new Request('https://layerporter.com/api/ai-image-edit',{method:'POST',headers:{origin:'https://layerporter.com',cookie},body:form});
+    const response=await callProvider({request:req,env});assert.equal(response.status,400);
+  }
 });

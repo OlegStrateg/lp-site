@@ -1,8 +1,8 @@
 import { enabled,clientHash,isOwner,json,sameOrigin } from '../_lib/ai-image-security.js';
-import { buildEditPrompt,validateContext,validatePoint } from '../_lib/ai-image-prompt.js';
+import { buildEditPrompt,validateContext,validatePoint,validateReferenceRoles,MAX_REFERENCE_IMAGES } from '../_lib/ai-image-prompt.js';
 import { normalizedImage } from '../_lib/ai-image-provider.js';
 
-const MAX_SIZE=6*1024*1024, DAILY_PER_IP=3, DAILY_SITE=20, MAX_REQUEST_BYTES=14*1024*1024;
+const MAX_SIZE=6*1024*1024, MAX_REFERENCE_SIZE=2*1024*1024, MAX_TOTAL_IMAGES=18*1024*1024, DAILY_PER_IP=3, DAILY_SITE=20, MAX_REQUEST_BYTES=21*1024*1024;
 function previewBlocked(request, env) {
   return new URL(request.url).hostname.endsWith('.pages.dev') && env.AI_IMAGE_PREVIEW_ENABLED !== 'yes';
 }
@@ -29,8 +29,8 @@ async function verifyCaptcha(token,request,env){
   return outcome.success===true&&outcome.hostname===new URL(request.url).hostname;
 }
 
-async function validFile(file) {
-  if(!(file instanceof File)||!file.size||file.size>MAX_SIZE) return false;
+async function validFile(file,maxBytes=MAX_SIZE) {
+  if(!(file instanceof File)||!file.size||file.size>maxBytes) return false;
   if(!['image/png','image/jpeg','image/webp'].includes(file.type))return false;
   const head=new Uint8Array(await file.slice(0,12).arrayBuffer());
   const png=head.length>=8&&[137,80,78,71,13,10,26,10].every((x,i)=>head[i]===x);
@@ -58,19 +58,23 @@ export async function onRequestPost({request,env}){
   try{form=await request.formData();}catch{return json({error:'invalid_input'},400);}
   const image=form.get('image');
   const original=form.get('original');
+  const references=form.getAll('references');
   const command=form.get('prompt');
   if(!await validFile(image)||original && !await validFile(original) ||
+     references.length>MAX_REFERENCE_IMAGES ||
+     !(await Promise.all(references.map(f=>validFile(f,MAX_REFERENCE_SIZE)))).every(Boolean) ||
      typeof command!=='string'||!command.trim()||command.length>800 ||
-     (image.size + (original?.size||0))>12*1024*1024)
+     (image.size + (original?.size||0) + references.reduce((sum,f)=>sum+f.size,0))>MAX_TOTAL_IMAGES)
     return json({error:'invalid_input'},400);
-  let history=[],point=null,preserve=true,finalPrompt='';
+  let history=[],point=null,preserve=true,finalPrompt='',roles=[];
   try {
     history=validateContext(JSON.parse(String(form.get('context')||'[]')));
     point=validatePoint(JSON.parse(String(form.get('point')||'null')));
+    roles=validateReferenceRoles(JSON.parse(String(form.get('referenceRoles')||'[]')),references.length);
     const flag=String(form.get('preserve')||'true');
     if(flag!=='true'&&flag!=='false')throw Error('invalid_preserve');
     preserve=flag==='true';
-    finalPrompt=buildEditPrompt({command,context:history,point,preserve,originalReference:!!original});
+    finalPrompt=buildEditPrompt({command,context:history,point,preserve,originalReference:!!original,referenceRoles:roles});
   }catch{return json({error:'invalid_input'},400);}
 
   if(!owner) {
@@ -90,9 +94,10 @@ export async function onRequestPost({request,env}){
     if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.port&&url.port!=='443')
       throw Error('provider_url');
     const body=new FormData();
-    if(original){
+    if(original || references.length) {
       body.append('image[]',image,image.name||'current.png');
-      body.append('image[]',original,original.name||'original.png');
+      if(original)body.append('image[]',original,original.name||'original.png');
+      for(const file of references)body.append('image[]',file,file.name||'reference.png');
     } else {
       body.append('image',image,image.name||'current.png');
     }
