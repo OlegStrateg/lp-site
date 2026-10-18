@@ -9,6 +9,7 @@ import { chromium } from 'playwright';
 const URL_BASE='http://127.0.0.1:8765';
 const shots='artifacts/ai-image-editor';
 await fs.mkdir(shots,{recursive:true});
+let activePage=null;
 const server=spawn('python3',['-m','http.server','8765','--bind','127.0.0.1','--directory','dist'],{stdio:['ignore','pipe','pipe']});
 let stderr='';
 server.stderr.on('data',data=>stderr+=String(data));
@@ -84,6 +85,7 @@ try {
   await waitForServer();
   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:1440,height:950},deviceScaleFactor:1,acceptDownloads:true});
+  activePage=page;
   const exceptions=[];
   page.on('pageerror',error=>exceptions.push(error.message));
   const session={owner:false,loginReady:true,calls:0,requests:[],result:null};
@@ -98,6 +100,7 @@ try {
   await page.locator('#ai-photo-image-holder').waitFor({state:'visible'});
   assert.equal(await page.locator('#ai-photo-history button').count(),1);
   await page.locator('#ai-photo-reference-file').setInputFiles({name:'coat.png',mimeType:'image/png',buffer:ref});
+  await page.locator('.ai-editor-reference-item').first().waitFor({state:'visible'});
   assert.equal(await page.locator('.ai-editor-reference-item').count(),1);
   await page.locator('.ai-editor-reference-role').selectOption('clothing');
   await page.locator('[data-ai-example]').nth(1).click();
@@ -145,6 +148,13 @@ try {
   assert.deepEqual(exceptions,[],'Desktop JS errors: '+exceptions.join('; '));
   assert.deepEqual(mobileExceptions,[],'Mobile JS errors: '+mobileExceptions.join('; '));
   console.log('VERIFIED CHROMIUM E2E: upload, reference, input/CTA, owner gate, mock edits, compare, branch history, reset, RU/EN, desktop/mobile, no JS errors');
+} catch(err) {
+  if(activePage) {
+    try {await activePage.screenshot({path:path.join(shots,'failure.png'),fullPage:true});}
+    catch { /* page may have crashed */ }
+  }
+  console.error('LP123_CHROMIUM_FAILURE:',err);
+  throw err;
 } finally {
   if(browser)await browser.close();
   server.kill('SIGTERM');
