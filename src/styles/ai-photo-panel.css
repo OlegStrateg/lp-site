@@ -1,0 +1,161 @@
+.ai-editor{max-width:none;margin:0 auto;border:1px solid #dfe1e8;border-radius:19px;background:#fff;overflow:hidden;box-shadow:0 18px 58px rgba(20,25,40,.065);color:#252832}
+.ai-editor [hidden]{display:none!important}
+.ai-editor-header{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;padding:27px 29px 24px;border-bottom:1px solid #e9eaf0}
+.ai-editor-eyebrow{font-size:10px;font-weight:850;letter-spacing:.1em;color:#6b5dd3}
+.ai-editor-header h1{font-size:clamp(24px,3vw,36px);line-height:1.08;letter-spacing:-.04em;margin:10px 0}
+.ai-editor-header p{margin:0;color:#6a6d79;font-size:13px;line-height:1.55;max-width:610px}
+.ai-editor-counter{font-size:11px;line-height:1.5;color:#767989;max-width:230px;text-align:right}
+.ai-editor-body{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(285px,.82fr);min-height:600px}
+.ai-editor-visual{min-width:0;background:#fcfcfe;padding:17px 20px 20px;border-right:1px solid #ececf2}
+.ai-editor-visual-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:0 0 14px}
+.ai-editor-visual-toolbar strong,.ai-editor-chat-head strong,.ai-editor-history-head strong{font-size:12px;font-weight:850}
+.ai-editor-tools{display:flex;gap:5px;flex-wrap:wrap}
+.ai-editor-tool{border:1px solid #e2e3eb;background:#fff;color:#525768;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:750;cursor:pointer}
+.ai-editor-tool[aria-pressed="true"]{background:#f0edff;color:#5b4dc5;border-color:#aaa2ef}
+.ai-editor-tool:disabled{opacity:.42;cursor:not-allowed}
+.ai-editor-stage{min-height:340px;background:#f4f5f8;border:1px solid #e9eaf0;border-radius:12px;display:flex;justify-content:center;align-items:center;padding:12px;box-sizing:border-box;overflow:hidden}
+.ai-editor-empty{text-align:center;color:#666a77;max-width:275px;padding:22px 0}
+.ai-editor-empty>span{display:block;margin:0 auto 13px;width:47px;height:47px;border-radius:12px;background:#eae7fb;color:#6b5dd3;font-size:29px;line-height:45px}
+.ai-editor-empty strong{font-size:14px;color:#292b35}
+.ai-editor-empty p{font-size:12px;line-height:1.5}
+.ai-editor-choose,.ai-editor-use,.ai-editor-download{border:1px solid #d8d9e4;border-radius:9px;padding:10px 14px;background:#fff;color:#333744;font-weight:800;font:inherit;font-size:12px;cursor:pointer;text-decoration:none}
+.ai-editor-image-holder{position:relative;display:inline-block;max-width:100%;max-height:550px;line-height:0;user-select:none}
+.ai-editor-image-holder img{display:block;width:auto;max-width:100%;max-height:550px;height:auto;object-fit:contain;border-radius:5px}
+.ai-editor-image-holder img#ai-photo-base{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.ai-editor-image-holder.is-comparing #ai-photo-image{position:relative}
+.ai-editor-image-holder.is-picking{cursor:crosshair}
+.ai-editor-pin{position:absolute;z-index:5;width:27px;height:27px;display:grid;place-items:center;background:#6258d4;border:2px solid white;box-shadow:0 2px 8px rgba(10,10,20,.27);border-radius:50%;color:white;font-size:12px;font-weight:850;line-height:1;transform:translate(-50%,-50%);pointer-events:none}
+.ai-editor-compare-controls{display:flex;gap:10px;align-items:center;margin:13px 0 0;font-size:11px;color:#7b7e89}
+.ai-editor-compare-controls input{flex:1;accent-color:#6b5dd3}
+.ai-editor-history-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:22px 0 10px}
+.ai-editor-history-head small,.ai-editor-chat-head small{color:#8a8c96;font-size:10px}
+.ai-editor-history{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.ai-editor-history button{flex:0 0 auto;min-width:90px;max-width:135px;text-align:left;background:white;border:1px solid #dedfea;border-radius:10px;padding:8px;cursor:pointer;color:#3d414e}
+.ai-editor-history button[aria-pressed="true"]{border-color:#6b5dd3;box-shadow:0 0 0 1px #6b5dd3;background:#f8f7ff}
+.ai-editor-history button:disabled{opacity:.6;cursor:not-allowed}
+.ai-editor-history img{width:100%;height:63px;object-fit:cover;border-radius:5px;display:block;margin-bottom:6px;background:#eceef1}
+.ai-editor-history span{font-size:11px;font-weight:800;display:block}
+.ai-editor-history small{font-size:10px;color:#8b8e99;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai-editor-output{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ai-editor-download{background:#f0edff;color:#5449bd;border-color:#dbd5f9}
+.ai-editor-use:disabled{opacity:.45;cursor:not-allowed}
+.ai-editor-conversation{min-width:0;display:flex;flex-direction:column}
+.ai-editor-chat-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid #edf0f3;padding:19px 20px}
+.ai-editor-feed{flex:1;min-height:220px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:20px;scrollbar-width:thin}
+.ai-editor-welcome{margin:0;font-size:13px;line-height:1.6;color:#757989}
+.ai-editor-chat-user{align-self:flex-end;max-width:94%;padding:11px 13px;border-radius:13px 13px 4px 13px;background:#edeafd;color:#39315f;font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-editor-chat-response{align-self:flex-start;padding:8px 11px;background:#f1f2f6;border-radius:9px 9px 9px 3px;color:#586070;font-size:11px}
+.ai-editor-compose{padding:19px 20px;border-top:1px solid #ededf3}
+.ai-editor-compose>label:not(.ai-editor-preserve){display:block;margin-bottom:9px;font-size:12px;font-weight:800}
+.ai-editor-compose textarea{box-sizing:border-box;width:100%;display:block;border:1px solid #dcdde7;border-radius:10px;resize:vertical;min-height:100px;padding:12px 13px;color:#252832;background:#fff;font:inherit;font-size:13px;line-height:1.5}
+.ai-editor-compose textarea:focus-visible,.ai-editor button:focus-visible,.ai-editor input:focus-visible,.ai-editor a:focus-visible{outline:3px solid rgba(103,92,222,.23);outline-offset:2px}
+.ai-editor-examples{display:flex;gap:6px;flex-wrap:wrap;padding:9px 0 8px}
+.ai-editor-examples button{border:1px solid #ececf1;border-radius:8px;background:#fafafd;padding:7px 8px;color:#777987;font-size:10px;cursor:pointer}
+.ai-editor-examples button:hover{border-color:#aeade2;color:#6258d4}
+.ai-editor-preserve{display:flex;gap:8px;align-items:center;margin:6px 0 9px;font-size:11px;color:#606472}
+.ai-editor-preserve input{accent-color:#6b5dd3}
+.ai-editor-point-note{font-size:11px;color:#6154ca;padding:8px;background:#f3f0ff;border-radius:8px;margin:8px 0}
+.ai-editor-send{width:100%;border:0;background:#6258d4;color:#fff;border-radius:10px;padding:13px;font-size:13px;font-weight:850;cursor:pointer}
+.ai-editor-send:disabled{opacity:.46;cursor:not-allowed}
+.ai-editor-send:not(:disabled):hover{background:#5246c5}
+.ai-editor-status{font-size:11px;min-height:16px;line-height:1.5;color:#676978;margin:9px 0}
+.ai-editor-status.is-error{color:#b73546}
+.ai-editor-disclosure{margin:8px 0 0;font-size:10px;line-height:1.5;color:#90939e}
+.ai-editor-turnstile:not(:empty){margin:10px 0}
+.ai-editor-owner{padding:14px 24px;border-top:1px solid #ececf1;font-size:11px;color:#868a96}
+.ai-editor-owner summary{cursor:pointer;max-width:max-content}
+.ai-editor-owner-form{display:flex;gap:8px;margin-top:10px}
+.ai-editor-owner-form input{flex:1;min-width:0;border:1px solid #dadbe6;border-radius:8px;padding:10px;font:inherit}
+.ai-editor-owner-form button{border:1px solid #d9d9e1;background:#f9f9fc;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px}
+@media(max-width:840px){.ai-editor-body{grid-template-columns:1fr}.ai-editor-visual{border-right:0;border-bottom:1px solid #ececf2}.ai-editor-feed{max-height:280px}.ai-editor-stage{min-height:300px}.ai-editor-header{padding:22px;align-items:flex-start}}
+@media(max-width:520px){.ai-editor-header{flex-direction:column;gap:12px;padding:18px}.ai-editor-counter{text-align:left}.ai-editor-visual{padding:14px}.ai-editor-stage{min-height:230px;padding:7px}.ai-editor-image-holder img{max-height:410px}.ai-editor-image-holder{max-height:410px}.ai-editor-chat-head,.ai-editor-compose,.ai-editor-feed{padding:15px}.ai-editor-owner{padding:14px}}
+
+/* Dedicated text-first editor: photo and prompt are the first meaningful viewport. */
+.ai-editor-page{width:min(1420px,calc(100vw - 40px));position:relative;left:50%;transform:translateX(-50%);padding:20px 0 36px;}
+.ai-editor-page .ai-editor{border-radius:18px;box-shadow:0 14px 60px rgba(17,24,48,.055);}
+.ai-editor-page .ai-editor-header{padding:20px 25px 19px;}
+.ai-editor-page .ai-editor-header h1{font-size:clamp(27px,2.8vw,36px);margin:7px 0;}
+.ai-editor-page .ai-editor-body{grid-template-columns:minmax(0,1.38fr) minmax(325px,.82fr);min-height:calc(100vh - 222px);}
+.ai-editor-page .ai-editor-visual{padding:14px 18px 18px;}
+.ai-editor-page .ai-editor-stage{min-height:clamp(355px,53vh,650px);}
+.ai-editor-page .ai-editor-image-holder{max-height:clamp(355px,53vh,650px);}
+.ai-editor-page .ai-editor-image-holder img{max-height:clamp(355px,53vh,650px);}
+.ai-editor-page .ai-editor-feed{min-height:150px;max-height:calc(100vh - 500px);}
+.ai-editor-page .ai-editor-conversation{background:#fff;}
+.ai-editor-file{display:none;}
+.ai-editor-stage.is-dragging{border:2px dashed #7669ec;background:#f2efff;}
+.ai-editor-page .ai-editor-empty{max-width:360px;}
+.ai-editor-page .ai-editor-empty>span{width:60px;height:60px;line-height:59px;border-radius:15px;margin-bottom:16px;}
+.ai-editor-page .ai-editor-choose{background:#6558d7;color:white;border:0;padding:12px 20px;border-radius:10px;}
+.ai-editor-page .ai-editor-history img{height:67px;}
+.ai-editor-page .ai-editor-owner{background:#fbfbfd;}
+.ai-editor-navigation{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;font-size:12px;color:#7b7d89}
+.ai-editor-navigation>a{text-decoration:none;color:#616372;}
+.ai-editor-navigation strong{font-weight:750;color:#383a48;}
+.ai-editor-navigation .ai-editor-back{display:inline-flex;align-items:center;gap:7px;}
+@media(max-width:860px){
+.ai-editor-page{width:calc(100vw - 28px);padding-top:12px}
+.ai-editor-page .ai-editor-body{grid-template-columns:1fr}
+.ai-editor-page .ai-editor-feed{max-height:230px;min-height:125px}
+.ai-editor-page .ai-editor-stage{min-height:340px}
+.ai-editor-page .ai-editor-header{padding:20px}
+}
+@media(max-width:520px){
+.ai-editor-page{width:calc(100vw - 18px);padding-top:9px}
+.ai-editor-page .ai-editor-header{padding:16px}
+.ai-editor-page .ai-editor-stage{min-height:270px}
+.ai-editor-page .ai-editor-empty{padding:22px 10px}
+.ai-editor-navigation{padding:0 6px}
+}
+
+/* Source and supplementary reference uploads: text-first, no Photoshop-style tools */
+.ai-editor-tool-primary{background:#6658dc;color:#fff;border-color:#6658dc;font-weight:800}
+.ai-editor-tool-primary:hover{background:#5345c0}
+.ai-editor-references{margin:10px 0 15px;padding:13px;border:1px dashed #c9c5e6;border-radius:12px;background:#faf9ff}
+.ai-editor-references.is-dragging{background:#ebe7ff;border-color:#6658dc}
+.ai-editor-references-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ai-editor-references-heading strong{font-size:12px;line-height:1.4}
+.ai-editor-references-heading span{font-size:11px;color:#7b7790}
+.ai-editor-references>p{font-size:11px;color:#777385;line-height:1.45;margin:7px 0 11px}
+.ai-editor-reference-add{border:1px solid #d5d0ee;background:#fff;border-radius:9px;padding:10px 12px;color:#5d51bf;cursor:pointer;font-size:12px;font-weight:800;width:100%;text-align:left}
+.ai-editor-reference-add:hover{background:#f3f0ff}
+.ai-editor-reference-add:disabled{opacity:.45;cursor:not-allowed}
+.ai-editor-reference-list{display:grid;gap:7px;margin-top:10px}
+.ai-editor-reference-list:empty{display:none}
+.ai-editor-reference-item{display:flex;align-items:center;gap:9px;min-width:0;padding:7px;border:1px solid #e6e3f1;background:#fff;border-radius:9px}
+.ai-editor-reference-thumbnail{width:46px;height:46px;object-fit:cover;border-radius:7px;flex:0 0 auto;background:#f4f4f6}
+.ai-editor-reference-details{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ai-editor-reference-name{font-size:11px;color:#65677b;font-weight:700}
+.ai-editor-reference-role{background:white;color:#272639;min-height:27px;font-size:11px;padding:2px 6px;border:1px solid #e2e0ee;border-radius:5px;width:100%}
+.ai-editor-reference-remove{font-size:10px;padding:5px 7px;border:0;background:none;cursor:pointer;color:#686278}
+.ai-editor-reference-remove:hover{color:#be3450}
+.ai-editor-header h1{line-height:1.1}
+
+/* Visible owner-only preview gate and actionable disabled-state explanations. */
+.ai-editor-blocker{margin:9px 0 4px;font-size:12px;line-height:1.5;color:#655c87;}
+.ai-editor-blocker:empty{display:none}
+.ai-editor-unlock{display:inline-flex;margin-left:8px;padding:6px 9px;background:#fff;color:#5d4acb;border:1px solid #c7bffa;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+.ai-editor-compose .ai-editor-owner{margin:12px 0 8px;padding:12px 14px;border:1px solid #e1ddf3;border-radius:11px;background:#f8f7ff;color:#3f4160;}
+.ai-editor-compose .ai-editor-owner summary{font-size:12px;font-weight:800;color:#5345bc}
+.ai-editor-owner-form{width:100%}
+.ai-editor-send:not(:disabled){background:#6258d4;opacity:1;}
+
+/* LP-123 acceptance fix: editor scrolling must never hide the title
+   beneath the global translucent sticky navigation. Site-wide navbar
+   behavior stays unchanged on all other routes. */
+body:has(.ai-editor-page) .site-header{
+  position:relative;
+  background:var(--color-bg);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+body:has(.ai-editor-page) .ai-editor-page{padding-top:24px}
+@media(max-width:520px){
+  body:has(.ai-editor-page) .ai-editor-page{padding-top:14px}
+}
+
+/* Owner-readiness is visible before uploading or filling a paid request. */
+.ai-editor-readiness{padding:10px 28px;border-bottom:1px solid #eeeaf8;color:#6355ae;background:#faf8ff;font-size:12px;line-height:1.5;font-weight:650}
+.ai-editor-readiness.is-offline{background:#fff9f5;color:#9a5a30;border-color:#f4e6d6}
+.ai-editor-readiness.is-ready{background:#f4faf6;color:#24623a;border-color:#d9eedf}
+@media(max-width:520px){.ai-editor-readiness{padding:10px 16px}}

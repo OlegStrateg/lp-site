@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AiPhotoPanel from '../../components/AiPhotoPanel.astro';
+import '../../styles/ai-photo-panel.css';
+const site='https://layerporter.com';
+---
+<BaseLayout
+  title="AI Image Editor — Edit Photos with Text | LayerPorter"
+  description="Edit photos with written instructions: remove objects, replace backgrounds and refine details. Keep versions, compare results and download."
+  canonicalPath="/tools/ai-image-editor/"
+  robots="noindex, nofollow"
+  lang="en"
+  
+  alternates={[
+    { hreflang:'en',href:`${site}/tools/ai-image-editor/` },
+    { hreflang:'ru',href:`${site}/ru/tools/ai-image-editor/` },
+    { hreflang:'x-default',href:`${site}/tools/ai-image-editor/` },
+  ]}
+  headerLabels={{converters:'Converters',extensions:'Extensions',learn:'Learn',mainAria:'Navigation',localEngine:'AI · external API',localTitle:'AI edits are sent to a provider only when requested'}}
+  footerLabels={{tagline:'LayerPorter — tools for images and files.',about:'About',extensions:'Extensions',privacy:'Privacy',terms:'Terms',footerAria:'Footer'}}
+>
+  <div class="ai-editor-page">
+    <div class="ai-editor-navigation">
+      <a class="ai-editor-back" href="/">← Back to LayerPorter</a>
+      <strong>AI Image Editor</strong>
+    </div>
+    <AiPhotoPanel />
+  </div>
+  <script>
+    import { initAiImagePanel } from '../../scripts/aiImagePanel';
+    initAiImagePanel();
+  </script>
+</BaseLayout>

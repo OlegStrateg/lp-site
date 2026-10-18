@@ -1,0 +1,24 @@
+name: LP-123 Config Readiness (read-only, never deploys)
+on:
+  push:
+    branches:
+      - feat/LP-123-ai-image-edit-guarded
+permissions:
+  contents: read
+jobs:
+  config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check unit cases for missing secrets
+        run: node --test scripts/preflight-ai-image-preview.test.mjs
+      - name: Check actual Cloudflare Preview secrets without exposing values
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_EXPECTED_ACCOUNT: ac4e8405e0350485c7c51d2f92d92fc3
+        run: node scripts/preflight-ai-image-preview.mjs

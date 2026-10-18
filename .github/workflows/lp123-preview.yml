@@ -1,0 +1,97 @@
+name: LayerPorter LP-123 preview (isolated, no production)
+# Publish only by deliberate manual dispatch after full acceptance tests.
+# No automatic deployment on push or PR.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  deployments: write
+jobs:
+  deploy_preview:
+    if: github.ref == 'refs/heads/feat/LP-123-ai-image-edit-guarded'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependencies
+        run: npm ci --no-audit --no-fund
+      - name: AI editor tests
+        run: node --test scripts/test-ai-image-security.mjs scripts/test-ai-image-editor.mjs
+      - name: Build entire site with existing verification
+        run: npm run build
+      - name: Force preview indexing off
+        shell: bash
+        run: |
+          printf '\n/*\n  X-Robots-Tag: noindex, nofollow, noarchive\n' >> dist/_headers
+      - name: Check Cloudflare credentials configured
+        env:
+          CF_TOKEN_EXISTS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          CF_ACCOUNT_EXISTS: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "$CF_TOKEN_EXISTS" != "true" ] || [ "$CF_ACCOUNT_EXISTS" != "true" ]; then
+            echo "::error::Cloudflare GitHub Actions credentials are not configured."
+            exit 1
+          fi
+      - name: Strict Preview preflight (fail before deployment)
+        id: preflight
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_EXPECTED_ACCOUNT: ac4e8405e0350485c7c51d2f92d92fc3
+        run: node scripts/preflight-ai-image-preview.mjs
+      - name: Verify all preview preflight cases
+        run: node --test scripts/preflight-ai-image-preview.test.mjs
+      - name: Install Chromium for actual UI verification
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test full AI editor workflow before publishing
+        run: node scripts/test-ai-image-browser.mjs
+      - name: Upload Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lp123-predeploy-chromium
+          path: artifacts/ai-image-editor/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Deploy only to Cloudflare Pages preview
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ steps.preflight.outputs.account_id }}
+          command: pages deploy dist --project-name=layerporter --branch=lp-123-ai-preview --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify deployed editor and non-production URL
+        shell: bash
+        env:
+          ALIAS: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+        run: |
+          set -euo pipefail
+          if [ "$ALIAS" != "https://lp-123-ai-preview.layerporter.pages.dev" ]; then
+            echo "::error::Unexpected preview alias '$ALIAS'; refusing to claim deployment is verified"
+            exit 1
+          fi
+          for path in /tools/ai-image-editor/ /ru/tools/ai-image-editor/; do
+            curl -fLsS --max-time 30 --retry 4 --retry-delay 3 "$ALIAS$path" -o /tmp/editor.html
+            grep -Fq 'id="ai-photo-panel"' /tmp/editor.html
+            grep -Fq 'id="ai-photo-prompt"' /tmp/editor.html
+            grep -Fq 'id="ai-photo-history"' /tmp/editor.html
+            grep -Fq 'id="ai-photo-file"' /tmp/editor.html
+            ! grep -Fq 'id="resize-image-tool"' /tmp/editor.html
+          done
+          curl -fLsS --max-time 30 "$ALIAS/tools/resize-image/" -o /tmp/resize.html
+          grep -Fq 'id="resize-image-tool"' /tmp/resize.html
+          ! grep -Fq 'id="ai-photo-panel"' /tmp/resize.html
+          curl -fsS --max-time 30 "$ALIAS/api/ai-image-edit" -o /tmp/editor-status.json
+          node -e "const x=require('/tmp/editor-status.json');if(x.available!==false||x.owner!==false||x.previewOwnerOnly!==true||x.ownerLoginReady!==true)process.exit(1)"
+          printf 'Preview API and UI preflight passed: %s/tools/ai-image-editor/\n' "$ALIAS"
+          echo "### LP-123 Preview candidate: UI / config checks passed (actual paid GPT edit NOT YET VERIFIED)" >> "$GITHUB_STEP_SUMMARY"
+          echo "$ALIAS/tools/ai-image-editor/" >> "$GITHUB_STEP_SUMMARY"

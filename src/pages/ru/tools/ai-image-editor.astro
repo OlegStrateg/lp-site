@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AiPhotoPanel from '../../../components/AiPhotoPanel.astro';
+import '../../../styles/ai-photo-panel.css';
+const site='https://layerporter.com';
+---
+<BaseLayout
+  title="ИИ-редактор фотографий — изменить фото текстом | LayerPorter"
+  description="Меняйте фотографии текстовыми командами: уберите объекты, замените фон, исправьте детали. История версий, сравнение и скачивание результата."
+  canonicalPath="/ru/tools/ai-image-editor/"
+  robots="noindex, nofollow"
+  lang="ru"
+  homePath="/ru/" extensionsPath="/ru/extensions/" learnPath="/ru/#workflows"
+  alternates={[
+    { hreflang:'en',href:`${site}/tools/ai-image-editor/` },
+    { hreflang:'ru',href:`${site}/ru/tools/ai-image-editor/` },
+    { hreflang:'x-default',href:`${site}/tools/ai-image-editor/` },
+  ]}
+  headerLabels={{converters:'Конвертеры',extensions:'Расширения',learn:'Материалы',mainAria:'Навигация',localEngine:'ИИ · внешний API',localTitle:'ИИ-правки отправляются провайдеру по команде пользователя'}}
+  footerLabels={{tagline:'LayerPorter — инструменты для изображений и файлов.',about:'О проекте',extensions:'Расширения',privacy:'Конфиденциальность',terms:'Условия',footerAria:'Подвал сайта'}}
+>
+  <div class="ai-editor-page">
+    <div class="ai-editor-navigation">
+      <a class="ai-editor-back" href="/ru/">← Главная</a>
+      <strong>ИИ-редактор изображений</strong>
+    </div>
+    <AiPhotoPanel locale="ru" />
+  </div>
+  <script>
+    import { initAiImagePanel } from '../../../scripts/aiImagePanel';
+    initAiImagePanel();
+  </script>
+</BaseLayout>
