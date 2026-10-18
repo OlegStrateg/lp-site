@@ -51,4 +51,7 @@ test('never fall back on credential failure or malformed ID',async()=>{
   assert.equal(count,1);
   await assert.rejects(()=>fetchPreviewMetadata(response,'http://cloudflare.example','test-only-token'));
   assert.equal(count,1);
+  const validated=await fetchPreviewMetadata(async()=>Response.json({success:true,result:{name:'layerporter'}}),
+    'bad-format','test-only-token','2'.repeat(32));
+  assert.equal(validated.accountId,'2'.repeat(32));
 });

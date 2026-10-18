@@ -53,6 +53,12 @@ export async function fetchPreviewMetadata(fetcher=fetch,
     if(body?.success!==true||body.result?.name!=='layerporter')throw Error('Cloudflare Pages project mismatch');
     return {project:body.result,accountId:id};
   }
+  const knownIsValid=typeof knownAccount==='string'&&/^[a-f0-9]{32}$/i.test(knownAccount);
+  if(!/^[a-f0-9]{32}$/i.test(account) && knownIsValid) {
+    const verified=await probe(knownAccount);
+    console.log('The stored Account ID has the wrong format; verified the project using the account identifier previously shown in Cloudflare. No secret values accessed.');
+    return verified;
+  }
   try {return await probe(account);}
   catch(error){
     // 7003 normally means an invalid account identifier / route. A known
