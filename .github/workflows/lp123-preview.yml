@@ -38,6 +38,14 @@ jobs:
             echo "::error::Cloudflare GitHub Actions credentials are not configured."
             exit 1
           fi
+      - name: Deploy only to Cloudflare Pages preview
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=layerporter --branch=lp-123-ai-preview --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Audit Cloudflare preview bindings without revealing secret values
         continue-on-error: true
         env:
@@ -58,14 +66,6 @@ jobs:
             console.log(environment+' configured names (values NEVER printed): '+names.map(name=>name+'='+(Object.hasOwn(keys,name)?'present':'missing')).join(', '));
           }
           NODE
-      - name: Deploy only to Cloudflare Pages preview
-        id: deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=layerporter --branch=lp-123-ai-preview --commit-hash=${{ github.sha }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Verify deployed editor and non-production URL
         shell: bash
         env:
