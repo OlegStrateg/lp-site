@@ -238,8 +238,8 @@ export function initAiImagePanel():void {
     choose.disabled=busy;
     addReference.disabled=busy||!usable||references.length>=MAX_REFERENCE_COUNT;
   }
-  function select(id:number):void {
-    if(busy)return;
+  function select(id:number,fromCompletedEdit=false):void {
+    if(busy&&!fromCompletedEdit)return;
     const v=versions.find(x=>x.id===id);if(!v)return;
     selected=id;
     point=null;picking=false;holder.classList.remove('is-picking');
@@ -378,7 +378,7 @@ export function initAiImagePanel():void {
       const node:Version={id:nextId++,parent:parentId,command,file:fileResult,url:URL.createObjectURL(fileResult),point};
       versions.push(node);
       prompt.value='';point=null;
-      comparing=false;select(node.id);
+      comparing=false;select(node.id,true);
       say('Ready. Enter another instruction or choose a previous version.','Готово. Напишите следующую команду или выберите предыдущую версию.');
     }catch {
       say('Unable to finish this edit. Avoid immediate retries if your API was charged.','Не удалось завершить правку. Не повторяйте запрос сразу, если API мог списать оплату.',true);
