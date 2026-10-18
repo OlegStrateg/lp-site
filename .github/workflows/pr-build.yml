@@ -28,6 +28,9 @@ jobs:
       - name: AI image security unit tests
         run: node --test scripts/test-ai-image-security.mjs scripts/test-ai-image-editor.mjs
 
+      - name: Test deployment-readiness guard (no external credentials)
+        run: node --test scripts/preflight-ai-image-preview.test.mjs
+
       - name: Build and static gates
         run: npm run build
       - name: Install isolated Chromium test dependencies
