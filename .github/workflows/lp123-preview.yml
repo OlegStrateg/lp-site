@@ -56,14 +56,19 @@ jobs:
             echo "::error::Unexpected preview alias '$ALIAS'; refusing to claim deployment is verified"
             exit 1
           fi
-          for path in /tools/resize-image/ /ru/tools/resize-image/; do
+          for path in /tools/ai-image-editor/ /ru/tools/ai-image-editor/; do
             curl -fLsS --max-time 30 --retry 4 --retry-delay 3 "$ALIAS$path" -o /tmp/editor.html
             grep -Fq 'id="ai-photo-panel"' /tmp/editor.html
             grep -Fq 'id="ai-photo-prompt"' /tmp/editor.html
             grep -Fq 'id="ai-photo-history"' /tmp/editor.html
+            grep -Fq 'id="ai-photo-file"' /tmp/editor.html
+            ! grep -Fq 'id="resize-image-tool"' /tmp/editor.html
           done
+          curl -fLsS --max-time 30 "$ALIAS/tools/resize-image/" -o /tmp/resize.html
+          grep -Fq 'id="resize-image-tool"' /tmp/resize.html
+          ! grep -Fq 'id="ai-photo-panel"' /tmp/resize.html
           curl -fsS --max-time 30 "$ALIAS/api/ai-image-edit" -o /tmp/editor-status.json
           node -e "const x=require('/tmp/editor-status.json');if(x.available!==false)process.exit(1)"
           printf 'Verified preview: %s/tools/resize-image/\n' "$ALIAS"
           echo "### LP-123 preview (AI spend disabled)" >> "$GITHUB_STEP_SUMMARY"
-          echo "$ALIAS/tools/resize-image/" >> "$GITHUB_STEP_SUMMARY"
+          echo "$ALIAS/tools/ai-image-editor/" >> "$GITHUB_STEP_SUMMARY"

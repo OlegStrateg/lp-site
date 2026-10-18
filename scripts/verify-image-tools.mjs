@@ -36,15 +36,22 @@ assert(resizeHtml.includes('id="resize-width"') && resizeHtml.includes('id="resi
 assert(resizeHtml.includes('/tools/crop-image/'), 'Resize → Crop workspace link missing');
 
 const resizeRuHtml = await fs.readFile('dist/ru/tools/resize-image/index.html', 'utf8');
-for (const [locale, html] of [['en', resizeHtml], ['ru', resizeRuHtml]]) {
+const aiEnHtml = await fs.readFile('dist/tools/ai-image-editor/index.html', 'utf8');
+const aiRuHtml = await fs.readFile('dist/ru/tools/ai-image-editor/index.html', 'utf8');
+for (const [locale, html] of [['en', aiEnHtml], ['ru', aiRuHtml]]) {
   for (const id of [
-    'ai-photo-panel','ai-photo-stage','ai-photo-image-holder','ai-photo-history',
-    'ai-photo-feed','ai-photo-prompt','ai-photo-point-mode','ai-photo-compare-switch',
-    'ai-photo-compare-range','ai-photo-run','ai-photo-download','ai-photo-owner-password'
-  ]) assert(html.includes(`id="${id}"`), `AI editor missing ${id} in ${locale} resize page`);
+    'ai-photo-panel','ai-photo-stage','ai-photo-file','ai-photo-image-holder',
+    'ai-photo-history','ai-photo-feed','ai-photo-prompt','ai-photo-point-mode',
+    'ai-photo-compare-switch','ai-photo-compare-range','ai-photo-run',
+    'ai-photo-download','ai-photo-owner-password'
+  ]) assert(html.includes(`id="${id}"`), `AI editor missing ${id} in ${locale} page`);
   assert(html.includes('ai-editor-body'), `AI conversation layout missing in ${locale}`);
+  assert(!html.includes('id="resize-image-tool"'), `Resize editor leaked into ${locale} AI page`);
 }
-
+for(const [locale,html] of [['en',resizeHtml],['ru',resizeRuHtml]]){
+  assert(!html.includes('id="ai-photo-panel"'), `AI editor must not appear beneath Resize in ${locale}`);
+  assert(html.includes('id="resize-image-tool"'), `Resize tool missing in ${locale}`);
+}
 
 assert(cropHtml.includes('https://layerporter.com/tools/crop-image/'), 'Crop canonical missing');
 assert(cropHtml.includes('Crop image to exact pixels'), 'Crop H1/copy missing');

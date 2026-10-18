@@ -1,6 +1,5 @@
 import { track } from '../lib/analytics';
 import { renderImage } from './imageToolCore';
-import { getWorkspaceSnapshot, setWorkspaceFile } from './imageWorkspaceStore';
 
 type Point = { x: number; y: number };
 type Config = { available: boolean; owner: boolean; perVisitorDaily: number; publicDaily: number; turnstileSiteKey: string|null };
@@ -49,6 +48,7 @@ export function initAiImagePanel():void {
   root.dataset.bound='1';
   const ru=document.documentElement.lang.toLowerCase().startsWith('ru');
   const area=get<HTMLElement>('ai-photo-stage'),empty=get<HTMLElement>('ai-photo-empty');
+  const fileInput=get<HTMLInputElement>('ai-photo-file'),replaceButton=get<HTMLButtonElement>('ai-photo-replace');
   const holder=get<HTMLElement>('ai-photo-image-holder');
   const activeImage=get<HTMLImageElement>('ai-photo-image'),baseImage=get<HTMLImageElement>('ai-photo-base');
   const pin=get<HTMLElement>('ai-photo-pin'),pointMode=get<HTMLButtonElement>('ai-photo-point-mode');
@@ -62,13 +62,13 @@ export function initAiImagePanel():void {
   const button=get<HTMLButtonElement>('ai-photo-run'),status=get<HTMLElement>('ai-photo-status');
   const limit=get<HTMLElement>('ai-photo-limit'),pointNote=get<HTMLElement>('ai-photo-point-note');
   const choose=get<HTMLButtonElement>('ai-photo-choose'),link=get<HTMLAnchorElement>('ai-photo-download');
-  const reuse=get<HTMLButtonElement>('ai-photo-use'),challenge=get<HTMLElement>('ai-photo-turnstile');
+  const challenge=get<HTMLElement>('ai-photo-turnstile');
   const pass=get<HTMLInputElement>('ai-photo-owner-password'),login=get<HTMLButtonElement>('ai-photo-owner-login');
   const ownerStatus=get<HTMLElement>('ai-photo-owner-status');
   const controller=new AbortController();
   let config:Config|null=null,challengeToken='',widgetId='',busy=false;
   let comparing=false,picking=false,point:Point|null=null,versions:Version[]=[],selected=0;
-  let workspaceVersion=-1,suppressWorkspaceReset=false,nextId=1,disposed=false;
+  let generation=0,nextId=1,disposed=false;
 
   function say(en:string,russian:string,error=false):void {
     status.textContent=ru?russian:en;status.classList.toggle('is-error',error);
@@ -142,7 +142,8 @@ export function initAiImagePanel():void {
     clearPoint.disabled=busy;
     compareButton.disabled=!usable||busy||current?.id===0;
     link.hidden=!usable;
-    reuse.disabled=!usable||busy||current?.id===0;
+    replaceButton.hidden=!usable;
+    replaceButton.disabled=busy;
     choose.disabled=busy;
   }
   function select(id:number):void {
@@ -157,22 +158,37 @@ export function initAiImagePanel():void {
     link.href=v.url;link.download=v.file.name||'layerporter-image.png';
     updateCompare();renderHistory();renderFeed();syncButtons();
   }
-  function resetWorkspace():void {
+  function resetImage(file:File|null):void {
     if(disposed)return;
-    for(const v of versions)URL.revokeObjectURL(v.url);
+    generation++;
+    for(const version of versions) URL.revokeObjectURL(version.url);
     versions=[];nextId=1;selected=0;point=null;picking=false;comparing=false;
-    const snapshot=getWorkspaceSnapshot();
-    workspaceVersion=snapshot.version;
-    holder.hidden=!snapshot.image;empty.hidden=!!snapshot.image;
-    if(snapshot.image){
-      versions=[{id:0,parent:null,command:'',file:snapshot.image.file,url:URL.createObjectURL(snapshot.image.file),point:null}];
+    holder.hidden=!file;empty.hidden=!!file;
+    area.classList.remove('is-dragging');
+    if(file){
+      versions=[{id:0,parent:null,command:'',file,url:URL.createObjectURL(file),point:null}];
       select(0);
-      if(config?.available)say('Describe the change you want.','Опишите, что нужно изменить.');
+      prompt.focus();
+      say('Photo ready. Describe what to change.','Фото загружено. Опишите изменение.');
     }else{
-      activeImage.removeAttribute('src');baseImage.removeAttribute('src');versionName.textContent=ru?'Исходное фото':'Original photo';
+      activeImage.removeAttribute('src');baseImage.removeAttribute('src');
+      versionName.textContent=ru?'Исходное фото':'Original photo';
       updateCompare();displayPoint();renderHistory();renderFeed();syncButtons();
-      say('Choose a photo first.','Сначала выберите фотографию.');
+      say('Upload a photo to begin.','Загрузите фотографию для начала.');
     }
+  }
+  async function acceptFile(file:File|null|undefined):Promise<void>{
+    if(!file||busy||disposed)return;
+    if(!['image/png','image/jpeg','image/webp'].includes(file.type)||!file.size||file.size>25*1024*1024){
+      say('Choose JPG, PNG or WebP, up to 25 MB.','Нужен JPG, PNG или WebP размером до 25 МБ.',true);return;
+    }
+    try{
+      const bitmap=await createImageBitmap(file);
+      const valid=bitmap.width>0&&bitmap.height>0&&bitmap.width*bitmap.height<=80000000;
+      bitmap.close();
+      if(!valid)throw Error('dimensions');
+      resetImage(file);
+    }catch{say('Cannot decode this photo, or it is too large.','Не удалось открыть фото или разрешение слишком велико.',true);}
   }
   async function refreshConfig():Promise<void>{
     try {
@@ -218,7 +234,7 @@ export function initAiImagePanel():void {
     }
     busy=true;syncButtons();renderHistory();
     say('AI is applying your change. This can take a minute.','ИИ вносит изменение. Это может занять некоторое время.');
-    const expectedWorkspace=workspaceVersion,parentId=current.id;
+    const expectedGeneration=generation,parentId=current.id;
     try {
       const file=await inputFile(current.file);
       const form=new FormData();
@@ -243,7 +259,7 @@ export function initAiImagePanel():void {
         return;
       }
       const fileResult=outputFromDataUri(payload.image,nextId);
-      if(getWorkspaceSnapshot().version!==expectedWorkspace || active()?.id!==parentId){
+      if(generation!==expectedGeneration || active()?.id!==parentId){
         say('Your source image changed while AI was working. Result was not applied.','Исходное фото изменилось во время обработки. Результат не применён.',true);
         return;
       }
@@ -268,7 +284,20 @@ export function initAiImagePanel():void {
     for(const v of versions)URL.revokeObjectURL(v.url);
     versions=[];
   }
-  choose.addEventListener('click',()=>get<HTMLInputElement>('resize-file').click(),{signal:controller.signal});
+  choose.addEventListener('click',()=>fileInput.click(),{signal:controller.signal});
+  replaceButton.addEventListener('click',()=>fileInput.click(),{signal:controller.signal});
+  fileInput.addEventListener('change',()=>{void acceptFile(fileInput.files?.[0]);fileInput.value='';},{signal:controller.signal});
+  area.addEventListener('dragover',e=>{if(busy)return;e.preventDefault();area.classList.add('is-dragging');},{signal:controller.signal});
+  area.addEventListener('dragleave',e=>{if(!area.contains(e.relatedTarget as Node))area.classList.remove('is-dragging');},{signal:controller.signal});
+  area.addEventListener('drop',e=>{
+    e.preventDefault();area.classList.remove('is-dragging');
+    if(!busy)void acceptFile(e.dataTransfer?.files?.[0]);
+  },{signal:controller.signal});
+  root.addEventListener('paste',e=>{
+    if(busy)return;
+    const file=Array.from(e.clipboardData?.items||[]).find(item=>item.type.startsWith('image/'))?.getAsFile();
+    if(file){e.preventDefault();void acceptFile(file);}
+  },{signal:controller.signal});
   prompt.addEventListener('input',syncButtons,{signal:controller.signal});
   prompt.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();void edit();}
@@ -298,20 +327,6 @@ export function initAiImagePanel():void {
       prompt.value=item.dataset.aiExample||'';prompt.focus();syncButtons();
     },{signal:controller.signal});
   }
-  document.addEventListener('lp:image-workspace-change',()=>{
-    if(!suppressWorkspaceReset&&getWorkspaceSnapshot().version!==workspaceVersion)resetWorkspace();
-  },{signal:controller.signal});
-  document.addEventListener('lp:image-workspace-imported',resetWorkspace,{signal:controller.signal});
-  reuse.addEventListener('click',async()=>{
-    const v=active();if(!v||v.id===0||busy)return;
-    suppressWorkspaceReset=true;
-    try{
-      await setWorkspaceFile(v.file);
-      workspaceVersion=getWorkspaceSnapshot().version;
-      say('This version is now loaded into Resize / Crop.','Эта версия загружена в инструменты изменения размера и обрезки.');
-    }catch{say('Could not load this version.','Не удалось загрузить выбранную версию.',true);}
-    finally{suppressWorkspaceReset=false;}
-  },{signal:controller.signal});
   login.addEventListener('click',async()=>{
     if(!pass.value||busy)return;
     login.disabled=true;
@@ -327,6 +342,6 @@ export function initAiImagePanel():void {
   },{signal:controller.signal});
   document.addEventListener('astro:before-swap',dispose,{once:true,signal:controller.signal});
   window.addEventListener('pagehide',dispose,{once:true,signal:controller.signal});
-  resetWorkspace();
+  resetImage(null);
   void refreshConfig();
 }
