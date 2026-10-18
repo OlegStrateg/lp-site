@@ -33,7 +33,18 @@ export async function fetchPreviewMetadata(fetcher=fetch,account=process.env.CF_
   if(!account||!token)throw Error('Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN in GitHub Actions');
   const res=await fetcher('https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(account)+'/pages/projects/layerporter',
     {headers:{Authorization:'Bearer '+token},redirect:'manual',signal:AbortSignal.timeout(15000)});
-  if(!res.ok)throw Error('Cloudflare project inspection failed: HTTP '+res.status);
+  if(!res.ok) {
+    // Surface machine-readable Cloudflare codes only; never log response text,
+    // URL parameters, authorization headers, or user-controlled credential data.
+    let codes=[];
+    try {
+      const error=await res.json();
+      if(Array.isArray(error?.errors))codes=error.errors.map(x=>Number(x.code)).filter(Number.isInteger).slice(0,5);
+    }catch{}
+    throw Error('Cloudflare Pages settings cannot be read (HTTP '+res.status+
+      (codes.length?', Cloudflare codes '+codes.join(','):'')+
+      '). Verify the Account ID and a Pages project read-permitted API token. No deployment performed.');
+  }
   const body=await res.json();
   if(body?.success!==true||body.result?.name!=='layerporter')throw Error('Cloudflare Pages project mismatch or API error');
   return body.result;
