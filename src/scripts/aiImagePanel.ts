@@ -76,6 +76,7 @@ export function initAiImagePanel():void {
   const ownerStatus=get<HTMLElement>('ai-photo-owner-status');
   const ownerBox=get<HTMLDetailsElement>('ai-photo-owner-box');
   const blocker=get<HTMLElement>('ai-photo-blocker');
+  const readiness=get<HTMLElement>('ai-photo-readiness');
   const controller=new AbortController();
   let config:Config|null=null,challengeToken='',widgetId='',busy=false;
   let comparing=false,picking=false,point:Point|null=null,versions:Version[]=[],selected=0;
@@ -287,6 +288,16 @@ export function initAiImagePanel():void {
     try {
       const response=await fetch('/api/ai-image-edit',{cache:'no-store',credentials:'same-origin'});
       config=await response.json() as Config;
+      readiness.classList.remove('is-ready','is-offline');
+      if(config.available && config.owner){
+        readiness.classList.add('is-ready');
+        readiness.textContent=ru?'ИИ подключён. Доступ владельца активен.':'AI connected. Owner session active.';
+      }else if(config.previewOwnerOnly&&config.ownerLoginReady){
+        readiness.textContent=ru?'ИИ настроен. Для генерации необходим вход владельца.':'AI configured. Owner sign-in is required to generate.';
+      }else {
+        readiness.classList.add('is-offline');
+        readiness.textContent=ru?'ИИ пока недоступен: тестовые генерации заблокированы.':'AI unavailable: test generations are blocked.';
+      }
       if(config.previewOwnerOnly){
         challenge.hidden=true;
         ownerBox.hidden=!!config.owner || !config.ownerLoginReady;
@@ -314,7 +325,7 @@ export function initAiImagePanel():void {
         ?ru?`${config.perVisitorDaily} правки в сутки на посетителя · общий лимит ${config.publicDaily}`
            :`${config.perVisitorDaily} edits per visitor daily · ${config.publicDaily} public site-wide`
         :config.owner?(ru?'Лимит посетителей не действует':'Owner exempt from visitor quota'):'';
-    }catch{config=null;say('The AI service is temporarily unavailable.','ИИ-сервис временно недоступен.',true);}
+    }catch{config=null;readiness.classList.add('is-offline');readiness.textContent=ru?'Сервер ИИ недоступен. Генерация заблокирована.':'AI server unavailable. Generation blocked.';say('The AI service is temporarily unavailable.','ИИ-сервис временно недоступен.',true);}
     syncButtons();
   }
   function renderChallenge():void {

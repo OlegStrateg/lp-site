@@ -38,6 +38,27 @@ jobs:
             echo "::error::Cloudflare GitHub Actions credentials are not configured."
             exit 1
           fi
+      - name: Strict Preview preflight (fail before deployment)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/preflight-ai-image-preview.mjs
+      - name: Verify all preview preflight cases
+        run: node --test scripts/preflight-ai-image-preview.test.mjs
+      - name: Install Chromium for actual UI verification
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test full AI editor workflow before publishing
+        run: node scripts/test-ai-image-browser.mjs
+      - name: Upload Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lp123-predeploy-chromium
+          path: artifacts/ai-image-editor/
+          retention-days: 14
+          if-no-files-found: ignore
       - name: Deploy only to Cloudflare Pages preview
         id: deploy
         uses: cloudflare/wrangler-action@v3
@@ -46,26 +67,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=layerporter --branch=lp-123-ai-preview --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-      - name: Audit Cloudflare preview bindings without revealing secret values
-        continue-on-error: true
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          const endpoint='https://api.cloudflare.com/client/v4/accounts/'+process.env.CF_ACCOUNT+'/pages/projects/layerporter';
-          const response=await fetch(endpoint,{headers:{Authorization:'Bearer '+process.env.CF_TOKEN}});
-          if(!response.ok){console.log('Cloudflare bindings introspection unavailable: HTTP '+response.status);process.exit(0)}
-          const data=await response.json();
-          if(!data.success){console.log('Cloudflare bindings introspection unavailable');process.exit(0)}
-          const names=['AI_IMAGE_API_KEY','AI_IMAGE_EDIT_URL','AI_IMAGE_MODEL','AI_IMAGE_OWNER_PASSWORD','AI_IMAGE_PREVIEW_ENABLED','AI_IMAGE_PREVIEW_OWNER_ONLY'];
-          const configs=data.result?.deployment_configs||{};
-          for(const environment of ['preview','production']){
-            const keys=configs[environment]?.env_vars||{};
-            console.log(environment+' configured names (values NEVER printed): '+names.map(name=>name+'='+(Object.hasOwn(keys,name)?'present':'missing')).join(', '));
-          }
-          NODE
       - name: Verify deployed editor and non-production URL
         shell: bash
         env:
@@ -88,7 +89,7 @@ jobs:
           grep -Fq 'id="resize-image-tool"' /tmp/resize.html
           ! grep -Fq 'id="ai-photo-panel"' /tmp/resize.html
           curl -fsS --max-time 30 "$ALIAS/api/ai-image-edit" -o /tmp/editor-status.json
-          node -e "const x=require('/tmp/editor-status.json');if(x.available!==false)process.exit(1)"
-          printf 'Verified preview: %s/tools/resize-image/\n' "$ALIAS"
-          echo "### LP-123 preview (AI spend disabled)" >> "$GITHUB_STEP_SUMMARY"
+          node -e "const x=require('/tmp/editor-status.json');if(x.available!==false||x.owner!==false||x.previewOwnerOnly!==true||x.ownerLoginReady!==true)process.exit(1)"
+          printf 'Preview API and UI preflight passed: %s/tools/ai-image-editor/\n' "$ALIAS"
+          echo "### LP-123 Preview candidate: UI / config checks passed (actual paid GPT edit NOT YET VERIFIED)" >> "$GITHUB_STEP_SUMMARY"
           echo "$ALIAS/tools/ai-image-editor/" >> "$GITHUB_STEP_SUMMARY"

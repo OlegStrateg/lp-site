@@ -153,3 +153,9 @@ body:has(.ai-editor-page) .ai-editor-page{padding-top:24px}
 @media(max-width:520px){
   body:has(.ai-editor-page) .ai-editor-page{padding-top:14px}
 }
+
+/* Owner-readiness is visible before uploading or filling a paid request. */
+.ai-editor-readiness{padding:10px 28px;border-bottom:1px solid #eeeaf8;color:#6355ae;background:#faf8ff;font-size:12px;line-height:1.5;font-weight:650}
+.ai-editor-readiness.is-offline{background:#fff9f5;color:#9a5a30;border-color:#f4e6d6}
+.ai-editor-readiness.is-ready{background:#f4faf6;color:#24623a;border-color:#d9eedf}
+@media(max-width:520px){.ai-editor-readiness{padding:10px 16px}}

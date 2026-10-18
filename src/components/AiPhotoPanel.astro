@@ -12,6 +12,7 @@ const ru=locale==='ru';
     </div>
     <div class="ai-editor-counter" id="ai-photo-limit" aria-live="polite"></div>
   </header>
+  <div id="ai-photo-readiness" class="ai-editor-readiness" role="status" aria-live="polite">{ru?'Проверка подключения ИИ…':'Checking AI connection…'}</div>
   <input id="ai-photo-file" class="ai-editor-file" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden />
   <input id="ai-photo-reference-file" class="ai-editor-file" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple hidden />
   <div class="ai-editor-body">
