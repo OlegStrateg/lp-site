@@ -130,6 +130,8 @@ try {
   await page.screenshot({path:path.join(shots,'desktop-1440.png'),fullPage:true});
   // Uploading a new original must reset both the ancestry and all reference attachments.
   await page.locator('#ai-photo-file').setInputFiles({name:'another.png',mimeType:'image/png',buffer:ref});
+  await page.waitForFunction(()=>document.querySelectorAll('#ai-photo-history button').length===1 &&
+    document.querySelectorAll('.ai-editor-reference-item').length===0);
   assert.equal(await page.locator('#ai-photo-history button').count(),1);
   assert.equal(await page.locator('.ai-editor-reference-item').count(),0);
   const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
