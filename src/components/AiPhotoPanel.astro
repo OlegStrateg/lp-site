@@ -84,18 +84,20 @@ const ru=locale==='ru';
         </label>
         <div id="ai-photo-point-note" class="ai-editor-point-note" hidden></div>
         <div id="ai-photo-turnstile" class="ai-editor-turnstile"></div>
-        <button type="button" class="ai-editor-send" id="ai-photo-run" disabled>{ru?'Изменить фото с помощью ИИ':'Edit image with AI'}</button>
+        <button type="button" class="ai-editor-send" id="ai-photo-run" disabled>{ru?'Напишите, что изменить':'Enter an edit instruction'}</button>
+        <div id="ai-photo-blocker" class="ai-editor-blocker" role="status" aria-live="polite"></div>
+        <details class="ai-editor-owner" id="ai-photo-owner-box">
+          <summary>{ru?'Вход владельца для тестирования GPT':'Owner sign-in for GPT testing'}</summary>
+          <div class="ai-editor-owner-form">
+            <input id="ai-photo-owner-password" type="password" autocomplete="off" placeholder={ru?'Пароль владельца':'Owner password'} aria-label={ru?'Пароль владельца':'Owner password'} />
+            <button type="button" id="ai-photo-owner-login">{ru?'Войти':'Sign in'}</button>
+          </div>
+          <p id="ai-photo-owner-status" role="status"></p>
+        </details>
         <p class="ai-editor-status" id="ai-photo-status" role="status" aria-live="polite"></p>
-        <p class="ai-editor-disclosure">{ru?'Исходное фото, приложенные образцы и текст отправляются внешнему ИИ-провайдеру только при запуске правки. В тестовой версии генерация временно отключена.':'Source photo, references and prompt are sent to an external AI provider only when you run an edit. AI generation is disabled in this preview.'}</p>
+        <p class="ai-editor-disclosure">{ru?'Исходное фото, образцы и текст отправляются провайдеру ИИ только при запуске правки.':'Source photo, references and prompt are sent to the AI provider only when you run the edit.'}</p>
       </div>
     </div>
   </div>
-  <details class="ai-editor-owner">
-    <summary>{ru?'Доступ владельца':'Owner access'}</summary>
-    <div class="ai-editor-owner-form">
-      <input id="ai-photo-owner-password" type="password" autocomplete="off" placeholder={ru?'Пароль владельца':'Owner password'} aria-label={ru?'Пароль владельца':'Owner password'} />
-      <button type="button" id="ai-photo-owner-login">{ru?'Войти':'Sign in'}</button>
-    </div>
-    <p id="ai-photo-owner-status" role="status"></p>
-  </details>
+
 </section>

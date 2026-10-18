@@ -43,6 +43,7 @@ for (const [locale, html] of [['en', aiEnHtml], ['ru', aiRuHtml]]) {
     'ai-photo-panel','ai-photo-stage','ai-photo-file','ai-photo-image-holder',
     'ai-photo-history','ai-photo-feed','ai-photo-prompt','ai-photo-point-mode',
     'ai-photo-reference-file','ai-photo-reference-add','ai-photo-reference-list','ai-photo-reference-count',
+    'ai-photo-blocker','ai-photo-owner-box',
     'ai-photo-compare-switch','ai-photo-compare-range','ai-photo-run',
     'ai-photo-download','ai-photo-owner-password'
   ]) assert(html.includes(`id="${id}"`), `AI editor missing ${id} in ${locale} page`);

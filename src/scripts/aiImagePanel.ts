@@ -2,7 +2,7 @@ import { track } from '../lib/analytics';
 import { renderImage } from './imageToolCore';
 
 type Point = { x: number; y: number };
-type Config = { available: boolean; owner: boolean; perVisitorDaily: number; publicDaily: number; turnstileSiteKey: string|null };
+type Config = { available: boolean; owner: boolean; previewOwnerOnly?: boolean; ownerLoginReady?: boolean; perVisitorDaily: number; publicDaily: number; turnstileSiteKey: string|null };
 type Version = { id: number; parent: number|null; command: string; file: File; url: string; point: Point|null };
 declare global {
   interface Window {
@@ -74,6 +74,8 @@ export function initAiImagePanel():void {
   const challenge=get<HTMLElement>('ai-photo-turnstile');
   const pass=get<HTMLInputElement>('ai-photo-owner-password'),login=get<HTMLButtonElement>('ai-photo-owner-login');
   const ownerStatus=get<HTMLElement>('ai-photo-owner-status');
+  const ownerBox=get<HTMLDetailsElement>('ai-photo-owner-box');
+  const blocker=get<HTMLElement>('ai-photo-blocker');
   const controller=new AbortController();
   let config:Config|null=null,challengeToken='',widgetId='',busy=false;
   let comparing=false,picking=false,point:Point|null=null,versions:Version[]=[],selected=0;
@@ -200,8 +202,33 @@ export function initAiImagePanel():void {
   }
   function syncButtons():void {
     const current=active(),usable=!!current;
-    const ready=!!config?.available&&usable&&!busy&&!!prompt.value.trim();
-    button.disabled=!ready;button.textContent=busy?(ru?'Выполняется изменение…':'Editing…'):(ru?'Применить изменение':'Apply edit');
+    const hasPrompt=!!prompt.value.trim();
+    // Allow a valid action to explain unavailable API instead of silently disabling it.
+    button.disabled=!usable||busy||!hasPrompt;
+    button.textContent=busy?(ru?'Выполняется изменение…':'Editing…')
+      :!hasPrompt?(ru?'Напишите, что изменить':'Enter an edit instruction')
+      :(ru?'Применить изменение':'Apply edit');
+    blocker.replaceChildren();
+    if(!usable)blocker.textContent=ru?'Сначала загрузите исходную фотографию.':'Upload a source photo first.';
+    else if(!hasPrompt)blocker.textContent=ru?'Введите команду в текстовое поле выше. Образцы сами по себе не запускают ИИ.':'Enter your instruction above. References alone do not run AI.';
+    else if(!config?.available){
+      const note=document.createElement('span');
+      note.textContent=config?.previewOwnerOnly
+        ?config?.ownerLoginReady
+          ?ru?'Для запуска требуется вход владельца.':'Sign in as owner to run the edit.'
+          :ru?'ИИ ещё не подключён: ключ и пароль владельца не настроены в Cloudflare Preview.':'AI is not connected: the Preview API key and owner password must be configured.'
+        :ru?'Генерация ИИ сейчас недоступна.':'AI generation is currently unavailable.';
+      blocker.append(note);
+      if(config?.previewOwnerOnly&&config?.ownerLoginReady){
+        const unlock=document.createElement('button');
+        unlock.type='button';unlock.className='ai-editor-unlock';
+        unlock.textContent=ru?'Войти владельцем':'Owner sign-in';
+        unlock.addEventListener('click',()=>{ownerBox.open=true;pass.focus();},{signal:controller.signal});
+        blocker.append(unlock);
+      }
+    }else blocker.textContent=config?.owner
+      ?ru?'Доступ владельца активен. Можно запускать правку.':'Owner session active. Ready to edit.'
+      :ru?'Готово к запуску.':'Ready to edit.';
     pointMode.disabled=!usable||busy||comparing;
     clearPoint.disabled=busy;
     compareButton.disabled=!usable||busy||current?.id===0;
@@ -260,7 +287,14 @@ export function initAiImagePanel():void {
     try {
       const response=await fetch('/api/ai-image-edit',{cache:'no-store',credentials:'same-origin'});
       config=await response.json() as Config;
-      if(!config.available)say('You can upload photos and references. AI generation is currently disabled.','Фото и образцы можно загрузить. Генерация ИИ в тестовой версии пока отключена.');
+      if(config.previewOwnerOnly){
+        challenge.hidden=true;
+        ownerBox.hidden=!!config.owner;
+        ownerBox.open=!!config.ownerLoginReady&&!config.owner;
+        if(config.owner)say('Owner session active.','Режим владельца активен.');
+        else if(config.ownerLoginReady)say('Sign in as owner to test real edits.','Войдите как владелец для проверки настоящих генераций.');
+        else say('Preview API is not fully configured.','Тестовый API не настроен полностью.',true);
+      } else if(!config.available)say('AI editing is unavailable.','ИИ-редактирование недоступно.',true);
       else if(config.owner){challenge.hidden=true;say('Owner mode is active.','Режим владельца активен.');}
       else{
         challenge.hidden=false;
@@ -294,7 +328,13 @@ export function initAiImagePanel():void {
   async function edit():Promise<void>{
     const current=active(),original=rootVersion();
     const command=prompt.value.trim();
-    if(!current||!original||!config?.available||busy||!command)return;
+    if(!current||!original||busy)return;
+    if(!command){prompt.focus();say('Enter the instruction first.','Сначала введите команду.',true);return;}
+    if(!config?.available){
+      if(config?.previewOwnerOnly&&config?.ownerLoginReady){ownerBox.open=true;pass.focus();say('Owner sign-in required.','Требуется вход владельца.',true);}
+      else say('AI is not configured in Cloudflare Preview.','В Cloudflare Preview ещё не настроен доступ к API.',true);
+      return;
+    }
     if(!config.owner&&!challengeToken){
       say('Complete the verification first.','Сначала пройдите проверку.',true);return;
     }
@@ -324,6 +364,7 @@ export function initAiImagePanel():void {
         if(payload.error==='daily_limit')say('Daily edit limit reached.','Суточный лимит правок исчерпан.',true);
         else if(payload.error==='verification_failed')say('Verification failed. Please try again.','Проверка не пройдена. Повторите.',true);
         else if(payload.error==='invalid_input')say('Image or instruction is not supported.','Неподдерживаемое изображение или текст.',true);
+        else if(payload.error==='owner_only'){ownerBox.open=true;pass.focus();say('Owner sign-in required.','Требуется вход владельца.',true);}
         else say('Image provider could not complete this edit.','ИИ-провайдер не смог выполнить изменение.',true);
         return;
       }
@@ -410,7 +451,8 @@ export function initAiImagePanel():void {
       pass.value='';
       ownerStatus.textContent=result.ok?(ru?'Доступ владельца открыт.':'Owner access enabled.'):
         (ru?'Ошибка авторизации.':'Owner login failed.');
-      if(result.ok)await refreshConfig();
+      if(result.ok){ownerBox.open=false;await refreshConfig();}
+      else {say('Owner login is unavailable or credentials are incorrect.','Вход владельца недоступен или пароль неверен.',true);}
     }catch{ownerStatus.textContent=ru?'Ошибка соединения.':'Connection error.';}
     login.disabled=false;
   },{signal:controller.signal});

@@ -130,3 +130,12 @@
 .ai-editor-reference-remove{font-size:10px;padding:5px 7px;border:0;background:none;cursor:pointer;color:#686278}
 .ai-editor-reference-remove:hover{color:#be3450}
 .ai-editor-header h1{line-height:1.1}
+
+/* Visible owner-only preview gate and actionable disabled-state explanations. */
+.ai-editor-blocker{margin:9px 0 4px;font-size:12px;line-height:1.5;color:#655c87;}
+.ai-editor-blocker:empty{display:none}
+.ai-editor-unlock{display:inline-flex;margin-left:8px;padding:6px 9px;background:#fff;color:#5d4acb;border:1px solid #c7bffa;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+.ai-editor-compose .ai-editor-owner{margin:12px 0 8px;padding:12px 14px;border:1px solid #e1ddf3;border-radius:11px;background:#f8f7ff;color:#3f4160;}
+.ai-editor-compose .ai-editor-owner summary{font-size:12px;font-weight:800;color:#5345bc}
+.ai-editor-owner-form{width:100%}
+.ai-editor-send:not(:disabled){background:#6258d4;opacity:1;}

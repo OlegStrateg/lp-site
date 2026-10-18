@@ -16,7 +16,7 @@ export async function onRequestGet({request,env}){
   const preview=previewHost(request);
   const ready=preview?previewMode(request,env):enabled(env);
   const owner=ready?await isOwner(request,env):false;
-  return json({available:preview?owner:ready,owner,previewOwnerOnly:preview,
+  return json({available:preview?owner:ready,owner,previewOwnerOnly:preview,ownerLoginReady:preview&&ready,
     perVisitorDaily:DAILY_PER_IP,publicDaily:DAILY_SITE,
     turnstileSiteKey:!preview&&ready?env.AI_IMAGE_TURNSTILE_SITE_KEY:null});
 }
