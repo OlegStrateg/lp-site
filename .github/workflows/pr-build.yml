@@ -30,6 +30,20 @@ jobs:
 
       - name: Build and static gates
         run: npm run build
+      - name: Install isolated Chromium test dependencies
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Real Chromium UI regression (offline mock AI)
+        run: node scripts/test-ai-image-browser.mjs
+      - name: Upload AI editor Chromium screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lp123-chromium-evidence
+          path: artifacts/ai-image-editor/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload meme editor evidence
         if: always()

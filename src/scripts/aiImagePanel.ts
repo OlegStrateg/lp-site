@@ -289,7 +289,7 @@ export function initAiImagePanel():void {
       config=await response.json() as Config;
       if(config.previewOwnerOnly){
         challenge.hidden=true;
-        ownerBox.hidden=!!config.owner;
+        ownerBox.hidden=!!config.owner || !config.ownerLoginReady;
         ownerBox.open=!!config.ownerLoginReady&&!config.owner;
         if(config.owner)say('Owner session active.','Режим владельца активен.');
         else if(config.ownerLoginReady)say('Sign in as owner to test real edits.','Войдите как владелец для проверки настоящих генераций.');
