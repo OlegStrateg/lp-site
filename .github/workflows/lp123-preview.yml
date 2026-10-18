@@ -1,8 +1,8 @@
 name: LayerPorter LP-123 preview (isolated, no production)
+# Publish only by deliberate manual dispatch after full acceptance tests.
+# No automatic deployment on push or PR.
 on:
-  push:
-    branches:
-      - feat/LP-123-ai-image-edit-guarded
+  workflow_dispatch:
 permissions:
   contents: read
   deployments: write
