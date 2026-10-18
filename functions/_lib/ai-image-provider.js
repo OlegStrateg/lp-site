@@ -36,8 +36,10 @@ export async function normalizedImage(item, env, fetcher = fetch) {
     const content = item.b64_json;
     if (!content || content.length>MAX_BASE64_CHARS || !/^[A-Za-z0-9+/]+={0,2}$/.test(content))
       throw new Error('bad_base64');
-    // Ensure actual image type is verified client-side by bitmap decoding.
-    return {image:'data:image/png;base64,'+content, format:'png'};
+    const head=Uint8Array.from(atob(content.slice(0,24)),c=>c.charCodeAt(0));
+    const mime=sniffMime(head);
+    if(!mime) throw new Error('bad_base64_image');
+    return {image:'data:'+mime+';base64,'+content,format:mime.split('/')[1]};
   }
   const url = trustedResultUrl(item.url, env);
   const result = await fetcher(url.toString(), {redirect:'manual',signal:AbortSignal.timeout(20000)});
