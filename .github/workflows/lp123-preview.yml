@@ -58,6 +58,35 @@ jobs:
             console.log(environment+' configured names (values NEVER printed): '+names.map(name=>name+'='+(Object.hasOwn(keys,name)?'present':'missing')).join(', '));
           }
           NODE
+      - name: Configure initial nonsecret preview-only API settings
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const url='https://api.cloudflare.com/client/v4/accounts/'+process.env.CF_ACCOUNT+'/pages/projects/layerporter';
+          const headers={Authorization:'Bearer '+process.env.CF_TOKEN,'Content-Type':'application/json'};
+          const read=await fetch(url,{headers});
+          if(!read.ok)throw Error('Cannot read Cloudflare project settings: '+read.status);
+          const current=(await read.json()).result;
+          const preview=current?.deployment_configs?.preview?.env_vars||{};
+          if(Object.keys(preview).length){
+            console.log('Preview already has environment bindings; skipping automatic changes to protect existing secrets.');
+          }else{
+            const vars={
+              AI_IMAGE_EDIT_URL:{type:'plain_text',value:'https://apimaster.ai/v1/images/edits'},
+              AI_IMAGE_MODEL:{type:'plain_text',value:'gpt-image-2'},
+              AI_IMAGE_PREVIEW_ENABLED:{type:'plain_text',value:'yes'},
+              AI_IMAGE_PREVIEW_OWNER_ONLY:{type:'plain_text',value:'yes'}
+            };
+            const change=await fetch(url,{method:'PATCH',headers,body:JSON.stringify({deployment_configs:{preview:{env_vars:vars}}})});
+            if(!change.ok)throw Error('Cloudflare preview config was rejected: '+change.status);
+            const updated=await change.json();
+            if(!updated.success)throw Error('Cloudflare rejected preview config');
+            console.log('Configured preview-only endpoint, model and owner-only flags. No key or password touched.');
+          }
+          NODE
       - name: Deploy only to Cloudflare Pages preview
         id: deploy
         uses: cloudflare/wrangler-action@v3
