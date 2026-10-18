@@ -29,37 +29,60 @@ export function validatePreviewConfiguration(config,wranglerText='') {
   }
   return {ok:errors.length===0,errors};
 }
-export async function fetchPreviewMetadata(fetcher=fetch,account=process.env.CF_ACCOUNT,token=process.env.CF_TOKEN) {
+export async function fetchPreviewMetadata(fetcher=fetch,
+  account=process.env.CF_ACCOUNT,token=process.env.CF_TOKEN,
+  knownAccount=process.env.CF_EXPECTED_ACCOUNT) {
   if(!account||!token)throw Error('Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN in GitHub Actions');
-  const res=await fetcher('https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(account)+'/pages/projects/layerporter',
-    {headers:{Authorization:'Bearer '+token},redirect:'manual',signal:AbortSignal.timeout(15000)});
-  if(!res.ok) {
-    // Surface machine-readable Cloudflare codes only; never log response text,
-    // URL parameters, authorization headers, or user-controlled credential data.
-    let codes=[];
-    try {
-      const error=await res.json();
-      if(Array.isArray(error?.errors))codes=error.errors.map(x=>Number(x.code)).filter(Number.isInteger).slice(0,5);
-    }catch{}
-    throw Error('Cloudflare Pages settings cannot be read (HTTP '+res.status+
-      (codes.length?', Cloudflare codes '+codes.join(','):'')+
-      '). Verify the Account ID and a Pages project read-permitted API token. No deployment performed.');
+  async function probe(id) {
+    if(!/^[a-f0-9]{32}$/i.test(id))throw Error('Cloudflare Account ID must contain exactly 32 hexadecimal characters');
+    const response=await fetcher('https://api.cloudflare.com/client/v4/accounts/'+id+'/pages/projects/layerporter',
+      {headers:{Authorization:'Bearer '+token},redirect:'manual',signal:AbortSignal.timeout(15000)});
+    if(!response.ok) {
+      let codes=[];
+      try {
+        const body=await response.json();
+        if(Array.isArray(body?.errors))codes=body.errors.map(x=>Number(x.code)).filter(Number.isInteger).slice(0,5);
+      }catch{}
+      const error=new Error('Cloudflare Pages project unavailable (HTTP '+response.status+
+        (codes.length?', codes '+codes.join(','):'')+
+        '). Verify account scope and Pages project read permissions.');
+      error.httpStatus=response.status;error.codes=codes;
+      throw error;
+    }
+    const body=await response.json();
+    if(body?.success!==true||body.result?.name!=='layerporter')throw Error('Cloudflare Pages project mismatch');
+    return {project:body.result,accountId:id};
   }
-  const body=await res.json();
-  if(body?.success!==true||body.result?.name!=='layerporter')throw Error('Cloudflare Pages project mismatch or API error');
-  return body.result;
+  try {return await probe(account);}
+  catch(error){
+    // 7003 normally means an invalid account identifier / route. A known
+    // account from the owner's Cloudflare screen may be checked READ-ONLY.
+    if(error.httpStatus===404 && error.codes?.includes(7003) &&
+       knownAccount && knownAccount!==account && /^[a-f0-9]{32}$/i.test(knownAccount)) {
+      const verified=await probe(knownAccount);
+      console.log('Cloudflare account from the current GitHub secret was not accessible; the account shown in the user Cloudflare console was verified instead. No secrets read.');
+      return verified;
+    }
+    throw error;
+  }
 }
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
   try{
-    const cloudflare=await fetchPreviewMetadata();
+    const {project,accountId}=await fetchPreviewMetadata();
     const wrangler=await readFile('wrangler.toml','utf8');
-    const {ok,errors}=validatePreviewConfiguration(cloudflare,wrangler);
+    const {ok,errors}=validatePreviewConfiguration(project,wrangler);
     if(!ok){
       console.error('LP-123 Preview deployment BLOCKED before publishing.');
       for(const error of errors)console.error(' - '+error);
       console.error('Required location: Cloudflare > Workers & Pages > layerporter > Settings > Variables and Secrets > Preview.');
       console.error('No secret value was read or printed. Production remains untouched.');
       process.exitCode=1;
-    }else console.log('LP-123 PREDEPLOY CONFIG PASS: required Preview secret names and flags are present. Real GPT validity is NOT proven.');
+    }else {
+      if(process.env.GITHUB_OUTPUT) {
+        const {appendFile}=await import('node:fs/promises');
+        await appendFile(process.env.GITHUB_OUTPUT,'account_id='+accountId+'\\n');
+      }
+      console.log('LP-123 PREDEPLOY CONFIG PASS: required Preview secret names and flags are present. Real GPT validity is NOT proven.');
+    }
   }catch(e){console.error('LP-123 PREDEPLOY FAIL CLOSED: '+e.message);process.exitCode=1;}
 }

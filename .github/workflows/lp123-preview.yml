@@ -39,9 +39,11 @@ jobs:
             exit 1
           fi
       - name: Strict Preview preflight (fail before deployment)
+        id: preflight
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_EXPECTED_ACCOUNT: ac4e8405e0350485c7c51d2f92d92fc3
         run: node scripts/preflight-ai-image-preview.mjs
       - name: Verify all preview preflight cases
         run: node --test scripts/preflight-ai-image-preview.test.mjs
@@ -64,7 +66,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ steps.preflight.outputs.account_id }}
           command: pages deploy dist --project-name=layerporter --branch=lp-123-ai-preview --commit-hash=${{ github.sha }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Verify deployed editor and non-production URL

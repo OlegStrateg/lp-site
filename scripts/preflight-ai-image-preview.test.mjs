@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validatePreviewConfiguration} from './preflight-ai-image-preview.mjs';
+import {validatePreviewConfiguration,fetchPreviewMetadata} from './preflight-ai-image-preview.mjs';
 const wrangler=`[env.preview.vars]
 AI_IMAGE_EDIT_URL = "https://apimaster.ai/v1/images/edits"
 AI_IMAGE_MODEL = "gpt-image-2"
@@ -28,4 +28,27 @@ test('checks preview flags without accepting production configuration',()=>{
 });
 test('valid exact config passes but makes no provider claims',()=>{
   assert.deepEqual(validatePreviewConfiguration(project(ready),wrangler),{ok:true,errors:[]});
+});
+
+test('Cloudflare account fallback is allowed only after confirmed 7003 and verified project match',async()=>{
+  const original='1'.repeat(32),correct='2'.repeat(32);
+  const requested=[];
+  const fake=async url=>{
+    requested.push(url);
+    if(url.includes(original))return Response.json({success:false,errors:[{code:7003}]},{status:404});
+    return Response.json({success:true,result:{name:'layerporter',deployment_configs:{preview:{env_vars:ready}}}});
+  };
+  const result=await fetchPreviewMetadata(fake,original,'test-only-token',correct);
+  assert.equal(result.accountId,correct);
+  assert.equal(requested.length,2);
+  const mismatch=async()=>Response.json({success:false,errors:[{code:7003}]},{status:404});
+  await assert.rejects(()=>fetchPreviewMetadata(mismatch,original,'test-only-token',correct));
+});
+test('never fall back on credential failure or malformed ID',async()=>{
+  let count=0;
+  const response=async()=>{count++;return Response.json({success:false,errors:[{code:10000}]},{status:403});};
+  await assert.rejects(()=>fetchPreviewMetadata(response,'1'.repeat(32),'test-only-token','2'.repeat(32)));
+  assert.equal(count,1);
+  await assert.rejects(()=>fetchPreviewMetadata(response,'http://cloudflare.example','test-only-token'));
+  assert.equal(count,1);
 });
