@@ -26,7 +26,7 @@ test('previous edits give context but latest command takes priority',()=>{
   assert.match(message,/Remove the tourists/);
   assert.match(message,/21% from the left/);
   assert.match(message,/70% from the top/);
-  assert.match(message,/no exact segmentation mask/);
+  assert.match(message,/not an exact segmentation mask/);
   assert.match(message,/Replace only the jacket/);
   assert.match(message,/Do not undo accepted edits/);
   assert.ok(message.indexOf('Remove the tourists')<message.indexOf('Replace only the jacket'));
