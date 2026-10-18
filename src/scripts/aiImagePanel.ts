@@ -290,8 +290,7 @@ export function initAiImagePanel():void {
       config=await response.json() as Config;
       readiness.classList.remove('is-ready','is-offline');
       if(config.available && config.owner){
-        readiness.classList.add('is-ready');
-        readiness.textContent=ru?'ИИ подключён. Доступ владельца активен.':'AI connected. Owner session active.';
+        readiness.textContent=ru?'Вход владельца выполнен. Работа APIMaster подтвердится после первой успешной генерации.':'Owner signed in. APIMaster is verified after the first successful edit.';
       }else if(config.previewOwnerOnly&&config.ownerLoginReady){
         readiness.textContent=ru?'ИИ настроен. Для генерации необходим вход владельца.':'AI configured. Owner sign-in is required to generate.';
       }else {
@@ -376,6 +375,11 @@ export function initAiImagePanel():void {
         else if(payload.error==='verification_failed')say('Verification failed. Please try again.','Проверка не пройдена. Повторите.',true);
         else if(payload.error==='invalid_input')say('Image or instruction is not supported.','Неподдерживаемое изображение или текст.',true);
         else if(payload.error==='owner_only'){ownerBox.open=true;pass.focus();say('Owner sign-in required.','Требуется вход владельца.',true);}
+        else if(payload.error==='provider_auth_failed')say('APIMaster rejected the API key or permissions.','APIMaster отклонил ключ API или права доступа.',true);
+        else if(payload.error==='provider_payment_required')say('APIMaster account has insufficient credit or billing is blocked.','Недостаточно средств или заблокирована оплата в APIMaster.',true);
+        else if(payload.error==='provider_busy')say('APIMaster rate limit reached; no automatic retry.','Превышен лимит APIMaster. Автоматического повтора нет.',true);
+        else if(payload.error==='provider_rejected')say('The model or image-edit request is not accepted by APIMaster.','APIMaster не принимает модель или параметры редактирования.',true);
+        else if(payload.error==='provider_unavailable')say('APIMaster is temporarily unavailable; avoid immediate paid retries.','APIMaster временно недоступен. Не повторяйте платный запрос сразу.',true);
         else say('Image provider could not complete this edit.','ИИ-провайдер не смог выполнить изменение.',true);
         return;
       }
@@ -390,6 +394,9 @@ export function initAiImagePanel():void {
       versions.push(node);
       prompt.value='';point=null;
       comparing=false;select(node.id,true);
+      readiness.classList.remove('is-offline');
+      readiness.classList.add('is-ready');
+      readiness.textContent=ru?'APIMaster проверен: получено реальное изображение.':'APIMaster verified: edited image returned.';
       say('Ready. Enter another instruction or choose a previous version.','Готово. Напишите следующую команду или выберите предыдущую версию.');
     }catch {
       say('Unable to finish this edit. Avoid immediate retries if your API was charged.','Не удалось завершить правку. Не повторяйте запрос сразу, если API мог списать оплату.',true);

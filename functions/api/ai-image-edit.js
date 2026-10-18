@@ -116,8 +116,16 @@ export async function onRequestPost({request,env}){
     const response=await fetch(url.toString(),{method:'POST',redirect:'manual',
       headers:{Authorization:'Bearer '+env.AI_IMAGE_API_KEY},
       body,signal:AbortSignal.timeout(120000)});
-    if(!response.ok||response.status>=300)
-      return json({error:response.status===429?'provider_busy':'provider_error'},502);
+    if(!response.ok||response.status>=300) {
+      // Do not reflect upstream error text: providers may include private request metadata.
+      let reason='provider_error';
+      if(response.status===401||response.status===403)reason='provider_auth_failed';
+      else if(response.status===402)reason='provider_payment_required';
+      else if(response.status===429)reason='provider_busy';
+      else if(response.status===400||response.status===404||response.status===422)reason='provider_rejected';
+      else if(response.status>=500)reason='provider_unavailable';
+      return json({error:reason},502);
+    }
     const output=await response.json();
     const result=await normalizedImage(output?.data?.[0],env);
     return json({ok:true,...result});

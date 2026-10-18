@@ -173,3 +173,27 @@ test('unknown reference role and too many references reject request before the p
     const response=await callProvider({request:req,env});assert.equal(response.status,400);
   }
 });
+
+test('provider errors are categorized without returning credentials, prompts or upstream bodies',async()=>{
+  const image=new File([png],'source.png',{type:'image/png'});
+  const cookie=(await ownerCookie(env)).split(';')[0];
+  const statuses=[[401,'provider_auth_failed'],[403,'provider_auth_failed'],[402,'provider_payment_required'],
+    [429,'provider_busy'],[400,'provider_rejected'],[404,'provider_rejected'],[422,'provider_rejected'],[503,'provider_unavailable']];
+  const saved=globalThis.fetch;
+  try{
+    for(const [status,expected] of statuses){
+      const form=new FormData();
+      form.append('image',image);form.append('prompt','Safe test instruction');
+      const request=new Request('https://layerporter.com/api/ai-image-edit',{
+        method:'POST',headers:{origin:'https://layerporter.com',cookie},body:form
+      });
+      globalThis.fetch=async()=>Response.json({error:'private upstream diagnostics'}, {status});
+      const response=await callProvider({request,env});
+      const result=await response.json();
+      assert.equal(response.status,502);
+      assert.equal(result.error,expected);
+      assert.ok(!JSON.stringify(result).includes('private upstream'));
+      assert.ok(!JSON.stringify(result).includes('placeholder'));
+    }
+  } finally {globalThis.fetch=saved;}
+});
