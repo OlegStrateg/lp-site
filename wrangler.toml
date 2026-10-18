@@ -9,3 +9,16 @@ compatibility_date = "2026-07-01"
 [[kv_namespaces]]
 binding = "FEEDBACK_KV"
 id = "a9cb0f03a191428085051e44df201bc6"
+
+# Preview-only configuration. All paid requests stay behind owner authentication.
+# NEVER put API keys or owner passwords in this file.
+[env.preview.vars]
+AI_IMAGE_EDIT_URL = "https://apimaster.ai/v1/images/edits"
+AI_IMAGE_MODEL = "gpt-image-2"
+AI_IMAGE_PREVIEW_ENABLED = "yes"
+AI_IMAGE_PREVIEW_OWNER_ONLY = "yes"
+
+# Repeat bindings in preview environment to preserve other Pages Functions.
+[[env.preview.kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "a9cb0f03a191428085051e44df201bc6"
