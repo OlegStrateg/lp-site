@@ -10,6 +10,10 @@ declare global {
   }
 }
 const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+const MAX_REFERENCE_BYTES = 2 * 1024 * 1024;
+const MAX_REFERENCE_COUNT = 3;
+type ReferenceRole = 'clothing'|'face'|'background'|'object'|'style';
+type Reference = { id:number; file:File; url:string; role:ReferenceRole };
 function get<T extends HTMLElement>(id:string):T { return document.getElementById(id) as T; }
 function clamp(value:number):number { return Math.max(0,Math.min(1,value)); }
 function outputFromDataUri(value:string, version:number):File {
@@ -22,8 +26,8 @@ function outputFromDataUri(value:string, version:number):File {
   const ext=match[1]==='image/jpeg'?'jpg':match[1].split('/')[1];
   return new File([bytes],`layerporter-ai-v${version}.${ext}`,{type:match[1]});
 }
-async function inputFile(file:File):Promise<File> {
-  if(file.size<=MAX_UPLOAD_BYTES)return file;
+async function inputFile(file:File,maxBytes=MAX_UPLOAD_BYTES):Promise<File> {
+  if(file.size<=maxBytes)return file;
   // Browser-native transcoding only for API input. Original quality remains in version history.
   const bitmap=await createImageBitmap(file);
   try {
@@ -32,7 +36,7 @@ async function inputFile(file:File):Promise<File> {
     for(const quality of [0.88,0.78,0.64]) {
       const width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale));
       const blob=await renderImage(bitmap,{width,height,mime:'image/webp',quality});
-      if(blob.size<=MAX_UPLOAD_BYTES)return new File([blob],'ai-input.webp',{type:'image/webp'});
+      if(blob.size<=maxBytes)return new File([blob],'ai-input.webp',{type:'image/webp'});
       scale*=0.74;
     }
     throw Error('image_too_large');
@@ -49,6 +53,11 @@ export function initAiImagePanel():void {
   const ru=document.documentElement.lang.toLowerCase().startsWith('ru');
   const area=get<HTMLElement>('ai-photo-stage'),empty=get<HTMLElement>('ai-photo-empty');
   const fileInput=get<HTMLInputElement>('ai-photo-file'),replaceButton=get<HTMLButtonElement>('ai-photo-replace');
+  const refInput=get<HTMLInputElement>('ai-photo-reference-file');
+  const addReference=get<HTMLButtonElement>('ai-photo-reference-add');
+  const refCount=get<HTMLElement>('ai-photo-reference-count');
+  const refList=get<HTMLElement>('ai-photo-reference-list');
+  const refDrop=get<HTMLElement>('ai-photo-reference-drop');
   const holder=get<HTMLElement>('ai-photo-image-holder');
   const activeImage=get<HTMLImageElement>('ai-photo-image'),baseImage=get<HTMLImageElement>('ai-photo-base');
   const pin=get<HTMLElement>('ai-photo-pin'),pointMode=get<HTMLButtonElement>('ai-photo-point-mode');
@@ -68,7 +77,8 @@ export function initAiImagePanel():void {
   const controller=new AbortController();
   let config:Config|null=null,challengeToken='',widgetId='',busy=false;
   let comparing=false,picking=false,point:Point|null=null,versions:Version[]=[],selected=0;
-  let generation=0,nextId=1,disposed=false;
+  let generation=0,nextId=1,disposed=false,referenceId=1;
+  let references:Reference[]=[];
 
   function say(en:string,russian:string,error=false):void {
     status.textContent=ru?russian:en;status.classList.toggle('is-error',error);
@@ -90,6 +100,60 @@ export function initAiImagePanel():void {
     pointNote.textContent=ru
       ?`Метка: ${x}% слева, ${y}% сверху. Уточните объект в тексте.`
       :`Point: ${x}% from left, ${y}% from top. Name the object in your instruction.`;
+  }
+  function clearReferences():void{
+    for(const ref of references)URL.revokeObjectURL(ref.url);
+    references=[];renderReferences();
+  }
+  function renderReferences():void {
+    refList.replaceChildren();
+    refCount.textContent=`${references.length} / ${MAX_REFERENCE_COUNT}`;
+    addReference.disabled=busy||!active()||references.length>=MAX_REFERENCE_COUNT;
+    const labels:Record<ReferenceRole,string>=ru
+      ?{clothing:'Одежда',face:'Лицо',background:'Фон',object:'Предмет',style:'Стиль'}
+      :{clothing:'Clothing',face:'Face',background:'Background',object:'Object',style:'Style'};
+    for(const [i,ref] of references.entries()) {
+      const item=make('div','ai-editor-reference-item');
+      const thumbnail=make('img','ai-editor-reference-thumbnail') as HTMLImageElement;
+      thumbnail.src=ref.url;thumbnail.alt='';
+      const details=make('div','ai-editor-reference-details');
+      details.append(make('span','ai-editor-reference-name',(ru?'Образец ':'Reference ')+(i+1)));
+      const select=make('select','ai-editor-reference-role') as HTMLSelectElement;
+      select.setAttribute('aria-label',(ru?'Назначение образца ':'Reference role ')+(i+1));
+      for(const [role,label] of Object.entries(labels)) {
+        const option=document.createElement('option');option.value=role;option.textContent=label;
+        option.selected=ref.role===role;select.append(option);
+      }
+      select.disabled=busy;
+      select.addEventListener('change',()=>{ref.role=select.value as ReferenceRole;},{signal:controller.signal});
+      details.append(select);
+      const remove=make('button','ai-editor-reference-remove',ru?'Убрать':'Remove');
+      remove.type='button';remove.disabled=busy;
+      remove.setAttribute('aria-label',(ru?'Убрать образец ':'Remove reference ')+(i+1));
+      remove.addEventListener('click',()=>{
+        if(busy)return;URL.revokeObjectURL(ref.url);
+        references=references.filter(x=>x.id!==ref.id);renderReferences();
+      },{signal:controller.signal});
+      item.append(thumbnail,details,remove);refList.append(item);
+    }
+  }
+  async function acceptReferences(files:File[]):Promise<void> {
+    if(busy||disposed)return;
+    let count=0;
+    for(const file of files.slice(0,MAX_REFERENCE_COUNT-references.length)) {
+      if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size<=0||file.size>25*1024*1024)continue;
+      try {
+        const bitmap=await createImageBitmap(file);
+        const valid=bitmap.width>0&&bitmap.height>0&&bitmap.width*bitmap.height<=80000000;
+        bitmap.close();
+        if(!valid)continue;
+        references.push({id:referenceId++,file,url:URL.createObjectURL(file),role:'clothing'});
+        count++;
+      } catch { /* invalid or corrupt image ignored */ }
+    }
+    renderReferences();syncButtons();
+    if(!count)say('Could not add references. Choose JPG, PNG or WebP under 25 MB.','Не удалось добавить образцы. Нужны JPG, PNG или WebP до 25 МБ.',true);
+    else say('Reference photos attached. Select each photo’s role, then describe the edit.','Образцы прикреплены. Укажите назначение каждого и напишите команду.');
   }
   function renderHistory():void {
     history.replaceChildren();
@@ -145,6 +209,7 @@ export function initAiImagePanel():void {
     replaceButton.hidden=!usable;
     replaceButton.disabled=busy;
     choose.disabled=busy;
+    addReference.disabled=busy||!usable||references.length>=MAX_REFERENCE_COUNT;
   }
   function select(id:number):void {
     if(busy)return;
@@ -162,6 +227,7 @@ export function initAiImagePanel():void {
     if(disposed)return;
     generation++;
     for(const version of versions) URL.revokeObjectURL(version.url);
+    clearReferences();
     versions=[];nextId=1;selected=0;point=null;picking=false;comparing=false;
     holder.hidden=!file;empty.hidden=!!file;
     area.classList.remove('is-dragging');
@@ -194,7 +260,7 @@ export function initAiImagePanel():void {
     try {
       const response=await fetch('/api/ai-image-edit',{cache:'no-store',credentials:'same-origin'});
       config=await response.json() as Config;
-      if(!config.available)say('AI editing is not configured yet.','ИИ-редактор ещё не настроен.');
+      if(!config.available)say('You can upload photos and references. AI generation is currently disabled.','Фото и образцы можно загрузить. Генерация ИИ в тестовой версии пока отключена.');
       else if(config.owner){challenge.hidden=true;say('Owner mode is active.','Режим владельца активен.');}
       else{
         challenge.hidden=false;
@@ -237,12 +303,15 @@ export function initAiImagePanel():void {
     const expectedGeneration=generation,parentId=current.id;
     try {
       const file=await inputFile(current.file);
+      const referenceFiles=await Promise.all(references.map(ref=>inputFile(ref.file,MAX_REFERENCE_BYTES)));
       const form=new FormData();
       form.append('image',file,file.name);
       if(current.id!==0) {
         const originalFile=await inputFile(original.file);
         form.append('original',originalFile,originalFile.name);
       }
+      for(const referenceFile of referenceFiles)form.append('references',referenceFile,referenceFile.name);
+      form.append('referenceRoles',JSON.stringify(references.map(ref=>ref.role)));
       form.append('prompt',command);
       form.append('context',JSON.stringify(ancestry(current).slice(1).map(x=>x.command).slice(-6)));
       form.append('point',JSON.stringify(point));
@@ -282,9 +351,14 @@ export function initAiImagePanel():void {
     if(disposed)return;
     disposed=true;controller.abort();
     for(const v of versions)URL.revokeObjectURL(v.url);
-    versions=[];
+    clearReferences();versions=[];
   }
   choose.addEventListener('click',()=>fileInput.click(),{signal:controller.signal});
+  addReference.addEventListener('click',()=>{if(active()&&!busy)refInput.click();},{signal:controller.signal});
+  refInput.addEventListener('change',()=>{void acceptReferences(Array.from(refInput.files||[]));refInput.value='';},{signal:controller.signal});
+  refDrop.addEventListener('dragover',e=>{if(!busy&&active()){e.preventDefault();refDrop.classList.add('is-dragging');}},{signal:controller.signal});
+  refDrop.addEventListener('dragleave',e=>{if(!refDrop.contains(e.relatedTarget as Node))refDrop.classList.remove('is-dragging');},{signal:controller.signal});
+  refDrop.addEventListener('drop',e=>{if(!active()||busy)return;e.preventDefault();refDrop.classList.remove('is-dragging');void acceptReferences(Array.from(e.dataTransfer?.files||[]));},{signal:controller.signal});
   replaceButton.addEventListener('click',()=>fileInput.click(),{signal:controller.signal});
   fileInput.addEventListener('change',()=>{void acceptFile(fileInput.files?.[0]);fileInput.value='';},{signal:controller.signal});
   area.addEventListener('dragover',e=>{if(busy)return;e.preventDefault();area.classList.add('is-dragging');},{signal:controller.signal});

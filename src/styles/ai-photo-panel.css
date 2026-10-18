@@ -107,3 +107,26 @@
 .ai-editor-page .ai-editor-empty{padding:22px 10px}
 .ai-editor-navigation{padding:0 6px}
 }
+
+/* Source and supplementary reference uploads: text-first, no Photoshop-style tools */
+.ai-editor-tool-primary{background:#6658dc;color:#fff;border-color:#6658dc;font-weight:800}
+.ai-editor-tool-primary:hover{background:#5345c0}
+.ai-editor-references{margin:10px 0 15px;padding:13px;border:1px dashed #c9c5e6;border-radius:12px;background:#faf9ff}
+.ai-editor-references.is-dragging{background:#ebe7ff;border-color:#6658dc}
+.ai-editor-references-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ai-editor-references-heading strong{font-size:12px;line-height:1.4}
+.ai-editor-references-heading span{font-size:11px;color:#7b7790}
+.ai-editor-references>p{font-size:11px;color:#777385;line-height:1.45;margin:7px 0 11px}
+.ai-editor-reference-add{border:1px solid #d5d0ee;background:#fff;border-radius:9px;padding:10px 12px;color:#5d51bf;cursor:pointer;font-size:12px;font-weight:800;width:100%;text-align:left}
+.ai-editor-reference-add:hover{background:#f3f0ff}
+.ai-editor-reference-add:disabled{opacity:.45;cursor:not-allowed}
+.ai-editor-reference-list{display:grid;gap:7px;margin-top:10px}
+.ai-editor-reference-list:empty{display:none}
+.ai-editor-reference-item{display:flex;align-items:center;gap:9px;min-width:0;padding:7px;border:1px solid #e6e3f1;background:#fff;border-radius:9px}
+.ai-editor-reference-thumbnail{width:46px;height:46px;object-fit:cover;border-radius:7px;flex:0 0 auto;background:#f4f4f6}
+.ai-editor-reference-details{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ai-editor-reference-name{font-size:11px;color:#65677b;font-weight:700}
+.ai-editor-reference-role{background:white;color:#272639;min-height:27px;font-size:11px;padding:2px 6px;border:1px solid #e2e0ee;border-radius:5px;width:100%}
+.ai-editor-reference-remove{font-size:10px;padding:5px 7px;border:0;background:none;cursor:pointer;color:#686278}
+.ai-editor-reference-remove:hover{color:#be3450}
+.ai-editor-header h1{line-height:1.1}
