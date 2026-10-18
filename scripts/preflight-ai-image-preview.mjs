@@ -80,7 +80,7 @@ if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
     }else {
       if(process.env.GITHUB_OUTPUT) {
         const {appendFile}=await import('node:fs/promises');
-        await appendFile(process.env.GITHUB_OUTPUT,'account_id='+accountId+'\\n');
+        await appendFile(process.env.GITHUB_OUTPUT,'account_id='+accountId+'\n');
       }
       console.log('LP-123 PREDEPLOY CONFIG PASS: required Preview secret names and flags are present. Real GPT validity is NOT proven.');
     }
