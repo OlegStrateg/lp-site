@@ -3,9 +3,13 @@ import { buildEditPrompt,validateContext,validatePoint } from '../_lib/ai-image-
 import { normalizedImage } from '../_lib/ai-image-provider.js';
 
 const MAX_SIZE=6*1024*1024, DAILY_PER_IP=3, DAILY_SITE=20, MAX_REQUEST_BYTES=14*1024*1024;
+function previewBlocked(request, env) {
+  return new URL(request.url).hostname.endsWith('.pages.dev') && env.AI_IMAGE_PREVIEW_ENABLED !== 'yes';
+}
+
 
 export async function onRequestGet({request,env}){
-  const ready=enabled(env);
+  const ready=enabled(env) && !previewBlocked(request, env);
   return json({available:ready,owner:ready&&await isOwner(request,env),
     perVisitorDaily:DAILY_PER_IP,publicDaily:DAILY_SITE,
     turnstileSiteKey:ready?env.AI_IMAGE_TURNSTILE_SITE_KEY:null});
@@ -46,7 +50,7 @@ export async function reserveDaily(db,id,now=Date.now()) {
 
 export async function onRequestPost({request,env}){
   if(!sameOrigin(request))return json({error:'forbidden'},403);
-  if(!enabled(env))return json({error:'unavailable'},503);
+  if(!enabled(env) || previewBlocked(request,env))return json({error:'unavailable'},503);
   const bytes=Number(request.headers.get('content-length')||0);
   if(bytes>MAX_REQUEST_BYTES)return json({error:'invalid_input'},413);
   const owner=await isOwner(request,env);

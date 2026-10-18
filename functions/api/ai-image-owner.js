@@ -1,7 +1,7 @@
 import { enabled,clientHash,json,ownerCookie,passwordMatches,sameOrigin } from '../_lib/ai-image-security.js';
 export async function onRequestPost({request,env}){
   if(!sameOrigin(request))return json({error:'forbidden'},403);
-  if(!enabled(env))return json({error:'unavailable'},503);
+  if(!enabled(env) || (new URL(request.url).hostname.endsWith('.pages.dev') && env.AI_IMAGE_PREVIEW_ENABLED !== 'yes'))return json({error:'unavailable'},503);
   const id=await clientHash(request,env);if(!id)return json({error:'unavailable'},503);
   const now=Math.floor(Date.now()/1000);
   try{
