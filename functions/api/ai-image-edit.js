@@ -3,16 +3,22 @@ import { buildEditPrompt,validateContext,validatePoint,validateReferenceRoles,MA
 import { normalizedImage } from '../_lib/ai-image-provider.js';
 
 const MAX_SIZE=6*1024*1024, MAX_REFERENCE_SIZE=2*1024*1024, MAX_TOTAL_IMAGES=18*1024*1024, DAILY_PER_IP=3, DAILY_SITE=20, MAX_REQUEST_BYTES=21*1024*1024;
-function previewBlocked(request, env) {
-  return new URL(request.url).hostname.endsWith('.pages.dev') && env.AI_IMAGE_PREVIEW_ENABLED !== 'yes';
+function previewMode(request,env){
+  return new URL(request.url).hostname==='lp-123-ai-preview.layerporter.pages.dev' &&
+    env.AI_IMAGE_PREVIEW_ENABLED==='yes' && env.AI_IMAGE_PREVIEW_OWNER_ONLY==='yes' &&
+    env.AI_IMAGE_OWNER_PASSWORD?.length>=48 && !!env.AI_IMAGE_API_KEY &&
+    !!env.AI_IMAGE_EDIT_URL && !!env.AI_IMAGE_MODEL;
 }
+function previewHost(request){return new URL(request.url).hostname.endsWith('.pages.dev');}
 
 
 export async function onRequestGet({request,env}){
-  const ready=enabled(env) && !previewBlocked(request, env);
-  return json({available:ready,owner:ready&&await isOwner(request,env),
+  const preview=previewHost(request);
+  const ready=preview?previewMode(request,env):enabled(env);
+  const owner=ready?await isOwner(request,env):false;
+  return json({available:preview?owner:ready,owner,previewOwnerOnly:preview,
     perVisitorDaily:DAILY_PER_IP,publicDaily:DAILY_SITE,
-    turnstileSiteKey:ready?env.AI_IMAGE_TURNSTILE_SITE_KEY:null});
+    turnstileSiteKey:!preview&&ready?env.AI_IMAGE_TURNSTILE_SITE_KEY:null});
 }
 
 async function verifyCaptcha(token,request,env){
@@ -50,10 +56,12 @@ export async function reserveDaily(db,id,now=Date.now()) {
 
 export async function onRequestPost({request,env}){
   if(!sameOrigin(request))return json({error:'forbidden'},403);
-  if(!enabled(env) || previewBlocked(request,env))return json({error:'unavailable'},503);
+  const preview=previewHost(request);
+  if(preview?!previewMode(request,env):!enabled(env))return json({error:'unavailable'},503);
+  const owner=await isOwner(request,env);
+  if(preview&&!owner)return json({error:'owner_only'},403);
   const bytes=Number(request.headers.get('content-length')||0);
   if(bytes>MAX_REQUEST_BYTES)return json({error:'invalid_input'},413);
-  const owner=await isOwner(request,env);
   let form;
   try{form=await request.formData();}catch{return json({error:'invalid_input'},400);}
   const image=form.get('image');
