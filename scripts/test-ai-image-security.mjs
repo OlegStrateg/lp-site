@@ -52,3 +52,32 @@ test('Anonymous daily fingerprint is stable and salted',async()=>{
   assert.notEqual(hash,await clientHash(request,{...env,AI_IMAGE_QUOTA_SALT:'z'.repeat(45)}));
   assert.equal(await clientHash(new Request(url),env),'');
 });
+
+
+test('preview never exposes paid edits without owner session',async()=>{
+  const base='https://lp-123-ai-preview.layerporter.pages.dev';
+  const secure={...env,AI_IMAGE_OWNER_PASSWORD:'K'.repeat(60),
+    AI_IMAGE_PREVIEW_ENABLED:'yes',AI_IMAGE_PREVIEW_OWNER_ONLY:'yes',
+    AI_IMAGE_DB:undefined,AI_IMAGE_TURNSTILE_SECRET:undefined,AI_IMAGE_TURNSTILE_SITE_KEY:undefined};
+  const before=await onRequestGet({request:new Request(base+'/api/ai-image-edit'),env:secure});
+  assert.equal((await before.json()).available,false);
+  const anon=await onRequestPost({request:new Request(base+'/api/ai-image-edit',{
+    method:'POST',headers:{origin:base},body:new FormData()
+  }),env:secure});
+  assert.equal(anon.status,403);
+  const loginRequest=new Request(base+'/api/ai-image-owner',{method:'POST',
+    headers:{origin:base,'content-type':'application/json'},
+    body:JSON.stringify({password:secure.AI_IMAGE_OWNER_PASSWORD})});
+  const response=await login({request:loginRequest,env:secure});
+  assert.equal(response.status,200);
+  const cookie=response.headers.get('set-cookie').split(';')[0];
+  const after=await onRequestGet({request:new Request(base+'/api/ai-image-edit',{headers:{cookie}}),env:secure});
+  assert.equal((await after.json()).available,true);
+  const wrongHost=await login({request:new Request('https://other.layerporter.pages.dev/api/ai-image-owner',{
+    method:'POST',headers:{origin:'https://other.layerporter.pages.dev','content-type':'application/json'},
+    body:JSON.stringify({password:secure.AI_IMAGE_OWNER_PASSWORD})}),env:secure});
+  assert.equal(wrongHost.status,503);
+  const wrongFlag=await onRequestGet({request:new Request(base+'/api/ai-image-edit'),
+    env:{...secure,AI_IMAGE_PREVIEW_OWNER_ONLY:'no'}});
+  assert.equal((await wrongFlag.json()).available,false);
+});
